@@ -1,0 +1,32 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Cercle de fond -->
+  <circle cx="128" cy="128" r="120" fill="url(#grad)"/>
+
+  <!-- Icône CRM (graphique avec personnes) -->
+  <g transform="translate(128, 128)">
+    <!-- Personne 1 -->
+    <circle cx="-40" cy="-20" r="15" fill="white" opacity="0.9"/>
+    <path d="M -40,-5 Q -50,15 -60,25 L -20,25 Q -30,15 -40,-5 Z" fill="white" opacity="0.9"/>
+
+    <!-- Personne 2 -->
+    <circle cx="0" cy="-30" r="15" fill="white"/>
+    <path d="M 0,-15 Q -10,5 -20,15 L 20,15 Q 10,5 0,-15 Z" fill="white"/>
+
+    <!-- Personne 3 -->
+    <circle cx="40" cy="-20" r="15" fill="white" opacity="0.9"/>
+    <path d="M 40,-5 Q 30,15 20,25 L 60,25 Q 50,15 40,-5 Z" fill="white" opacity="0.9"/>
+
+    <!-- Graphique en bas -->
+    <rect x="-50" y="35" width="20" height="30" fill="white" opacity="0.7" rx="2"/>
+    <rect x="-15" y="25" width="20" height="40" fill="white" opacity="0.8" rx="2"/>
+    <rect x="20" y="30" width="20" height="35" fill="white" opacity="0.7" rx="2"/>
+  </g>
+</svg>

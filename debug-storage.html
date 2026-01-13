@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Storage CRM</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        .section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .key {
+            color: #4a9eff;
+            font-weight: bold;
+        }
+        .value {
+            color: #50fa7b;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #3a8eef;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnostic Storage CRM</h1>
+
+    <div class="section">
+        <h2>📊 État du localStorage</h2>
+        <div id="storage-info"></div>
+    </div>
+
+    <div class="section">
+        <h2>📦 Données CRM</h2>
+        <div id="crm-data"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔧 Actions</h2>
+        <button onclick="exportData()">💾 Exporter les données</button>
+        <button onclick="location.reload()">🔄 Rafraîchir</button>
+    </div>
+
+    <script>
+        function displayStorageInfo() {
+            const infoDiv = document.getElementById('storage-info');
+            let html = '';
+
+            // Liste toutes les clés localStorage
+            html += '<p><span class="key">Nombre total de clés:</span> <span class="value">' + localStorage.length + '</span></p>';
+
+            html += '<p><span class="key">Clés présentes:</span></p><ul>';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const size = localStorage.getItem(key)?.length || 0;
+                html += `<li>${key} (${size} caractères)</li>`;
+            }
+            html += '</ul>';
+
+            infoDiv.innerHTML = html;
+        }
+
+        function displayCRMData() {
+            const dataDiv = document.getElementById('crm-data');
+            let html = '';
+
+            // Vérifie crm_pipelines
+            const pipelines = localStorage.getItem('crm_pipelines');
+            if (pipelines) {
+                try {
+                    const parsed = JSON.parse(pipelines);
+                    html += '<h3>✅ crm_pipelines trouvé</h3>';
+                    html += '<p><span class="key">Nombre de pipelines:</span> <span class="value">' + parsed.length + '</span></p>';
+
+                    parsed.forEach((pipeline, idx) => {
+                        html += `<p><span class="key">Pipeline ${idx + 1}:</span> ${pipeline.name}</p>`;
+                        html += `<p><span class="key">Nombre de leads:</span> <span class="value">${pipeline.leads?.length || 0}</span></p>`;
+                    });
+
+                    html += '<details><summary>Voir le JSON complet</summary>';
+                    html += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                    html += '</details>';
+                } catch (e) {
+                    html += '<h3>❌ Erreur de parsing crm_pipelines</h3>';
+                    html += '<p>' + e.message + '</p>';
+                    html += '<pre>' + pipelines.substring(0, 500) + '...</pre>';
+                }
+            } else {
+                html += '<h3>❌ crm_pipelines NON TROUVÉ</h3>';
+            }
+
+            // Vérifie l'ancienne clé crm-leads
+            const oldLeads = localStorage.getItem('crm-leads');
+            if (oldLeads) {
+                html += '<h3>⚠️ Ancienne clé crm-leads trouvée</h3>';
+                html += '<p>Cette clé contient peut-être vos anciennes données</p>';
+                try {
+                    const parsed = JSON.parse(oldLeads);
+                    html += '<p><span class="key">Nombre de leads:</span> <span class="value">' + parsed.length + '</span></p>';
+                    html += '<details><summary>Voir le JSON complet</summary>';
+                    html += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                    html += '</details>';
+                } catch (e) {
+                    html += '<p>Erreur de parsing</p>';
+                }
+            }
+
+            // Vérifie current pipeline
+            const currentPipeline = localStorage.getItem('crm_current_pipeline');
+            if (currentPipeline) {
+                html += '<p><span class="key">Pipeline actuel:</span> <span class="value">' + currentPipeline + '</span></p>';
+            }
+
+            dataDiv.innerHTML = html;
+        }
+
+        function exportData() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                localStorage: {}
+            };
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key) {
+                    data.localStorage[key] = localStorage.getItem(key);
+                }
+            }
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `crm-backup-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('✅ Données exportées !');
+        }
+
+        // Exécute au chargement
+        displayStorageInfo();
+        displayCRMData();
+
+        // Surveille les changements de localStorage
+        window.addEventListener('storage', (e) => {
+            console.log('🔔 localStorage modifié:', e.key, e.newValue);
+            displayStorageInfo();
+            displayCRMData();
+        });
+
+        // Log au rafraîchissement
+        console.log('🔍 Page de debug chargée à', new Date().toISOString());
+        console.log('📦 localStorage.length:', localStorage.length);
+    </script>
+</body>
+</html>
