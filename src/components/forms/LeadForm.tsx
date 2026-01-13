@@ -321,6 +321,7 @@ export function LeadForm({
                           onClick={() => setActionToDelete(formData.nextAction || null)}
                           className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-400 p-1"
                           title="Supprimer cette action de la liste"
+                          aria-label="Supprimer cette action"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -376,6 +377,7 @@ export function LeadForm({
                         }
                       }}
                       className="p-2 bg-accent-blue text-white rounded-lg hover:bg-accent-blue/90"
+                      aria-label="Ajouter l'action"
                     >
                       <Plus size={18} />
                     </button>
@@ -386,6 +388,7 @@ export function LeadForm({
                         setNewActionInput('');
                       }}
                       className="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600"
+                      aria-label="Annuler l'ajout"
                     >
                       <X size={18} />
                     </button>

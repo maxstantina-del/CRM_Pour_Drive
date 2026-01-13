@@ -1,0 +1,150 @@
+
+> simple-crm@1.0.0 lint /app
+> eslint . src/components/ui/Input.tsx src/components/ui/Select.tsx src/components/forms/LeadForm.tsx
+
+
+/app/electron/database.ts
+  152:74  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  177:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  185:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  229:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  251:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  271:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/electron/main.ts
+  179:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  182:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  187:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  190:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  198:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  214:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  223:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  228:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  239:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  261:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  264:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  269:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  272:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  280:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  288:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  305:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/electron/preload.ts
+  22:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/scripts/performance-test.ts
+   26:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/src/App.tsx
+   13:26  error    'useOnboarding' is defined but never used                                                                                                                                                   @typescript-eslint/no-unused-vars
+   86:9   warning  The 'leads' logical expression could make the dependencies of useMemo Hook (at line 123) change on every render. To fix this, wrap the initialization of 'leads' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  115:6   warning  React Hook useEffect has missing dependencies: 'leads' and 'updatePipelineLeads'. Either include them or remove the dependency array                                                        react-hooks/exhaustive-deps
+  115:26  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked                                                    react-hooks/exhaustive-deps
+
+/app/src/components/layout/Sidebar.tsx
+  3:10  error  'useState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/components/license/LicenseActivationModal.tsx
+  41:9  error  'copyToClipboard' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/components/license/TrialBanner.tsx
+  12:39  error  'isTrialExpired' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/app/src/components/modals/EmailComposeModal.tsx
+  2:32  error  'Select' is defined but never used  @typescript-eslint/no-unused-vars
+  3:22  error  'X' is defined but never used       @typescript-eslint/no-unused-vars
+
+/app/src/components/modals/ImportWizard.tsx
+    2:18  error  'AnimatePresence' is defined but never used  @typescript-eslint/no-unused-vars
+  181:42  error  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  238:16  error  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  290:21  error  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/app/src/components/onboarding/OnboardingTour.tsx
+  270:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/app/src/components/pipeline/LeadCard.tsx
+  3:60  error  'Globe' is defined but never used         @typescript-eslint/no-unused-vars
+  3:85  error  'ExternalLink' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/components/pipeline/PipelineColumn.tsx
+  59:6  warning  React Hook useEffect has a missing dependency: 'handleSave'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/app/src/components/pipeline/PipelineView.tsx
+  2:10  error  'motion' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/components/settings/IceBreakerSection.tsx
+   22:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:18  error  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  238:81  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/src/components/settings/TeamSection.tsx
+   2:10  error  'Mail' is defined but never used          @typescript-eslint/no-unused-vars
+  88:72  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/src/contexts/ToastContext.tsx
+  93:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/app/src/hooks/useGlobalTimer.ts
+  9:5  error  'globalListeners' is never reassigned. Use 'const' instead  prefer-const
+
+/app/src/hooks/useIceBreaker.ts
+  33:26  error  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/hooks/usePipelineStages.ts
+  7:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/src/lib/db.ts
+  10:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:80  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/src/lib/storage.ts
+  7:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  7:80  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  8:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  8:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  9:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  9:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/app/src/services/openaiService.ts
+  234:12  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/src/services/picaService.ts
+    7:7   error  'PICA_API_URL' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   22:13  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+   82:53  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  116:13  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/app/src/types/electron.d.ts
+  16:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 91 problems (85 errors, 6 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+
+ ELIFECYCLE  Command failed with exit code 1.
