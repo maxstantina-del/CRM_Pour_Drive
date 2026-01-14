@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, Building2, DollarSign, Edit, Trash2, Globe, Linkedin, QrCode, ExternalLink } from 'lucide-react';
+import { Mail, Phone, Building2, DollarSign, Edit, Trash2, Linkedin, QrCode } from 'lucide-react';
 import { Lead } from '../../lib/types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { ensureUrlProtocol } from '../../lib/utils';
@@ -82,6 +82,7 @@ export function LeadCard({ lead, onEdit, onDelete, onViewDetails, isDragging }: 
             }}
             className={`p-2.5 rounded-lg hover:bg-white/10 transition-colors ${showQR ? 'text-accent-blue' : 'text-gray-300'}`}
             title="Afficher QR Phone"
+            aria-label="Afficher QR Phone"
           >
             <QrCode size={20} />
           </button>
@@ -91,6 +92,8 @@ export function LeadCard({ lead, onEdit, onDelete, onViewDetails, isDragging }: 
               onEdit(lead);
             }}
             className="p-2.5 rounded-lg hover:bg-white/10 text-gray-300 hover:text-accent-blue transition-colors"
+            title="Modifier le lead"
+            aria-label="Modifier le lead"
           >
             <Edit size={20} />
           </button>
@@ -100,6 +103,8 @@ export function LeadCard({ lead, onEdit, onDelete, onViewDetails, isDragging }: 
               onDelete(lead.id);
             }}
             className="p-2.5 rounded-lg hover:bg-white/10 text-gray-300 hover:text-accent-red transition-colors"
+            title="Supprimer le lead"
+            aria-label="Supprimer le lead"
           >
             <Trash2 size={20} />
           </button>
@@ -168,6 +173,7 @@ export function LeadCard({ lead, onEdit, onDelete, onViewDetails, isDragging }: 
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+            aria-label="Voir le profil LinkedIn"
           >
             <Linkedin size={12} /> LinkedIn
           </a>
