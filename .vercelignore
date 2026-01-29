@@ -1,0 +1,56 @@
+# Dependencies
+node_modules
+
+# Source files (only dist is needed)
+src
+public
+
+# Config files not needed in production
+*.config.ts
+*.config.js
+tsconfig.json
+tsconfig.*.json
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+src/test
+coverage
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Scripts
+scripts
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Environment files (use Vercel env vars instead)
+.env
+.env.local
+.env.production
+
+# Temporary files
+temp_sync
+
+# Excel files with client data
+*.xlsx
+*.xls
+Fichier_Clients_Enrichi_TOTAL.xlsx
+REJETS_A_VERIFIER.xlsx
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
