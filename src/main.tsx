@@ -2,22 +2,44 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { ToastProvider } from './contexts/ToastContext.tsx';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { initSentry } from './lib/sentry';
 import './index.css';
 
-// Initialize Sentry for error monitoring (disabled temporarily - causing black screen)
-// TODO: Fix Sentry DSN configuration
-// initSentry();
+// PAS de Sentry - causait l'écran noir
+// PAS de ErrorBoundary - peut bloquer le rendu
+// Mode dark activé après le rendu
 
+console.log('🚀 CRM Starting...');
+
+const root = document.getElementById('root');
+
+if (!root) {
+  document.body.innerHTML = '<div style="padding: 50px; background: red; color: white;"><h1>ERROR: Root element not found!</h1></div>';
+  throw new Error('Root element not found');
+}
+
+console.log('✅ Root element found');
+
+// Activer le dark mode
 document.documentElement.classList.add('dark');
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
+console.log('✅ Dark mode enabled');
+
+try {
+  createRoot(root).render(
+    <StrictMode>
       <ToastProvider>
         <App />
       </ToastProvider>
-    </ErrorBoundary>
-  </StrictMode>
-);
+    </StrictMode>
+  );
+  console.log('✅ React app rendered successfully');
+} catch (error) {
+  console.error('❌ Error rendering app:', error);
+  document.body.innerHTML = `
+    <div style="padding: 50px; background: red; color: white;">
+      <h1>ERROR LOADING CRM</h1>
+      <pre>${error}</pre>
+      <p>Check console (F12) for details</p>
+    </div>
+  `;
+}
