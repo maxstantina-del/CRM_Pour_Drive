@@ -85,14 +85,14 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
 
               // Contact
               contactName: row['Nom du contact'] || row['Contact'] || row['contact'] ||
-                          row['Nom contact'] || '',
+                          row['Nom contact'] || row['contact_name'] || row['contactName'] || '',
 
               // Email
               email: row['Email'] || row['email'] || row['E-mail'] || row['e-mail'] || '',
 
               // Téléphone
               phone: row['Téléphone'] || row['Phone'] || row['phone'] || row['Tel'] ||
-                    row['tel'] || row['Telephone'] || '',
+                    row['tel'] || row['Telephone'] || row['mobile'] || '',
 
               // Entreprise
               company: row['Entreprise'] || row['Company'] || row['company'] ||
@@ -109,7 +109,8 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
 
               // Code postal
               zipCode: String(row['Code postal'] || row['Zip'] || row['zip'] ||
-                             row['Code Postal'] || row['CP'] || row['cp'] || ''),
+                             row['Code Postal'] || row['CP'] || row['cp'] ||
+                             row['postal_code'] || row['postalCode'] || ''),
 
               // Pays
               country: row['Pays'] || row['Country'] || row['country'] || row['pays'] || 'France',
@@ -121,6 +122,9 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
               // Notes
               notes: row['Notes'] || row['notes'] || row['Note'] || row['note'] ||
                     row['Description'] || row['description'] || '',
+
+              // Stage (si présent dans le fichier)
+              stage: row['stage'] || row['Stage'] || row['Étape'] || undefined,
 
               // Pipeline ID
               pipelineId: currentPipelineId
