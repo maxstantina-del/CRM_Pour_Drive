@@ -214,7 +214,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <input
             type="file"
-            accept=".csv,.json,.xlsx,.xls"
+            accept=".csv,.json,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json"
             onChange={handleFileChange}
             className="hidden"
             id="file-upload"
