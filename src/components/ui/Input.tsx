@@ -15,7 +15,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, icon, fullWidth = false, className, ...props }, ref) => {
-    const inputId = props.id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = React.useId();
+    const inputId = props.id || generatedId;
 
     return (
       <div className={cn('flex flex-col gap-1.5', fullWidth && 'w-full')}>
@@ -71,7 +72,8 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, helperText, fullWidth = false, className, ...props }, ref) => {
-    const textareaId = props.id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = React.useId();
+    const textareaId = props.id || generatedId;
 
     return (
       <div className={cn('flex flex-col gap-1.5', fullWidth && 'w-full')}>
