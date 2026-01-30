@@ -511,13 +511,10 @@ export function usePipelines() {
    */
   const addBatchLeads = useCallback(
     async (pipelineId: string, newLeads: Lead[]) => {
-      // Update local state
-      setLeadsByPipeline(prev => ({
-        ...prev,
-        [pipelineId]: [...(prev[pipelineId] || []), ...newLeads]
-      }));
+      console.log('🔵 addBatchLeads: Starting import of', newLeads.length, 'leads');
+      console.log('🔵 Supabase configured:', isSupabase);
 
-      // Sync with Supabase in batches
+      // Sync with Supabase in batches FIRST
       if (isSupabase && supabase) {
         try {
           const batchSize = 1000; // Supabase can handle up to 1000 rows per insert
@@ -547,13 +544,82 @@ export function usePipelines() {
               pipeline_id: pipelineId
             }));
 
-            await supabase.from('leads').insert(supabaseLeads);
-            console.log(`Inserted batch ${i / batchSize + 1}/${Math.ceil(newLeads.length / batchSize)}`);
+            console.log(`🟢 Inserting batch ${i / batchSize + 1}/${Math.ceil(newLeads.length / batchSize)} (${batch.length} leads)`);
+
+            const { data, error } = await supabase.from('leads').insert(supabaseLeads);
+
+            if (error) {
+              console.error('🔴 Supabase insert error:', error);
+              throw new Error(`Supabase error: ${error.message}`);
+            }
+
+            console.log(`✅ Batch ${i / batchSize + 1} inserted successfully`);
           }
+
+          console.log('✅ All leads inserted into Supabase');
+
+          // Reload from Supabase to ensure consistency
+          console.log('🔄 Reloading leads from Supabase...');
+          const { data: allLeads, error: loadError } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('pipeline_id', pipelineId)
+            .order('created_at', { ascending: false });
+
+          if (loadError) {
+            console.error('🔴 Error reloading leads:', loadError);
+            throw loadError;
+          }
+
+          // Update local state with fresh data from Supabase
+          const leadsMap: Record<string, Lead[]> = {};
+          if (allLeads) {
+            allLeads.forEach((lead: any) => {
+              const pid = lead.pipeline_id || 'default';
+              if (!leadsMap[pid]) leadsMap[pid] = [];
+              leadsMap[pid].push({
+                id: lead.id,
+                name: lead.name,
+                contactName: lead.contact_name,
+                email: lead.email,
+                phone: lead.phone,
+                company: lead.company,
+                siret: lead.siret,
+                address: lead.address,
+                city: lead.city,
+                zipCode: lead.zip_code,
+                country: lead.country,
+                stage: lead.stage,
+                value: lead.value,
+                probability: lead.probability,
+                closedDate: lead.closed_date,
+                notes: lead.notes,
+                nextActions: lead.next_actions || [],
+                createdAt: lead.created_at,
+                updatedAt: lead.updated_at,
+                pipelineId: lead.pipeline_id
+              });
+            });
+          }
+
+          setLeadsByPipeline(prev => ({
+            ...prev,
+            ...leadsMap
+          }));
+
+          console.log('✅ Local state updated with', allLeads?.length || 0, 'leads from Supabase');
+
         } catch (error) {
-          console.error('Error adding batch leads to Supabase:', error);
+          console.error('🔴 CRITICAL Error adding batch leads to Supabase:', error);
           throw error;
         }
+      } else {
+        // No Supabase, just update local state
+        console.log('⚠️ No Supabase configured, updating local state only');
+        setLeadsByPipeline(prev => ({
+          ...prev,
+          [pipelineId]: [...(prev[pipelineId] || []), ...newLeads]
+        }));
       }
     },
     [isSupabase]
