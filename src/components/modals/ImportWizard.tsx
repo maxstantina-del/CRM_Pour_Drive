@@ -231,6 +231,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <input
             type="file"
+            accept="*/*"
             onChange={handleFileChange}
             className="hidden"
             id="file-upload"
