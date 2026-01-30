@@ -66,7 +66,8 @@ function App() {
     updatePipelineLeads,
     addSingleLead,
     updateSingleLead,
-    deleteSingleLead
+    deleteSingleLead,
+    addBatchLeads
   } = usePipelines();
 
   const { stages } = usePipelineStages();
@@ -160,40 +161,44 @@ function App() {
     console.log('handleImport: Starting import of', importedLeads.length, 'leads');
     console.log('Current leads count:', leads.length);
 
-    // Créer tous les nouveaux leads avec leurs IDs
-    const now = new Date().toISOString();
-    const newLeads: Lead[] = importedLeads.map(leadData => ({
-      id: generateId(),
-      name: leadData.name || 'Nouveau Lead',
-      contactName: leadData.contactName,
-      email: leadData.email,
-      phone: leadData.phone,
-      company: leadData.company,
-      siret: leadData.siret,
-      address: leadData.address,
-      city: leadData.city,
-      zipCode: leadData.zipCode,
-      country: leadData.country || 'France',
-      stage: leadData.stage || 'new',
-      value: leadData.value,
-      probability: leadData.probability,
-      closedDate: leadData.closedDate,
-      notes: leadData.notes,
-      nextActions: leadData.nextActions || [],
-      createdAt: now,
-      updatedAt: now,
-      pipelineId: effectivePipelineId
-    }));
+    try {
+      // Créer tous les nouveaux leads avec leurs IDs
+      const now = new Date().toISOString();
+      const newLeads: Lead[] = importedLeads.map(leadData => ({
+        id: generateId(),
+        name: leadData.name || 'Nouveau Lead',
+        contactName: leadData.contactName,
+        email: leadData.email,
+        phone: leadData.phone,
+        company: leadData.company,
+        siret: leadData.siret,
+        address: leadData.address,
+        city: leadData.city,
+        zipCode: leadData.zipCode,
+        country: leadData.country || 'France',
+        stage: leadData.stage || 'new',
+        value: leadData.value,
+        probability: leadData.probability,
+        closedDate: leadData.closedDate,
+        notes: leadData.notes,
+        nextActions: leadData.nextActions || [],
+        createdAt: now,
+        updatedAt: now,
+        pipelineId: effectivePipelineId
+      }));
 
-    // Ajouter tous les nouveaux leads en une seule fois
-    const allLeads = [...leads, ...newLeads];
-    console.log('handleImport: Updating pipeline with', allLeads.length, 'total leads');
+      console.log('handleImport: Adding', newLeads.length, 'new leads to pipeline');
 
-    await updatePipelineLeads(effectivePipelineId, allLeads);
+      // Utiliser addBatchLeads pour une insertion optimisée
+      await addBatchLeads(effectivePipelineId, newLeads);
 
-    console.log('handleImport: Import completed successfully');
-    showToast(`${importedLeads.length} leads importés avec succès`, 'success');
-    setIsImportWizardOpen(false);
+      console.log('handleImport: Import completed successfully');
+      showToast(`${importedLeads.length} leads importés avec succès`, 'success');
+      setIsImportWizardOpen(false);
+    } catch (error) {
+      console.error('Import error:', error);
+      showToast('Erreur lors de l\'import. Vérifiez la console.', 'error');
+    }
   };
 
   const handleExportCSV = () => {

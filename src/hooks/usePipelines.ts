@@ -507,6 +507,59 @@ export function usePipelines() {
   );
 
   /**
+   * Add multiple leads at once (optimized for imports)
+   */
+  const addBatchLeads = useCallback(
+    async (pipelineId: string, newLeads: Lead[]) => {
+      // Update local state
+      setLeadsByPipeline(prev => ({
+        ...prev,
+        [pipelineId]: [...(prev[pipelineId] || []), ...newLeads]
+      }));
+
+      // Sync with Supabase in batches
+      if (isSupabase && supabase) {
+        try {
+          const batchSize = 1000; // Supabase can handle up to 1000 rows per insert
+
+          for (let i = 0; i < newLeads.length; i += batchSize) {
+            const batch = newLeads.slice(i, i + batchSize);
+            const supabaseLeads = batch.map(lead => ({
+              id: lead.id,
+              name: lead.name,
+              contact_name: lead.contactName,
+              email: lead.email,
+              phone: lead.phone,
+              company: lead.company,
+              siret: lead.siret,
+              address: lead.address,
+              city: lead.city,
+              zip_code: lead.zipCode,
+              country: lead.country,
+              stage: lead.stage,
+              value: lead.value,
+              probability: lead.probability,
+              closed_date: lead.closedDate,
+              notes: lead.notes,
+              next_actions: lead.nextActions || [],
+              created_at: lead.createdAt,
+              updated_at: lead.updatedAt,
+              pipeline_id: pipelineId
+            }));
+
+            await supabase.from('leads').insert(supabaseLeads);
+            console.log(`Inserted batch ${i / batchSize + 1}/${Math.ceil(newLeads.length / batchSize)}`);
+          }
+        } catch (error) {
+          console.error('Error adding batch leads to Supabase:', error);
+          throw error;
+        }
+      }
+    },
+    [isSupabase]
+  );
+
+  /**
    * Update leads for a specific pipeline (batch operation for imports)
    */
   const updatePipelineLeads = useCallback(
@@ -570,6 +623,8 @@ export function usePipelines() {
     // Optimized single-lead operations
     addSingleLead,
     updateSingleLead,
-    deleteSingleLead
+    deleteSingleLead,
+    // Batch operations
+    addBatchLeads
   };
 }
