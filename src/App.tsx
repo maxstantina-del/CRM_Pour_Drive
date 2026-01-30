@@ -63,7 +63,10 @@ function App() {
     renamePipeline,
     deletePipeline,
     getPipelineLeads,
-    updatePipelineLeads
+    updatePipelineLeads,
+    addSingleLead,
+    updateSingleLead,
+    deleteSingleLead
   } = usePipelines();
 
   const { stages } = usePipelineStages();
@@ -93,17 +96,9 @@ function App() {
     const lead = leads.find(l => l.id === leadId);
     const isWon = newStage === 'won' || newStage === 'closed_won';
     const wasWon = lead?.stage === 'won' || lead?.stage === 'closed_won';
+    const previousStage = lead?.stage;
 
-    // 1. MISE À JOUR INSTANTANÉE DE L'UI (optimiste) - SANS Supabase sync
-    const updatedLeads = leads.map(l =>
-      l.id === leadId
-        ? { ...l, stage: newStage, updatedAt: new Date().toISOString() }
-        : l
-    );
-    // skipPersist = true pour éviter delete+insert de 458 leads!
-    updatePipelineLeads(effectivePipelineId, updatedLeads, true);
-
-    // 2. Célébration si gagné
+    // Célébration si gagné
     if (lead && isWon && !wasWon) {
       setCelebration({ isVisible: true, leadName: lead.name });
       showToast(`🏆 ${lead.name} est gagné !`, 'success');
@@ -113,13 +108,17 @@ function App() {
       }, 3000);
     }
 
-    // 3. Mise à jour Supabase d'UN SEUL lead (pas 458!)
-    leadsManager.updateLead(leadId, { stage: newStage }).catch(error => {
+    // Mise à jour optimiste + Supabase avec updateSingleLead (1 seul UPDATE!)
+    try {
+      await updateSingleLead(effectivePipelineId, leadId, { stage: newStage });
+    } catch (error) {
       console.error('Erreur mise à jour stage:', error);
-      // Rollback si échec
-      updatePipelineLeads(effectivePipelineId, leads, true);
+      // Rollback en cas d'erreur
+      if (previousStage) {
+        await updateSingleLead(effectivePipelineId, leadId, { stage: previousStage });
+      }
       showToast('❌ Erreur: mise à jour annulée', 'error');
-    });
+    }
   };
 
   const handleNewLead = () => {
@@ -317,7 +316,7 @@ function App() {
             <SettingsView
               pipelines={pipelines}
               currentPipelineId={effectivePipelineId}
-              onAddPipeline={() => setIsAddPipelineOpen(true)}
+              onAddPipeline={handleNewPipeline}
               onRenamePipeline={renamePipeline}
               onDeletePipeline={deletePipeline}
             />

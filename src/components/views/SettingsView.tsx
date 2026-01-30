@@ -37,11 +37,11 @@ export function SettingsView({
   };
 
   const handleDelete = (id: string) => {
-    if (id === currentPipelineId) {
-      alert('Vous ne pouvez pas supprimer le pipeline actif. Basculez vers un autre pipeline d\'abord.');
-      return;
-    }
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce pipeline? Tous les leads associés seront supprimés.')) {
+    const message = id === currentPipelineId
+      ? 'Supprimer le pipeline actif? Tous les leads associés seront supprimés et un nouveau pipeline sera créé automatiquement.'
+      : 'Êtes-vous sûr de vouloir supprimer ce pipeline? Tous les leads associés seront supprimés.';
+
+    if (confirm(message)) {
       onDeletePipeline(id);
     }
   };
@@ -109,16 +109,13 @@ export function SettingsView({
                       >
                         <Edit size={16} />
                       </button>
-                      {pipelines.length > 1 && (
-                        <button
-                          onClick={() => handleDelete(pipeline.id)}
-                          className="p-2 hover:bg-red-100 text-red-600 rounded"
-                          title="Supprimer"
-                          disabled={pipeline.id === currentPipelineId}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDelete(pipeline.id)}
+                        className="p-2 hover:bg-red-100 text-red-600 rounded"
+                        title="Supprimer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </>
                 )}

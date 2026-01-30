@@ -69,10 +69,12 @@ export function usePipelines() {
   useEffect(() => {
     if (!isSupabase || !supabase) return;
 
+    const supabaseClient = supabase;
+
     // Load pipelines from Supabase
     const loadPipelines = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('pipelines')
           .select('*')
           .order('created_at', { ascending: true });
@@ -97,7 +99,7 @@ export function usePipelines() {
     // Load leads from Supabase
     const loadLeads = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('leads')
           .select('*')
           .order('created_at', { ascending: false });
@@ -144,26 +146,112 @@ export function usePipelines() {
     loadPipelines();
     loadLeads();
 
-    // Subscribe to real-time changes
-    const pipelinesSubscription = supabase
+    // Subscribe to real-time changes with optimized updates
+    const pipelinesSubscription = supabaseClient
       .channel('pipelines_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pipelines' }, () => {
+        // For pipelines, reload is acceptable since they change rarely
         loadPipelines();
       })
       .subscribe();
 
-    const leadsSubscription = supabase
+    const leadsSubscription = supabaseClient
       .channel('leads_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-        loadLeads();
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'leads'
+      }, (payload: any) => {
+        // Add new lead to local state
+        const newLead: Lead = {
+          id: payload.new.id,
+          name: payload.new.name,
+          contactName: payload.new.contact_name,
+          email: payload.new.email,
+          phone: payload.new.phone,
+          company: payload.new.company,
+          siret: payload.new.siret,
+          address: payload.new.address,
+          city: payload.new.city,
+          zipCode: payload.new.zip_code,
+          country: payload.new.country,
+          stage: payload.new.stage,
+          value: payload.new.value,
+          probability: payload.new.probability,
+          closedDate: payload.new.closed_date,
+          notes: payload.new.notes,
+          nextActions: payload.new.next_actions || [],
+          createdAt: payload.new.created_at,
+          updatedAt: payload.new.updated_at,
+          pipelineId: payload.new.pipeline_id
+        };
+
+        setLeadsByPipeline(prev => ({
+          ...prev,
+          [newLead.pipelineId || 'default']: [
+            ...(prev[newLead.pipelineId || 'default'] || []),
+            newLead
+          ]
+        }));
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'leads'
+      }, (payload: any) => {
+        // Update specific lead in local state
+        const updatedLead: Lead = {
+          id: payload.new.id,
+          name: payload.new.name,
+          contactName: payload.new.contact_name,
+          email: payload.new.email,
+          phone: payload.new.phone,
+          company: payload.new.company,
+          siret: payload.new.siret,
+          address: payload.new.address,
+          city: payload.new.city,
+          zipCode: payload.new.zip_code,
+          country: payload.new.country,
+          stage: payload.new.stage,
+          value: payload.new.value,
+          probability: payload.new.probability,
+          closedDate: payload.new.closed_date,
+          notes: payload.new.notes,
+          nextActions: payload.new.next_actions || [],
+          createdAt: payload.new.created_at,
+          updatedAt: payload.new.updated_at,
+          pipelineId: payload.new.pipeline_id
+        };
+
+        setLeadsByPipeline(prev => {
+          const pipelineId = updatedLead.pipelineId || 'default';
+          return {
+            ...prev,
+            [pipelineId]: (prev[pipelineId] || []).map(lead =>
+              lead.id === updatedLead.id ? updatedLead : lead
+            )
+          };
+        });
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'leads'
+      }, (payload: any) => {
+        // Remove lead from local state
+        const deletedId = payload.old.id;
+        const pipelineId = payload.old.pipeline_id || 'default';
+
+        setLeadsByPipeline(prev => ({
+          ...prev,
+          [pipelineId]: (prev[pipelineId] || []).filter(lead => lead.id !== deletedId)
+        }));
       })
       .subscribe();
 
     return () => {
-      if (supabase) {
-        supabase.removeChannel(pipelinesSubscription);
-        supabase.removeChannel(leadsSubscription);
-      }
+      supabaseClient.removeChannel(pipelinesSubscription);
+      supabaseClient.removeChannel(leadsSubscription);
     };
   }, [isSupabase]);
 
@@ -269,7 +357,123 @@ export function usePipelines() {
   }, [leadsByPipeline]);
 
   /**
-   * Update leads for a specific pipeline
+   * Add a single lead (optimized for Supabase)
+   */
+  const addSingleLead = useCallback(
+    async (pipelineId: string, lead: Lead) => {
+      setLeadsByPipeline(prev => ({
+        ...prev,
+        [pipelineId]: [...(prev[pipelineId] || []), lead]
+      }));
+
+      if (isSupabase && supabase) {
+        try {
+          await supabase.from('leads').insert({
+            id: lead.id,
+            name: lead.name,
+            contact_name: lead.contactName,
+            email: lead.email,
+            phone: lead.phone,
+            company: lead.company,
+            siret: lead.siret,
+            address: lead.address,
+            city: lead.city,
+            zip_code: lead.zipCode,
+            country: lead.country,
+            stage: lead.stage,
+            value: lead.value,
+            probability: lead.probability,
+            closed_date: lead.closedDate,
+            notes: lead.notes,
+            next_actions: lead.nextActions || [],
+            created_at: lead.createdAt,
+            updated_at: lead.updatedAt,
+            pipeline_id: pipelineId
+          });
+        } catch (error) {
+          console.error('Error adding lead to Supabase:', error);
+        }
+      }
+    },
+    [isSupabase]
+  );
+
+  /**
+   * Update a single lead (optimized for Supabase - no delete+insert!)
+   */
+  const updateSingleLead = useCallback(
+    async (pipelineId: string, leadId: string, updates: Partial<Lead>) => {
+      // Update local state
+      setLeadsByPipeline(prev => ({
+        ...prev,
+        [pipelineId]: (prev[pipelineId] || []).map(lead =>
+          lead.id === leadId
+            ? { ...lead, ...updates, updatedAt: new Date().toISOString() }
+            : lead
+        )
+      }));
+
+      // Update Supabase (single UPDATE query)
+      if (isSupabase && supabase) {
+        try {
+          const supabaseUpdates: Record<string, any> = {
+            updated_at: new Date().toISOString()
+          };
+
+          // Map camelCase to snake_case
+          if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+          if (updates.contactName !== undefined) supabaseUpdates.contact_name = updates.contactName;
+          if (updates.email !== undefined) supabaseUpdates.email = updates.email;
+          if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
+          if (updates.company !== undefined) supabaseUpdates.company = updates.company;
+          if (updates.siret !== undefined) supabaseUpdates.siret = updates.siret;
+          if (updates.address !== undefined) supabaseUpdates.address = updates.address;
+          if (updates.city !== undefined) supabaseUpdates.city = updates.city;
+          if (updates.zipCode !== undefined) supabaseUpdates.zip_code = updates.zipCode;
+          if (updates.country !== undefined) supabaseUpdates.country = updates.country;
+          if (updates.stage !== undefined) supabaseUpdates.stage = updates.stage;
+          if (updates.value !== undefined) supabaseUpdates.value = updates.value;
+          if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
+          if (updates.closedDate !== undefined) supabaseUpdates.closed_date = updates.closedDate;
+          if (updates.notes !== undefined) supabaseUpdates.notes = updates.notes;
+          if (updates.nextActions !== undefined) supabaseUpdates.next_actions = updates.nextActions;
+
+          await supabase
+            .from('leads')
+            .update(supabaseUpdates)
+            .eq('id', leadId);
+        } catch (error) {
+          console.error('Error updating lead in Supabase:', error);
+          throw error;
+        }
+      }
+    },
+    [isSupabase]
+  );
+
+  /**
+   * Delete a single lead (optimized for Supabase)
+   */
+  const deleteSingleLead = useCallback(
+    async (pipelineId: string, leadId: string) => {
+      setLeadsByPipeline(prev => ({
+        ...prev,
+        [pipelineId]: (prev[pipelineId] || []).filter(lead => lead.id !== leadId)
+      }));
+
+      if (isSupabase && supabase) {
+        try {
+          await supabase.from('leads').delete().eq('id', leadId);
+        } catch (error) {
+          console.error('Error deleting lead from Supabase:', error);
+        }
+      }
+    },
+    [isSupabase]
+  );
+
+  /**
+   * Update leads for a specific pipeline (batch operation for imports)
    */
   const updatePipelineLeads = useCallback(
     async (pipelineId: string, leads: Lead[], skipPersist = false) => {
@@ -328,6 +532,10 @@ export function usePipelines() {
     renamePipeline,
     deletePipeline,
     getPipelineLeads,
-    updatePipelineLeads
+    updatePipelineLeads,
+    // Optimized single-lead operations
+    addSingleLead,
+    updateSingleLead,
+    deleteSingleLead
   };
 }
