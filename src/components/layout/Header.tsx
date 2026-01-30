@@ -8,8 +8,7 @@ import {
   Upload,
   Download,
   Save,
-  RotateCcw,
-  FileSpreadsheet
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '../ui';
 
@@ -19,7 +18,6 @@ export interface HeaderProps {
   onExport: () => void;
   onBackup: () => void;
   onRestore: () => void;
-  onExportExcel: () => void;
 }
 
 export function Header({
@@ -27,8 +25,7 @@ export function Header({
   onImport,
   onExport,
   onBackup,
-  onRestore,
-  onExportExcel
+  onRestore
 }: HeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -58,7 +55,7 @@ export function Header({
             size="sm"
             icon={<Upload size={16} />}
             onClick={onImport}
-            title="Importer des leads (CSV, JSON, Excel)"
+            title="Importer des leads (CSV, JSON)"
           >
             Import
           </Button>
@@ -71,16 +68,6 @@ export function Header({
             title="Exporter en CSV"
           >
             Export CSV
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<FileSpreadsheet size={16} />}
-            onClick={onExportExcel}
-            title="Exporter en Excel"
-          >
-            Excel
           </Button>
 
           {/* Backup Actions */}

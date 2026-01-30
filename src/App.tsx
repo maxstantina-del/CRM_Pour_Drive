@@ -19,7 +19,6 @@ import { usePipelineStages } from './hooks/usePipelineStages';
 import { useBackup } from './hooks/useBackup';
 import type { Lead, ViewType } from './lib/types';
 import { generateId } from './lib/utils';
-import * as XLSX from 'xlsx';
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewType>('pipeline');
@@ -209,24 +208,6 @@ function App() {
     showToast('Export CSV réussi', 'success');
   };
 
-  const handleExportExcel = () => {
-    const excelData = leads.map(lead => ({
-      'Nom': lead.name,
-      'Contact': lead.contactName || '',
-      'Email': lead.email || '',
-      'Téléphone': lead.phone || '',
-      'Entreprise': lead.company || '',
-      'Étape': lead.stage,
-      'Valeur': lead.value || 0
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
-    XLSX.writeFile(workbook, `crm_export_${new Date().toISOString().split('T')[0]}.xlsx`);
-
-    showToast('📊 Export Excel réussi', 'success');
-  };
 
   const handleBackup = () => {
     exportBackup();
@@ -283,7 +264,6 @@ function App() {
           onExport={handleExportCSV}
           onBackup={handleBackup}
           onRestore={handleRestore}
-          onExportExcel={handleExportExcel}
         />
 
         <main className="flex-1 overflow-y-auto bg-gray-50">

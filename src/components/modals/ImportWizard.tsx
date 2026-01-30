@@ -1,5 +1,5 @@
 /**
- * Import wizard for CSV/JSON/Excel files
+ * Import wizard for CSV/JSON files
  */
 
 import React, { useState } from 'react';
@@ -7,7 +7,6 @@ import type { Lead } from '../../lib/types';
 import { Modal, ModalFooter, Button } from '../ui';
 import { Upload, FileText, CheckCircle } from 'lucide-react';
 import { readFileAsText } from '../../lib/utils';
-import * as XLSX from 'xlsx';
 
 export interface ImportWizardProps {
   isOpen: boolean;
@@ -62,105 +61,6 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
     return leads;
   };
 
-  const parseExcel = (file: File): Promise<Partial<Lead>[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = e.target?.result;
-          // Utiliser ArrayBuffer au lieu de binary string
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-
-          console.log('Excel headers detected:', jsonData.length > 0 ? Object.keys(jsonData[0]) : 'No data');
-          console.log('First row sample:', jsonData[0]);
-
-          const leads: Partial<Lead>[] = jsonData.map((row: any) => {
-            // Mapper les colonnes de manière flexible
-            const lead: Partial<Lead> = {
-              // Nom du projet (requis)
-              name: row['Nom du projet'] || row['Nom'] || row['Name'] || row['name'] ||
-                    row['Projet'] || row['projet'] || '',
-
-              // Contact
-              contactName: row['Nom du contact'] || row['Contact'] || row['contact'] ||
-                          row['Nom contact'] || row['contact_name'] || row['contactName'] || '',
-
-              // Email
-              email: row['Email'] || row['email'] || row['E-mail'] || row['e-mail'] || '',
-
-              // Téléphone
-              phone: row['Téléphone'] || row['Phone'] || row['phone'] || row['Tel'] ||
-                    row['tel'] || row['Telephone'] || row['mobile'] || '',
-
-              // Entreprise
-              company: row['Entreprise'] || row['Company'] || row['company'] ||
-                      row['entreprise'] || row['Société'] || row['société'] || '',
-
-              // SIRET
-              siret: row['SIRET'] || row['Siret'] || row['siret'] || '',
-
-              // Adresse
-              address: row['Adresse'] || row['Address'] || row['address'] || row['adresse'] || '',
-
-              // Ville
-              city: row['Ville'] || row['City'] || row['city'] || row['ville'] || '',
-
-              // Code postal
-              zipCode: String(row['Code postal'] || row['Zip'] || row['zip'] ||
-                             row['Code Postal'] || row['CP'] || row['cp'] ||
-                             row['postal_code'] || row['postalCode'] || ''),
-
-              // Pays
-              country: row['Pays'] || row['Country'] || row['country'] || row['pays'] || 'France',
-
-              // Valeur
-              value: parseFloat(String(row['Valeur'] || row['Value'] || row['value'] ||
-                                      row['valeur'] || row['Montant'] || row['montant'] || 0)),
-
-              // Notes
-              notes: row['Notes'] || row['notes'] || row['Note'] || row['note'] ||
-                    row['Description'] || row['description'] || '',
-
-              // Stage (si présent dans le fichier)
-              stage: row['stage'] || row['Stage'] || row['Étape'] || undefined,
-
-              // Pipeline ID
-              pipelineId: currentPipelineId
-            };
-
-            return lead;
-          }).filter((lead: Partial<Lead>) => {
-            // Vérifier qu'il y a au moins un nom ou une entreprise
-            const hasData = lead.name || lead.company || lead.contactName;
-            if (!hasData) {
-              console.warn('Lead skipped (no name, company or contact):', lead);
-            }
-            return hasData;
-          });
-
-          console.log(`${leads.length} leads parsed from Excel file`);
-
-          if (leads.length === 0) {
-            reject(new Error('Aucun lead trouvé dans le fichier. Vérifiez que le fichier contient au moins une colonne "Nom", "Name", "Entreprise" ou "Company".'));
-            return;
-          }
-
-          resolve(leads);
-        } catch (error) {
-          console.error('Excel parsing error:', error);
-          reject(error);
-        }
-      };
-      reader.onerror = (error) => {
-        console.error('FileReader error:', error);
-        reject(error);
-      };
-      // Utiliser readAsArrayBuffer au lieu de readAsBinaryString (obsolète)
-      reader.readAsArrayBuffer(file);
-    });
-  };
 
   const handleImport = async () => {
     if (!file) return;
@@ -171,29 +71,19 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
 
       console.log('Starting import for file:', file.name, 'Size:', file.size, 'bytes', 'Type:', file.type);
 
-      // Détection plus robuste du type de fichier
       const fileName = file.name.toLowerCase();
       const fileType = file.type;
-      const isExcel = fileName.endsWith('.xlsx') ||
-                     fileName.endsWith('.xls') ||
-                     fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-                     fileType === 'application/vnd.ms-excel';
-      const isCSV = fileName.endsWith('.csv') || fileType === 'text/csv';
-      const isJSON = fileName.endsWith('.json') || fileType === 'application/json';
 
-      if (isCSV) {
+      if (fileName.endsWith('.csv') || fileType === 'text/csv') {
         console.log('Detected CSV file');
         const content = await readFileAsText(file);
         leads = parseCSV(content);
-      } else if (isJSON) {
+      } else if (fileName.endsWith('.json') || fileType === 'application/json') {
         console.log('Detected JSON file');
         const content = await readFileAsText(file);
         leads = JSON.parse(content);
-      } else if (isExcel) {
-        console.log('Detected Excel file');
-        leads = await parseExcel(file);
       } else {
-        throw new Error(`Format de fichier non supporté: "${file.name}" (type: ${file.type}).\n\nUtilisez CSV, JSON, ou Excel (.xlsx, .xls)`);
+        throw new Error(`Format de fichier non supporté: "${file.name}" (type: ${file.type}).\n\nUtilisez uniquement CSV ou JSON`);
       }
 
       console.log('Parsed leads:', leads.length);
@@ -224,14 +114,14 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
         <div className="text-center">
           <Upload className="mx-auto text-gray-400 mb-4" size={48} />
           <p className="text-sm text-gray-600">
-            Formats supportés: CSV, JSON, Excel (.xlsx, .xls)
+            Formats supportés: CSV, JSON
           </p>
         </div>
 
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <input
             type="file"
-            accept="*/*"
+            accept=".csv,.json,text/csv,application/json"
             onChange={handleFileChange}
             className="hidden"
             id="file-upload"
@@ -267,7 +157,6 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
           <ul className="list-disc list-inside space-y-1 text-xs">
             <li>CSV: première ligne = en-têtes, lignes suivantes = données</li>
             <li>JSON: tableau d'objets avec les propriétés des leads</li>
-            <li>Excel: première feuille avec en-têtes en première ligne</li>
           </ul>
         </div>
       </div>

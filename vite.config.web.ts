@@ -21,7 +21,6 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'framer-motion'],
           'supabase-vendor': ['@supabase/supabase-js'],
-          'xlsx-vendor': ['xlsx'],
           'ui-vendor': ['lucide-react', 'qrcode.react', 'canvas-confetti']
         }
       }
