@@ -169,18 +169,31 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
     try {
       let leads: Partial<Lead>[] = [];
 
-      console.log('Starting import for file:', file.name, 'Size:', file.size, 'bytes');
+      console.log('Starting import for file:', file.name, 'Size:', file.size, 'bytes', 'Type:', file.type);
 
-      if (file.name.endsWith('.csv')) {
+      // Détection plus robuste du type de fichier
+      const fileName = file.name.toLowerCase();
+      const fileType = file.type;
+      const isExcel = fileName.endsWith('.xlsx') ||
+                     fileName.endsWith('.xls') ||
+                     fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                     fileType === 'application/vnd.ms-excel';
+      const isCSV = fileName.endsWith('.csv') || fileType === 'text/csv';
+      const isJSON = fileName.endsWith('.json') || fileType === 'application/json';
+
+      if (isCSV) {
+        console.log('Detected CSV file');
         const content = await readFileAsText(file);
         leads = parseCSV(content);
-      } else if (file.name.endsWith('.json')) {
+      } else if (isJSON) {
+        console.log('Detected JSON file');
         const content = await readFileAsText(file);
         leads = JSON.parse(content);
-      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      } else if (isExcel) {
+        console.log('Detected Excel file');
         leads = await parseExcel(file);
       } else {
-        throw new Error('Format de fichier non supporté. Utilisez CSV, JSON, ou Excel (.xlsx, .xls)');
+        throw new Error(`Format de fichier non supporté: "${file.name}" (type: ${file.type}).\n\nUtilisez CSV, JSON, ou Excel (.xlsx, .xls)`);
       }
 
       console.log('Parsed leads:', leads.length);
@@ -218,7 +231,6 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <input
             type="file"
-            accept=".csv,.json,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json"
             onChange={handleFileChange}
             className="hidden"
             id="file-upload"
