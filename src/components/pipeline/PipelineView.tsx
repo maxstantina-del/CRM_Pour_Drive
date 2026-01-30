@@ -27,6 +27,7 @@ export function PipelineView({
 }: PipelineViewProps) {
   const [draggedLead, setDraggedLead] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Group leads by stage
   const leadsByStage = leads.reduce((acc, lead) => {
@@ -120,29 +121,51 @@ export function PipelineView({
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
                           <h4 className="font-medium text-gray-900 text-sm">{lead.name}</h4>
-                          <div className="relative group">
+                          <div className="relative">
                             <button
-                              className="p-1 rounded hover:bg-gray-100"
-                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 rounded hover:bg-gray-200 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === lead.id ? null : lead.id);
+                              }}
+                              title="Actions"
                             >
-                              <MoreVertical size={14} />
+                              <MoreVertical size={16} className="text-gray-600" />
                             </button>
-                            <div className="hidden group-hover:block absolute right-0 mt-1 bg-white border rounded-lg shadow-lg py-1 z-10">
-                              <button
-                                onClick={() => onEditLead(lead)}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                              >
-                                <Edit size={14} />
-                                Modifier
-                              </button>
-                              <button
-                                onClick={() => onDeleteLead(lead.id)}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
-                              >
-                                <Trash2 size={14} />
-                                Supprimer
-                              </button>
-                            </div>
+                            {openMenuId === lead.id && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-10"
+                                  onClick={() => setOpenMenuId(null)}
+                                />
+                                <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-20 min-w-[160px]">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEditLead(lead);
+                                      setOpenMenuId(null);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                  >
+                                    <Edit size={14} />
+                                    Modifier
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (confirm(`Supprimer "${lead.name}" ?`)) {
+                                        onDeleteLead(lead.id);
+                                      }
+                                      setOpenMenuId(null);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                                  >
+                                    <Trash2 size={14} />
+                                    Supprimer
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                         {lead.contactName && (
