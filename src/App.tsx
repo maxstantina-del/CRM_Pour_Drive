@@ -94,13 +94,14 @@ function App() {
     const isWon = newStage === 'won' || newStage === 'closed_won';
     const wasWon = lead?.stage === 'won' || lead?.stage === 'closed_won';
 
-    // 1. MISE À JOUR INSTANTANÉE DE L'UI (optimiste)
+    // 1. MISE À JOUR INSTANTANÉE DE L'UI (optimiste) - SANS Supabase sync
     const updatedLeads = leads.map(l =>
       l.id === leadId
         ? { ...l, stage: newStage, updatedAt: new Date().toISOString() }
         : l
     );
-    updatePipelineLeads(effectivePipelineId, updatedLeads);
+    // skipPersist = true pour éviter delete+insert de 458 leads!
+    updatePipelineLeads(effectivePipelineId, updatedLeads, true);
 
     // 2. Célébration si gagné
     if (lead && isWon && !wasWon) {
@@ -112,11 +113,11 @@ function App() {
       }, 3000);
     }
 
-    // 3. Mise à jour de Supabase EN ARRIÈRE-PLAN (pas de await!)
+    // 3. Mise à jour Supabase d'UN SEUL lead (pas 458!)
     leadsManager.updateLead(leadId, { stage: newStage }).catch(error => {
       console.error('Erreur mise à jour stage:', error);
       // Rollback si échec
-      updatePipelineLeads(effectivePipelineId, leads);
+      updatePipelineLeads(effectivePipelineId, leads, true);
       showToast('❌ Erreur: mise à jour annulée', 'error');
     });
   };
