@@ -313,7 +313,15 @@ function App() {
             />
           )}
 
-          {currentView === 'settings' && <SettingsView />}
+          {currentView === 'settings' && (
+            <SettingsView
+              pipelines={pipelines}
+              currentPipelineId={effectivePipelineId}
+              onAddPipeline={() => setIsAddPipelineOpen(true)}
+              onRenamePipeline={renamePipeline}
+              onDeletePipeline={deletePipeline}
+            />
+          )}
         </main>
       </div>
 
