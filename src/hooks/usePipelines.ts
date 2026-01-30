@@ -1,6 +1,10 @@
 /**
  * Pipelines management hook
- * Handles multiple sales pipelines with localStorage and optional Supabase sync
+ *
+ * ✅ ARCHITECTURE PROPRE:
+ * - Source de vérité: SUPABASE UNIQUEMENT
+ * - localStorage: Seulement pour currentPipelineId (préférence UI)
+ * - Pas de double sync localStorage/Supabase
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -30,40 +34,25 @@ function createDefaultPipeline(): Pipeline {
 export function usePipelines() {
   const isSupabase = isSupabaseConfigured();
 
-  // Pipelines state
-  const [pipelines, setPipelines] = useState<Pipeline[]>(() => {
-    const stored = getItem<Pipeline[]>(STORAGE_KEYS.PIPELINES, []);
-    return stored.length > 0 ? stored : [createDefaultPipeline()];
-  });
+  // Pipelines state - loaded from Supabase
+  const [pipelines, setPipelines] = useState<Pipeline[]>([createDefaultPipeline()]);
 
-  // Current pipeline ID state
+  // Current pipeline ID state - saved to localStorage (UI preference only)
   const [currentPipelineId, setCurrentPipelineId] = useState<string>(() => {
     const stored = getItem<string>(STORAGE_KEYS.CURRENT_PIPELINE, '');
-    return stored || pipelines[0]?.id || 'default';
+    return stored || 'default';
   });
 
-  // Leads state (organized by pipeline)
-  const [leadsByPipeline, setLeadsByPipeline] = useState<Record<string, Lead[]>>(() => {
-    return getItem<Record<string, Lead[]>>(STORAGE_KEYS.LEADS, {});
-  });
+  // Leads state - loaded from Supabase ONLY (no localStorage)
+  const [leadsByPipeline, setLeadsByPipeline] = useState<Record<string, Lead[]>>({});
 
   // Current pipeline
   const currentPipeline = pipelines.find(p => p.id === currentPipelineId) || pipelines[0];
 
-  // Persist pipelines to localStorage
-  useEffect(() => {
-    setItem(STORAGE_KEYS.PIPELINES, pipelines);
-  }, [pipelines]);
-
-  // Persist current pipeline ID to localStorage
+  // Persist current pipeline ID to localStorage (UI preference only)
   useEffect(() => {
     setItem(STORAGE_KEYS.CURRENT_PIPELINE, currentPipelineId);
   }, [currentPipelineId]);
-
-  // Persist leads to localStorage
-  useEffect(() => {
-    setItem(STORAGE_KEYS.LEADS, leadsByPipeline);
-  }, [leadsByPipeline]);
 
   // Sync with Supabase if configured
   useEffect(() => {

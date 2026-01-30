@@ -13,7 +13,6 @@ import { LeadDetailsModal } from './components/modals/LeadDetailsModal';
 import { OnboardingTour, useOnboarding } from './components/onboarding/OnboardingTour';
 import { ChatAgent } from './components/ai/ChatAgent';
 import { usePipelines } from './hooks/usePipelines';
-import { createLeadsManager } from './hooks/useLeads';
 import { useToast } from './contexts/ToastContext';
 import { usePipelineStages } from './hooks/usePipelineStages';
 import { useBackup } from './hooks/useBackup';
@@ -63,7 +62,6 @@ function App() {
     renamePipeline,
     deletePipeline,
     getPipelineLeads,
-    updatePipelineLeads,
     addSingleLead,
     updateSingleLead,
     deleteSingleLead,
@@ -75,11 +73,72 @@ function App() {
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || 'default';
   const leads = getPipelineLeads(effectivePipelineId);
 
+  // Create leads manager with optimized single-lead operations
   const leadsManager = useMemo(() => {
-    return createLeadsManager(leads, (newLeads) => {
-      updatePipelineLeads(effectivePipelineId, newLeads);
-    }, effectivePipelineId);
-  }, [leads, effectivePipelineId, updatePipelineLeads]);
+    return {
+      addLead: async (leadData: Partial<Lead>) => {
+        const now = new Date().toISOString();
+        const newLead: Lead = {
+          id: generateId(),
+          name: leadData.name || 'Nouveau Lead',
+          contactName: leadData.contactName,
+          email: leadData.email,
+          phone: leadData.phone,
+          company: leadData.company,
+          siret: leadData.siret,
+          address: leadData.address,
+          city: leadData.city,
+          zipCode: leadData.zipCode,
+          country: leadData.country || 'France',
+          stage: leadData.stage || 'new',
+          value: leadData.value,
+          probability: leadData.probability,
+          closedDate: leadData.closedDate,
+          notes: leadData.notes,
+          nextActions: leadData.nextActions || [],
+          createdAt: now,
+          updatedAt: now,
+          pipelineId: effectivePipelineId
+        };
+        await addSingleLead(effectivePipelineId, newLead);
+        return newLead;
+      },
+      updateLead: async (leadId: string, updates: Partial<Lead>) => {
+        await updateSingleLead(effectivePipelineId, leadId, updates);
+      },
+      deleteLead: async (leadId: string) => {
+        await deleteSingleLead(effectivePipelineId, leadId);
+      },
+      addNextAction: async (leadId: string, actionText: string, dueDate?: string) => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead) return;
+        const newAction = {
+          id: generateId(),
+          text: actionText,
+          completed: false,
+          dueDate,
+          createdAt: new Date().toISOString()
+        };
+        await updateSingleLead(effectivePipelineId, leadId, {
+          nextActions: [...(lead.nextActions || []), newAction]
+        });
+      },
+      toggleNextAction: async (leadId: string, actionId: string) => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead || !lead.nextActions) return;
+        const updatedActions = lead.nextActions.map(action =>
+          action.id === actionId ? { ...action, completed: !action.completed } : action
+        );
+        await updateSingleLead(effectivePipelineId, leadId, { nextActions: updatedActions });
+      },
+      deleteNextAction: async (leadId: string, actionId: string) => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead || !lead.nextActions) return;
+        const updatedActions = lead.nextActions.filter(action => action.id !== actionId);
+        await updateSingleLead(effectivePipelineId, leadId, { nextActions: updatedActions });
+      }
+    };
+  }, [effectivePipelineId, addSingleLead, updateSingleLead, deleteSingleLead, leads]);
 
   // Backup/restore setup
   const leadsByPipeline = useMemo(() => {
