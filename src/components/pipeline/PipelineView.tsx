@@ -92,7 +92,7 @@ export function PipelineView({
             onDrop={(e) => handleDrop(e, stage.id)}
           >
             <div
-              className={`rounded-lg p-4 transition-all duration-200 ${
+              className={`rounded-lg p-4 transition-all duration-100 ${
                 dragOverStage === stage.id
                   ? 'bg-blue-100 border-2 border-blue-400 shadow-lg scale-105'
                   : 'bg-gray-100 border-2 border-transparent'
@@ -112,8 +112,8 @@ export function PipelineView({
                     draggable
                     onDragStart={(e) => handleDragStart(e, lead.id)}
                     onDragEnd={handleDragEnd}
-                    className={`transition-all duration-200 cursor-move ${
-                      draggedLead === lead.id ? 'scale-95' : 'scale-100'
+                    className={`transition-all duration-75 cursor-move ${
+                      draggedLead === lead.id ? 'scale-95 opacity-50' : 'scale-100 opacity-100'
                     }`}
                   >
                     <Card padding="sm" hover>
