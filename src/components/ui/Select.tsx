@@ -2,7 +2,7 @@
  * Reusable Select component
  */
 
-import React, { SelectHTMLAttributes, forwardRef } from 'react';
+import React, { SelectHTMLAttributes, forwardRef, useId } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -26,7 +26,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     { label, error, helperText, options, placeholder, fullWidth = false, className, ...props },
     ref
   ) => {
-    const selectId = props.id || `select-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const selectId = props.id || generatedId;
 
     return (
       <div className={cn('flex flex-col gap-1.5', fullWidth && 'w-full')}>
