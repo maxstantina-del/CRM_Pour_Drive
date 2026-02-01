@@ -14,6 +14,7 @@ export interface ImportWizardProps {
   onClose: () => void;
   onImport: (leads: Partial<Lead>[]) => void;
   currentPipelineId: string;
+  pipelines?: Array<{ id: string; name: string }>;
 }
 
 /**
@@ -148,9 +149,10 @@ function mapHeaderToField(header: string): keyof Lead | null {
   return null;
 }
 
-export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: ImportWizardProps) {
+export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pipelines = [] }: ImportWizardProps) {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>(currentPipelineId);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -200,7 +202,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
           // Parse data rows
           for (let i = 1; i < jsonData.length; i++) {
             const row = jsonData[i];
-            const lead: Partial<Lead> = { pipelineId: currentPipelineId };
+            const lead: Partial<Lead> = { pipelineId: selectedPipelineId };
 
             fieldMap.forEach((field, colIndex) => {
               const value = row[colIndex];
@@ -357,6 +359,25 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId }: I
             Formats supportés: Excel (.xlsx, .xls), CSV, JSON
           </p>
         </div>
+
+        {pipelines.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📌 Pipeline de destination
+            </label>
+            <select
+              value={selectedPipelineId}
+              onChange={(e) => setSelectedPipelineId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {pipelines.map((pipeline) => (
+                <option key={pipeline.id} value={pipeline.id}>
+                  {pipeline.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <input

@@ -423,6 +423,7 @@ function App() {
         onClose={() => setIsImportWizardOpen(false)}
         onImport={handleImport}
         currentPipelineId={effectivePipelineId}
+        pipelines={pipelines}
       />
 
       {inputModal.isOpen && inputModal.onSubmit && (
