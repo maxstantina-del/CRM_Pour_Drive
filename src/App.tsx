@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Sidebar, Header, Container } from './components/layout';
 import { DashboardView } from './components/dashboard';
 import { PipelineView } from './components/pipeline';
@@ -20,7 +20,16 @@ import type { Lead, ViewType } from './lib/types';
 import { generateId } from './lib/utils';
 
 function App() {
-  const [currentView, setCurrentView] = useState<ViewType>('pipeline');
+  // Charger la dernière vue depuis localStorage ou utiliser 'pipeline' par défaut
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    const savedView = localStorage.getItem('crm_current_view');
+    return (savedView as ViewType) || 'pipeline';
+  });
+
+  // Sauvegarder la vue actuelle dans localStorage à chaque changement
+  useEffect(() => {
+    localStorage.setItem('crm_current_view', currentView);
+  }, [currentView]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
   const [viewingLead, setViewingLead] = useState<Lead | null>(null);
