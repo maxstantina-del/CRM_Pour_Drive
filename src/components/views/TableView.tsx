@@ -2,7 +2,7 @@
  * Table view with sortable columns
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Lead } from '../../lib/types';
 import { Button, Badge } from '../ui';
 import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
@@ -110,12 +110,16 @@ export function TableView({ leads, onEditLead, onDeleteLead }: TableViewProps) {
                         variant="ghost"
                         icon={<Edit size={14} />}
                         onClick={() => onEditLead(lead)}
+                        aria-label="Modifier le lead"
+                        title="Modifier"
                       />
                       <Button
                         size="sm"
                         variant="ghost"
                         icon={<Trash2 size={14} />}
                         onClick={() => onDeleteLead(lead.id)}
+                        aria-label="Supprimer le lead"
+                        title="Supprimer"
                       />
                     </div>
                   </td>
