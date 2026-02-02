@@ -59,6 +59,9 @@ const LeadCard = memo(function LeadCard({
                   onMenuToggle(lead.id);
                 }}
                 title="Actions"
+                aria-label="Actions du lead"
+                aria-haspopup="true"
+                aria-expanded={isMenuOpen}
               >
                 <MoreVertical size={16} className="text-gray-600" />
               </button>
@@ -68,7 +71,10 @@ const LeadCard = memo(function LeadCard({
                     className="fixed inset-0 z-10"
                     onClick={() => onMenuToggle(lead.id)}
                   />
-                  <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-20 min-w-[160px]">
+                  <div
+                    className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-20 min-w-[160px]"
+                    role="menu"
+                  >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -76,6 +82,7 @@ const LeadCard = memo(function LeadCard({
                         onMenuToggle(lead.id);
                       }}
                       className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                      role="menuitem"
                     >
                       <Edit size={14} />
                       Modifier
@@ -89,6 +96,7 @@ const LeadCard = memo(function LeadCard({
                         onMenuToggle(lead.id);
                       }}
                       className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                      role="menuitem"
                     >
                       <Trash2 size={14} />
                       Supprimer
