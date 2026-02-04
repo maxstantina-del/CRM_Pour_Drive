@@ -156,6 +156,12 @@ export function useLeads() {
     console.log('🔵 addBatchLeads: Number of leads:', leads.length);
     console.log('🔵 Sample lead pipelineId:', leads[0]?.pipelineId);
 
+    // ✅ Vérifier que le pipelineId n'est pas vide
+    if (!pipelineId) {
+      console.error('❌ addBatchLeads: pipelineId is empty!');
+      throw new Error('pipelineId cannot be empty');
+    }
+
     setLeadsByPipeline(prev => ({
       ...prev,
       [pipelineId]: [...(prev[pipelineId] || []), ...leads]
@@ -169,8 +175,9 @@ export function useLeads() {
           zip_code: lead.zipCode, country: lead.country, stage: lead.stage,
           value: lead.value, probability: lead.probability, closed_date: lead.closedDate,
           notes: lead.notes, next_actions: lead.nextActions, created_at: lead.createdAt,
-          updated_at: lead.updatedAt, pipeline_id: lead.pipelineId
+          updated_at: lead.updatedAt, pipeline_id: pipelineId  // ✅ Utilise le PARAMÈTRE pipelineId, pas lead.pipelineId
         }));
+        console.log('🟢 Inserting to Supabase with pipeline_id:', pipelineId);
         await supabase.from('leads').insert(supabaseLeads);
         console.log('✅ Batch import OK');
       } catch (error) {

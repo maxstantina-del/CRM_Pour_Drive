@@ -265,11 +265,20 @@ function App() {
   };
 
   const handleImport = async (importedLeads: Partial<Lead>[]) => {
+    // ✅ Recalculer le pipelineId MAINTENANT pour éviter les closures stale
+    const targetPipelineId = currentPipelineId || pipelines[0]?.id || '';
+
     console.log('🔵 handleImport: Starting import of', importedLeads.length, 'leads');
     console.log('🔵 currentPipelineId:', currentPipelineId);
     console.log('🔵 pipelines:', pipelines);
-    console.log('🔵 effectivePipelineId:', effectivePipelineId);
-    console.log('🔵 Current leads count:', leads.length);
+    console.log('🔵 targetPipelineId (recalculated):', targetPipelineId);
+    console.log('🔵 effectivePipelineId (old):', effectivePipelineId);
+
+    if (!targetPipelineId) {
+      console.error('❌ No pipeline ID available for import!');
+      showToast('Erreur: Aucun pipeline disponible', 'error');
+      return;
+    }
 
     try {
       // Créer tous les nouveaux leads avec leurs IDs
@@ -294,15 +303,15 @@ function App() {
         nextActions: leadData.nextActions || [],
         createdAt: now,
         updatedAt: now,
-        pipelineId: effectivePipelineId
+        pipelineId: targetPipelineId  // ✅ Utilise targetPipelineId recalculé
       }));
 
-      console.log('🟢 handleImport: Leads created with pipelineId:', effectivePipelineId);
+      console.log('🟢 handleImport: Leads created with pipelineId:', targetPipelineId);
       console.log('🟢 Sample lead:', newLeads[0]);
-      console.log('🟢 Calling addBatchLeads with pipelineId:', effectivePipelineId);
+      console.log('🟢 Calling addBatchLeads with pipelineId:', targetPipelineId);
 
       // Utiliser addBatchLeads pour une insertion optimisée
-      await addBatchLeads(effectivePipelineId, newLeads);
+      await addBatchLeads(targetPipelineId, newLeads);  // ✅ Utilise targetPipelineId
 
       console.log('✅ handleImport: Import completed successfully');
       showToast(`${importedLeads.length} leads importés avec succès`, 'success');
