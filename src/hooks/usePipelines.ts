@@ -81,29 +81,13 @@ export function usePipelines() {
           setPipelines(supabasePipelines);
 
           // Set current pipeline to first one if default doesn't exist
-          if (!supabasePipelines.find(p => p.id === currentPipelineId)) {
+          if (supabasePipelines.length > 0 && !supabasePipelines.find(p => p.id === currentPipelineId)) {
             setCurrentPipelineId(supabasePipelines[0].id);
           }
         } else {
-          // No pipelines in Supabase, create default one
-          console.log('📋 No pipelines found, creating default pipeline...');
-          const defaultPipeline = createDefaultPipeline();
-
-          const { error: insertError } = await supabaseClient.from('pipelines').insert({
-            id: defaultPipeline.id,
-            name: defaultPipeline.name,
-            stages: defaultPipeline.stages,
-            created_at: defaultPipeline.createdAt,
-            updated_at: defaultPipeline.updatedAt
-          });
-
-          if (insertError) {
-            console.error('Error creating default pipeline:', insertError);
-          } else {
-            setPipelines([defaultPipeline]);
-            setCurrentPipelineId(defaultPipeline.id);
-            console.log('✅ Default pipeline created in Supabase');
-          }
+          // No pipelines - user will create their first one
+          setPipelines([]);
+          setCurrentPipelineId('');
         }
       } catch (error) {
         console.error('Error loading pipelines from Supabase:', error);
