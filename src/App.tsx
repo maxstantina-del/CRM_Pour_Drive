@@ -80,8 +80,8 @@ function App() {
 
   const { stages } = usePipelineStages();
 
-  const effectivePipelineId = currentPipelineId || pipelines[0]?.id || 'default';
-  const leads = getPipelineLeads(effectivePipelineId);
+  const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
+  const leads = effectivePipelineId ? getPipelineLeads(effectivePipelineId) : [];
 
   // Create leads manager with optimized single-lead operations
   const leadsManager = useMemo(() => {
@@ -226,6 +226,25 @@ function App() {
     setEditingLead(undefined);
   };
 
+  const handleImportClick = () => {
+    if (pipelines.length === 0) {
+      setInputModal({
+        isOpen: true,
+        title: 'Créer un pipeline',
+        description: 'Vous devez d\'abord créer un pipeline avant d\'importer des leads.',
+        placeholder: 'Nom du pipeline',
+        onSubmit: async (name) => {
+          await addPipeline(name);
+          setInputModal({ isOpen: false, title: '', description: '', placeholder: '', onSubmit: async () => {} });
+          // Ouvrir l'import wizard après création du pipeline
+          setTimeout(() => setIsImportWizardOpen(true), 300);
+        }
+      });
+    } else {
+      setIsImportWizardOpen(true);
+    }
+  };
+
   const handleImport = async (importedLeads: Partial<Lead>[]) => {
     console.log('handleImport: Starting import of', importedLeads.length, 'leads');
     console.log('Current leads count:', leads.length);
@@ -351,7 +370,7 @@ function App() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
           onNewLead={handleNewLead}
-          onImport={() => setIsImportWizardOpen(true)}
+          onImport={handleImportClick}
           onExport={handleExportCSV}
           onBackup={handleBackup}
           onRestore={handleRestore}
