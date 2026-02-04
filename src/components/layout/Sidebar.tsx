@@ -2,14 +2,17 @@
  * Sidebar navigation component
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Layers,
   Table,
   Calendar,
   Settings,
-  Plus
+  Plus,
+  MoreVertical,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import type { ViewType, Pipeline } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -21,6 +24,8 @@ export interface SidebarProps {
   currentPipelineId: string;
   onPipelineChange: (pipelineId: string) => void;
   onNewPipeline: () => void;
+  onRenamePipeline: (pipelineId: string, newName: string) => void;
+  onDeletePipeline: (pipelineId: string) => void;
 }
 
 export function Sidebar({
@@ -29,8 +34,12 @@ export function Sidebar({
   pipelines,
   currentPipelineId,
   onPipelineChange,
-  onNewPipeline
+  onNewPipeline,
+  onRenamePipeline,
+  onDeletePipeline
 }: SidebarProps) {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
   const views: { id: ViewType; icon: React.ReactNode; label: string }[] = [
     { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { id: 'pipeline', icon: <Layers size={20} />, label: 'Pipeline' },
@@ -38,6 +47,31 @@ export function Sidebar({
     { id: 'today', icon: <Calendar size={20} />, label: "Aujourd'hui" },
     { id: 'settings', icon: <Settings size={20} />, label: 'Paramètres' }
   ];
+
+  const handleRename = (pipeline: Pipeline) => {
+    const newName = prompt('Nouveau nom du pipeline:', pipeline.name);
+    if (newName && newName.trim() && newName !== pipeline.name) {
+      onRenamePipeline(pipeline.id, newName.trim());
+    }
+    setOpenMenuId(null);
+  };
+
+  const handleDelete = (pipeline: Pipeline) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le pipeline "${pipeline.name}" ?`)) {
+      onDeletePipeline(pipeline.id);
+    }
+    setOpenMenuId(null);
+  };
+
+  // Fermer le menu quand on clique en dehors
+  useEffect(() => {
+    if (!openMenuId) return;
+
+    const handleClickOutside = () => setOpenMenuId(null);
+    document.addEventListener('click', handleClickOutside);
+
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openMenuId]);
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -86,19 +120,50 @@ export function Sidebar({
           </div>
           <div className="space-y-1">
             {pipelines.map(pipeline => (
-              <button
-                key={pipeline.id}
-                onClick={() => onPipelineChange(pipeline.id)}
-                className={cn(
-                  'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors truncate',
-                  currentPipelineId === pipeline.id
-                    ? 'bg-gray-100 text-gray-900 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50'
+              <div key={pipeline.id} className="relative group">
+                <button
+                  onClick={() => onPipelineChange(pipeline.id)}
+                  className={cn(
+                    'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors truncate flex items-center justify-between',
+                    currentPipelineId === pipeline.id
+                      ? 'bg-gray-100 text-gray-900 font-medium'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  )}
+                  title={pipeline.name}
+                >
+                  <span className="truncate">{pipeline.name}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId(openMenuId === pipeline.id ? null : pipeline.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-opacity"
+                    title="Actions"
+                  >
+                    <MoreVertical size={14} />
+                  </button>
+                </button>
+
+                {/* Dropdown Menu */}
+                {openMenuId === pipeline.id && (
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <button
+                      onClick={() => handleRename(pipeline)}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 rounded-t-lg"
+                    >
+                      <Edit2 size={14} />
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => handleDelete(pipeline)}
+                      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
+                    >
+                      <Trash2 size={14} />
+                      Supprimer
+                    </button>
+                  </div>
                 )}
-                title={pipeline.name}
-              >
-                {pipeline.name}
-              </button>
+              </div>
             ))}
           </div>
         </div>

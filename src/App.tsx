@@ -343,6 +343,8 @@ function App() {
         currentPipelineId={effectivePipelineId}
         onPipelineChange={setCurrentPipelineId}
         onNewPipeline={handleNewPipeline}
+        onRenamePipeline={renamePipeline}
+        onDeletePipeline={deletePipeline}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
