@@ -1,281 +1,210 @@
 /**
- * Leads management hook
- * Provides CRUD operations for leads and their next actions
+ * ✨ REFACTORISÉ - Hook de gestion des leads
+ * Gère UNIQUEMENT les leads, séparé de la gestion des pipelines
+ * Source de vérité: Supabase
  */
 
-import type { Lead, NextAction, LeadStage } from '../lib/types';
-import { generateId } from '../lib/utils';
+import { useState, useEffect, useCallback } from 'react';
+import type { Lead } from '../lib/types';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
-/**
- * Callback type for updating leads
- */
-type UpdateLeadsCallback = (newLeads: Lead[], skipPersist?: boolean) => void;
+export function useLeads() {
+  const isSupabase = isSupabaseConfigured();
 
-/**
- * Leads manager interface
- */
-export interface LeadsManager {
-  addLead: (leadData: Partial<Lead>) => Promise<Lead>;
-  updateLead: (leadId: string, updates: Partial<Lead>) => Promise<void>;
-  deleteLead: (leadId: string) => Promise<void>;
-  addNextAction: (leadId: string, actionText: string, dueDate?: string) => Promise<void>;
-  toggleNextAction: (leadId: string, actionId: string) => Promise<void>;
-  deleteNextAction: (leadId: string, actionId: string) => Promise<void>;
-}
+  // Leads organisés par pipeline
+  const [leadsByPipeline, setLeadsByPipeline] = useState<Record<string, Lead[]>>({});
 
-/**
- * Create a leads manager instance
- * Factory function that returns CRUD operations for leads
- *
- * @param leads - Current leads array
- * @param updateCallback - Callback to update leads state
- * @param pipelineId - Current pipeline ID
- */
-export function createLeadsManager(
-  leads: Lead[],
-  updateCallback: UpdateLeadsCallback,
-  pipelineId: string
-): LeadsManager {
-  /**
-   * Add a new lead
-   */
-  const addLead = async (leadData: Partial<Lead>): Promise<Lead> => {
-    const now = new Date().toISOString();
+  // Charger les leads depuis Supabase
+  useEffect(() => {
+    if (!isSupabase || !supabase) return;
 
-    const newLead: Lead = {
-      id: generateId(),
-      name: leadData.name || 'Nouveau Lead',
-      contactName: leadData.contactName,
-      email: leadData.email,
-      phone: leadData.phone,
-      company: leadData.company,
-      siret: leadData.siret,
-      address: leadData.address,
-      city: leadData.city,
-      zipCode: leadData.zipCode,
-      country: leadData.country || 'France',
-      stage: leadData.stage || 'new',
-      value: leadData.value,
-      probability: leadData.probability,
-      closedDate: leadData.closedDate,
-      notes: leadData.notes,
-      nextActions: leadData.nextActions || [],
-      createdAt: now,
-      updatedAt: now,
-      pipelineId
+    const loadLeads = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const leadsMap: Record<string, Lead[]> = {};
+          data.forEach(l => {
+            const lead: Lead = {
+              id: l.id,
+              name: l.name,
+              email: l.email,
+              phone: l.phone,
+              company: l.company,
+              address: l.address,
+              city: l.city,
+              zipCode: l.zip_code,
+              country: l.country,
+              stage: l.stage,
+              value: l.value,
+              probability: l.probability,
+              closedDate: l.closed_date,
+              notes: l.notes,
+              nextActions: l.next_actions || [],
+              createdAt: l.created_at,
+              updatedAt: l.updated_at,
+              pipelineId: l.pipeline_id
+            };
+            const pipelineId = lead.pipelineId || 'default';
+            if (!leadsMap[pipelineId]) leadsMap[pipelineId] = [];
+            leadsMap[pipelineId].push(lead);
+          });
+          setLeadsByPipeline(leadsMap);
+        }
+      } catch (error) {
+        console.error('❌ Error loading leads:', error);
+      }
     };
 
-    const updatedLeads = [...leads, newLead];
-    updateCallback(updatedLeads);
+    loadLeads();
+  }, [isSupabase]);
 
-    return newLead;
-  };
+  // Récupérer les leads d'un pipeline
+  const getPipelineLeads = useCallback((pipelineId: string): Lead[] => {
+    return leadsByPipeline[pipelineId] || [];
+  }, [leadsByPipeline]);
 
-  /**
-   * Update an existing lead
-   */
-  const updateLead = async (leadId: string, updates: Partial<Lead>): Promise<void> => {
-    const updatedLeads = leads.map(lead =>
-      lead.id === leadId
-        ? {
-            ...lead,
-            ...updates,
-            updatedAt: new Date().toISOString()
-          }
-        : lead
-    );
+  // Ajouter un lead
+  const addLead = useCallback(async (pipelineId: string, lead: Lead) => {
+    setLeadsByPipeline(prev => ({
+      ...prev,
+      [pipelineId]: [...(prev[pipelineId] || []), lead]
+    }));
 
-    updateCallback(updatedLeads);
-  };
-
-  /**
-   * Delete a lead
-   */
-  const deleteLead = async (leadId: string): Promise<void> => {
-    const updatedLeads = leads.filter(lead => lead.id !== leadId);
-    updateCallback(updatedLeads);
-  };
-
-  /**
-   * Add a next action to a lead
-   */
-  const addNextAction = async (
-    leadId: string,
-    actionText: string,
-    dueDate?: string
-  ): Promise<void> => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead) {
-      console.error(`Lead not found: ${leadId}`);
-      return;
+    if (isSupabase && supabase) {
+      try {
+        await supabase.from('leads').insert({
+          id: lead.id, name: lead.name, email: lead.email, phone: lead.phone,
+          company: lead.company, address: lead.address, city: lead.city,
+          zip_code: lead.zipCode, country: lead.country, stage: lead.stage,
+          value: lead.value, probability: lead.probability, closed_date: lead.closedDate,
+          notes: lead.notes, next_actions: lead.nextActions, created_at: lead.createdAt,
+          updated_at: lead.updatedAt, pipeline_id: lead.pipelineId
+        });
+      } catch (error) {
+        console.error('❌ Error adding lead:', error);
+        setLeadsByPipeline(prev => ({
+          ...prev,
+          [pipelineId]: prev[pipelineId].filter(l => l.id !== lead.id)
+        }));
+        throw error;
+      }
     }
+  }, [isSupabase]);
 
-    const newAction: NextAction = {
-      id: generateId(),
-      text: actionText,
-      completed: false,
-      dueDate,
-      createdAt: new Date().toISOString()
-    };
+  // Mettre à jour un lead
+  const updateLead = useCallback(async (pipelineId: string, leadId: string, updates: Partial<Lead>) => {
+    setLeadsByPipeline(prev => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId]?.map(l =>
+        l.id === leadId ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l
+      ) || []
+    }));
 
-    const currentActions = lead.nextActions || [];
-    const updatedLeads = leads.map(l =>
-      l.id === leadId
-        ? {
-            ...l,
-            nextActions: [...currentActions, newAction],
-            updatedAt: new Date().toISOString()
-          }
-        : l
-    );
+    if (isSupabase && supabase) {
+      try {
+        const supabaseUpdates: any = { updated_at: new Date().toISOString() };
+        if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+        if (updates.email !== undefined) supabaseUpdates.email = updates.email;
+        if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
+        if (updates.company !== undefined) supabaseUpdates.company = updates.company;
+        if (updates.address !== undefined) supabaseUpdates.address = updates.address;
+        if (updates.city !== undefined) supabaseUpdates.city = updates.city;
+        if (updates.zipCode !== undefined) supabaseUpdates.zip_code = updates.zipCode;
+        if (updates.country !== undefined) supabaseUpdates.country = updates.country;
+        if (updates.stage !== undefined) supabaseUpdates.stage = updates.stage;
+        if (updates.value !== undefined) supabaseUpdates.value = updates.value;
+        if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
+        if (updates.closedDate !== undefined) supabaseUpdates.closed_date = updates.closedDate;
+        if (updates.notes !== undefined) supabaseUpdates.notes = updates.notes;
+        if (updates.nextActions !== undefined) supabaseUpdates.next_actions = updates.nextActions;
 
-    updateCallback(updatedLeads);
-  };
-
-  /**
-   * Toggle completion status of a next action
-   */
-  const toggleNextAction = async (leadId: string, actionId: string): Promise<void> => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead || !lead.nextActions) {
-      console.error(`Lead or actions not found: ${leadId}`);
-      return;
+        await supabase.from('leads').update(supabaseUpdates).eq('id', leadId);
+      } catch (error) {
+        console.error('❌ Error updating lead:', error);
+        throw error;
+      }
     }
+  }, [isSupabase]);
 
-    const updatedActions = lead.nextActions.map(action =>
-      action.id === actionId
-        ? { ...action, completed: !action.completed }
-        : action
-    );
+  // Supprimer un lead
+  const deleteLead = useCallback(async (pipelineId: string, leadId: string) => {
+    setLeadsByPipeline(prev => ({
+      ...prev,
+      [pipelineId]: prev[pipelineId]?.filter(l => l.id !== leadId) || []
+    }));
 
-    const updatedLeads = leads.map(l =>
-      l.id === leadId
-        ? {
-            ...l,
-            nextActions: updatedActions,
-            updatedAt: new Date().toISOString()
-          }
-        : l
-    );
-
-    updateCallback(updatedLeads);
-  };
-
-  /**
-   * Delete a next action from a lead
-   */
-  const deleteNextAction = async (leadId: string, actionId: string): Promise<void> => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead || !lead.nextActions) {
-      console.error(`Lead or actions not found: ${leadId}`);
-      return;
+    if (isSupabase && supabase) {
+      try {
+        await supabase.from('leads').delete().eq('id', leadId);
+      } catch (error) {
+        console.error('❌ Error deleting lead:', error);
+        throw error;
+      }
     }
+  }, [isSupabase]);
 
-    const updatedActions = lead.nextActions.filter(action => action.id !== actionId);
+  // Import batch de leads
+  const addBatchLeads = useCallback(async (pipelineId: string, leads: Lead[]) => {
+    console.log('🔵 addBatchLeads:', leads.length, 'leads');
 
-    const updatedLeads = leads.map(l =>
-      l.id === leadId
-        ? {
-            ...l,
-            nextActions: updatedActions,
-            updatedAt: new Date().toISOString()
-          }
-        : l
-    );
+    setLeadsByPipeline(prev => ({
+      ...prev,
+      [pipelineId]: [...(prev[pipelineId] || []), ...leads]
+    }));
 
-    updateCallback(updatedLeads);
-  };
+    if (isSupabase && supabase) {
+      try {
+        const supabaseLeads = leads.map(lead => ({
+          id: lead.id, name: lead.name, email: lead.email, phone: lead.phone,
+          company: lead.company, address: lead.address, city: lead.city,
+          zip_code: lead.zipCode, country: lead.country, stage: lead.stage,
+          value: lead.value, probability: lead.probability, closed_date: lead.closedDate,
+          notes: lead.notes, next_actions: lead.nextActions, created_at: lead.createdAt,
+          updated_at: lead.updatedAt, pipeline_id: lead.pipelineId
+        }));
+        await supabase.from('leads').insert(supabaseLeads);
+        console.log('✅ Batch import OK');
+      } catch (error) {
+        console.error('❌ Error batch import:', error);
+        setLeadsByPipeline(prev => ({
+          ...prev,
+          [pipelineId]: prev[pipelineId].filter(l => !leads.find(nl => nl.id === l.id))
+        }));
+        throw error;
+      }
+    }
+  }, [isSupabase]);
+
+  // Supprimer tous les leads d'un pipeline
+  const deletePipelineLeads = useCallback(async (pipelineId: string) => {
+    setLeadsByPipeline(prev => {
+      const { [pipelineId]: _, ...rest } = prev;
+      return rest;
+    });
+
+    if (isSupabase && supabase) {
+      try {
+        await supabase.from('leads').delete().eq('pipeline_id', pipelineId);
+      } catch (error) {
+        console.error('❌ Error deleting pipeline leads:', error);
+      }
+    }
+  }, [isSupabase]);
 
   return {
+    leadsByPipeline,
+    getPipelineLeads,
     addLead,
     updateLead,
     deleteLead,
-    addNextAction,
-    toggleNextAction,
-    deleteNextAction
+    addBatchLeads,
+    deletePipelineLeads
   };
-}
-
-/**
- * Helper function to create a new lead with default values
- */
-export function createEmptyLead(stage: LeadStage = 'new', pipelineId?: string): Partial<Lead> {
-  return {
-    name: '',
-    contactName: '',
-    email: '',
-    phone: '',
-    company: '',
-    siret: '',
-    address: '',
-    city: '',
-    zipCode: '',
-    country: 'France',
-    stage,
-    value: 0,
-    probability: 0,
-    notes: '',
-    nextActions: [],
-    pipelineId
-  };
-}
-
-/**
- * Helper function to validate lead data
- */
-export function validateLead(lead: Partial<Lead>): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  if (!lead.name || lead.name.trim() === '') {
-    errors.push('Le nom du projet est requis');
-  }
-
-  if (lead.email && !isValidEmail(lead.email)) {
-    errors.push('Email invalide');
-  }
-
-  if (lead.phone && !isValidPhone(lead.phone)) {
-    errors.push('Numéro de téléphone invalide');
-  }
-
-  if (lead.siret && !isValidSiret(lead.siret)) {
-    errors.push('Numéro SIRET invalide (14 chiffres requis)');
-  }
-
-  if (lead.zipCode && !isValidZipCode(lead.zipCode)) {
-    errors.push('Code postal invalide (5 chiffres requis)');
-  }
-
-  if (lead.value !== undefined && lead.value < 0) {
-    errors.push('La valeur ne peut pas être négative');
-  }
-
-  if (lead.probability !== undefined && (lead.probability < 0 || lead.probability > 100)) {
-    errors.push('La probabilité doit être entre 0 et 100');
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors
-  };
-}
-
-// Validation helper functions
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-function isValidPhone(phone: string): boolean {
-  const phoneRegex = /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/;
-  return phoneRegex.test(phone);
-}
-
-function isValidSiret(siret: string): boolean {
-  const cleanSiret = siret.replace(/\s/g, '');
-  return /^\d{14}$/.test(cleanSiret);
-}
-
-function isValidZipCode(zipCode: string): boolean {
-  return /^\d{5}$/.test(zipCode);
 }

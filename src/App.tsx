@@ -13,6 +13,7 @@ import { LeadDetailsModal } from './components/modals/LeadDetailsModal';
 import { OnboardingTour, useOnboarding } from './components/onboarding/OnboardingTour';
 import { ChatAgent } from './components/ai/ChatAgent';
 import { usePipelines } from './hooks/usePipelines';
+import { useLeads } from './hooks/useLeads';
 import { Layers, Plus } from 'lucide-react';
 import { useToast } from './contexts/ToastContext';
 import { usePipelineStages } from './hooks/usePipelineStages';
@@ -70,13 +71,17 @@ function App() {
     setCurrentPipelineId,
     addPipeline,
     renamePipeline,
-    deletePipeline,
-    getPipelineLeads,
-    addSingleLead,
-    updateSingleLead,
-    deleteSingleLead,
-    addBatchLeads
+    deletePipeline
   } = usePipelines();
+
+  const {
+    getPipelineLeads,
+    addLead: addSingleLead,
+    updateLead: updateSingleLead,
+    deleteLead: deleteSingleLead,
+    addBatchLeads,
+    deletePipelineLeads
+  } = useLeads();
 
   const { stages } = usePipelineStages();
 
@@ -158,6 +163,12 @@ function App() {
     });
     return result;
   }, [pipelines, getPipelineLeads]);
+
+  // Handle pipeline deletion with leads cleanup
+  const handleDeletePipeline = async (pipelineId: string) => {
+    await deletePipelineLeads(pipelineId);
+    await deletePipeline(pipelineId);
+  };
 
   const { exportBackup, importBackup } = useBackup(pipelines, leadsByPipeline);
 
@@ -364,7 +375,7 @@ function App() {
         onPipelineChange={setCurrentPipelineId}
         onNewPipeline={handleNewPipeline}
         onRenamePipeline={renamePipeline}
-        onDeletePipeline={deletePipeline}
+        onDeletePipeline={handleDeletePipeline}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -436,7 +447,7 @@ function App() {
               currentPipelineId={effectivePipelineId}
               onAddPipeline={handleNewPipeline}
               onRenamePipeline={renamePipeline}
-              onDeletePipeline={deletePipeline}
+              onDeletePipeline={handleDeletePipeline}
             />
           )}
         </main>
