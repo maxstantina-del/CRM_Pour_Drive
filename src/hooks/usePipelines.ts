@@ -330,46 +330,7 @@ export function usePipelines() {
    * Delete a pipeline
    */
   const deletePipeline = useCallback(async (pipelineId: string) => {
-    // If it's the last pipeline, create a new default one automatically
-    if (pipelines.length === 1) {
-      const newDefaultPipeline: Pipeline = {
-        id: generateId(),
-        name: 'Nouveau Pipeline',
-        stages: DEFAULT_STAGES,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      setPipelines([newDefaultPipeline]);
-      setCurrentPipelineId(newDefaultPipeline.id);
-
-      // Delete old pipeline leads
-      setLeadsByPipeline({});
-
-      // Sync with Supabase
-      if (isSupabase && supabase) {
-        try {
-          // Delete old pipeline and its leads
-          await supabase.from('pipelines').delete().eq('id', pipelineId);
-          await supabase.from('leads').delete().eq('pipeline_id', pipelineId);
-
-          // Create new default pipeline
-          await supabase.from('pipelines').insert({
-            id: newDefaultPipeline.id,
-            name: newDefaultPipeline.name,
-            stages: newDefaultPipeline.stages,
-            created_at: newDefaultPipeline.createdAt,
-            updated_at: newDefaultPipeline.updatedAt
-          });
-        } catch (error) {
-          console.error('Error deleting last pipeline from Supabase:', error);
-        }
-      }
-
-      return true;
-    }
-
-    // Normal deletion when there are multiple pipelines
+    // Delete the pipeline
     setPipelines(prev => prev.filter(p => p.id !== pipelineId));
 
     // Delete leads associated with this pipeline
