@@ -245,7 +245,8 @@ function App() {
         description: 'Vous devez d\'abord créer un pipeline avant d\'importer des leads.',
         placeholder: 'Nom du pipeline',
         onSubmit: async (name) => {
-          await addPipeline(name);
+          const newPipeline = await addPipeline(name);
+          setCurrentPipelineId(newPipeline.id); // ✅ FIX: Set le pipeline actif
           setInputModal({ isOpen: false, title: '', description: '', placeholder: '', onSubmit: async () => {} });
           // Ouvrir l'import wizard après création du pipeline
           setTimeout(() => setIsImportWizardOpen(true), 300);
