@@ -245,11 +245,18 @@ function App() {
         description: 'Vous devez d\'abord créer un pipeline avant d\'importer des leads.',
         placeholder: 'Nom du pipeline',
         onSubmit: async (name) => {
+          console.log('🔵 Creating pipeline:', name);
           const newPipeline = await addPipeline(name);
-          setCurrentPipelineId(newPipeline.id); // ✅ FIX: Set le pipeline actif
+          console.log('🟢 Pipeline created:', newPipeline);
+          console.log('🟡 Setting currentPipelineId to:', newPipeline.id);
+          setCurrentPipelineId(newPipeline.id);
+          console.log('🟣 pipelines state:', pipelines);
           setInputModal({ isOpen: false, title: '', description: '', placeholder: '', onSubmit: async () => {} });
           // Ouvrir l'import wizard après création du pipeline
-          setTimeout(() => setIsImportWizardOpen(true), 300);
+          setTimeout(() => {
+            console.log('⏰ Opening import wizard after 300ms');
+            setIsImportWizardOpen(true);
+          }, 300);
         }
       });
     } else {
@@ -258,8 +265,11 @@ function App() {
   };
 
   const handleImport = async (importedLeads: Partial<Lead>[]) => {
-    console.log('handleImport: Starting import of', importedLeads.length, 'leads');
-    console.log('Current leads count:', leads.length);
+    console.log('🔵 handleImport: Starting import of', importedLeads.length, 'leads');
+    console.log('🔵 currentPipelineId:', currentPipelineId);
+    console.log('🔵 pipelines:', pipelines);
+    console.log('🔵 effectivePipelineId:', effectivePipelineId);
+    console.log('🔵 Current leads count:', leads.length);
 
     try {
       // Créer tous les nouveaux leads avec leurs IDs
@@ -287,16 +297,18 @@ function App() {
         pipelineId: effectivePipelineId
       }));
 
-      console.log('handleImport: Adding', newLeads.length, 'new leads to pipeline');
+      console.log('🟢 handleImport: Leads created with pipelineId:', effectivePipelineId);
+      console.log('🟢 Sample lead:', newLeads[0]);
+      console.log('🟢 Calling addBatchLeads with pipelineId:', effectivePipelineId);
 
       // Utiliser addBatchLeads pour une insertion optimisée
       await addBatchLeads(effectivePipelineId, newLeads);
 
-      console.log('handleImport: Import completed successfully');
+      console.log('✅ handleImport: Import completed successfully');
       showToast(`${importedLeads.length} leads importés avec succès`, 'success');
       setIsImportWizardOpen(false);
     } catch (error) {
-      console.error('Import error:', error);
+      console.error('❌ Import error:', error);
       showToast('Erreur lors de l\'import. Vérifiez la console.', 'error');
     }
   };

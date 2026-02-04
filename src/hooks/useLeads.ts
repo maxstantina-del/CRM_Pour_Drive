@@ -152,7 +152,9 @@ export function useLeads() {
 
   // Import batch de leads
   const addBatchLeads = useCallback(async (pipelineId: string, leads: Lead[]) => {
-    console.log('🔵 addBatchLeads:', leads.length, 'leads');
+    console.log('🔵 addBatchLeads called with pipelineId:', pipelineId);
+    console.log('🔵 addBatchLeads: Number of leads:', leads.length);
+    console.log('🔵 Sample lead pipelineId:', leads[0]?.pipelineId);
 
     setLeadsByPipeline(prev => ({
       ...prev,
