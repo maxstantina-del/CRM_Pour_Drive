@@ -119,7 +119,12 @@ export function Sidebar({
             </button>
           </div>
           <div className="space-y-1">
-            {pipelines.map(pipeline => (
+            {pipelines.length === 0 ? (
+              <div className="text-xs text-gray-400 text-center py-2 px-3">
+                Aucun pipeline
+              </div>
+            ) : (
+              pipelines.map(pipeline => (
               <div key={pipeline.id} className="relative group">
                 <button
                   onClick={() => onPipelineChange(pipeline.id)}
@@ -164,7 +169,8 @@ export function Sidebar({
                   </div>
                 )}
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </nav>

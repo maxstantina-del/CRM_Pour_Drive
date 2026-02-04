@@ -13,6 +13,7 @@ import { LeadDetailsModal } from './components/modals/LeadDetailsModal';
 import { OnboardingTour, useOnboarding } from './components/onboarding/OnboardingTour';
 import { ChatAgent } from './components/ai/ChatAgent';
 import { usePipelines } from './hooks/usePipelines';
+import { Layers, Plus } from 'lucide-react';
 import { useToast } from './contexts/ToastContext';
 import { usePipelineStages } from './hooks/usePipelineStages';
 import { useBackup } from './hooks/useBackup';
@@ -360,13 +361,36 @@ function App() {
           {currentView === 'dashboard' && <DashboardView leads={leads} />}
 
           {currentView === 'pipeline' && (
-            <PipelineView
-              leads={leads}
-              stages={stages}
-              onUpdateStage={handleUpdateStage}
-              onEditLead={handleEditLead}
-              onDeleteLead={handleDeleteLead}
-            />
+            pipelines.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full p-8">
+                <div className="text-center max-w-md">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                    <Layers className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    Aucun pipeline
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    Créez votre premier pipeline pour commencer à organiser vos leads et suivre votre processus de vente.
+                  </p>
+                  <button
+                    onClick={handleNewPipeline}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <Plus size={20} />
+                    Créer votre premier pipeline
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <PipelineView
+                leads={leads}
+                stages={stages}
+                onUpdateStage={handleUpdateStage}
+                onEditLead={handleEditLead}
+                onDeleteLead={handleDeleteLead}
+              />
+            )
           )}
 
           {currentView === 'table' && (
