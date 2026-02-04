@@ -16,31 +16,19 @@ import { supabase } from '../lib/supabaseClient';
 import { DEFAULT_STAGES } from './usePipelineStages';
 
 /**
- * Create a default pipeline
- */
-function createDefaultPipeline(): Pipeline {
-  return {
-    id: 'default',
-    name: 'Pipeline Principal',
-    stages: DEFAULT_STAGES,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-}
-
-/**
- * Hook to manage pipelines and their leads
+ * Hook to manage pipelines (refactored - no longer manages leads)
+ * Leads management is now in useLeads.ts hook
  */
 export function usePipelines() {
   const isSupabase = isSupabaseConfigured();
 
   // Pipelines state - loaded from Supabase
-  const [pipelines, setPipelines] = useState<Pipeline[]>([createDefaultPipeline()]);
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
 
   // Current pipeline ID state - saved to localStorage (UI preference only)
   const [currentPipelineId, setCurrentPipelineId] = useState<string>(() => {
     const stored = getItem<string>(STORAGE_KEYS.CURRENT_PIPELINE, '');
-    return stored || 'default';
+    return stored || '';
   });
 
   // Current pipeline
