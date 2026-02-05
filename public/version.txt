@@ -1,0 +1,11 @@
+VERSION: 094e95a - Fix reloadLeads XLSX import
+DEPLOYED: 2026-02-05 16:35
+CHANGE: Ajout reloadLeads() après import XLSX pour rafraîchir l'UI
+
+Si tu vois cette version, le fix est déployé.
+Si tes leads XLSX n'apparaissent toujours pas dans le pipeline :
+1. Fais CTRL+SHIFT+R (Windows) ou CMD+SHIFT+R (Mac) pour vider le cache
+2. Ou va dans DevTools (F12) > Network > Coche "Disable cache"
+3. Puis réessaye l'import
+
+Le fix est ACTIF et testé avec Puppeteer.
