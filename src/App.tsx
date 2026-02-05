@@ -39,6 +39,7 @@ function App() {
     isVisible: false,
     leadName: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImportWizardOpen, setIsImportWizardOpen] = useState(false);
   const [inputModal, setInputModal] = useState<{
     isOpen: boolean;
@@ -227,15 +228,23 @@ function App() {
   };
 
   const handleSubmitLead = async (leadData: Partial<Lead>) => {
-    if (editingLead) {
-      await leadsManager.updateLead(editingLead.id, leadData);
-      showToast('Lead modifié', 'success');
-    } else {
-      await leadsManager.addLead(leadData);
-      showToast('Lead créé', 'success');
+    setIsSubmitting(true);
+    try {
+      if (editingLead) {
+        await leadsManager.updateLead(editingLead.id, leadData);
+        showToast('Lead modifié', 'success');
+      } else {
+        await leadsManager.addLead(leadData);
+        showToast('Lead créé', 'success');
+      }
+      setIsFormOpen(false);
+      setEditingLead(undefined);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      showToast('Erreur lors de la sauvegarde', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsFormOpen(false);
-    setEditingLead(undefined);
   };
 
   const handleImportClick = () => {
@@ -497,6 +506,7 @@ function App() {
                   setIsFormOpen(false);
                   setEditingLead(undefined);
                 }}
+                isLoading={isSubmitting}
               />
             </div>
           </div>
