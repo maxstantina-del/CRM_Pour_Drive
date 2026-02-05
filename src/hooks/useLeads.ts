@@ -21,10 +21,12 @@ export function useLeads() {
 
     try {
       console.log('🔵 Loading leads from Supabase...');
+      // ✅ FIX: Augmenter la limite à 10000 leads (défaut Supabase = 1000)
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10000);  // Support jusqu'à 10k leads
 
       if (error) throw error;
 
