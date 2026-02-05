@@ -15,55 +15,58 @@ export function useLeads() {
   // Leads organisés par pipeline
   const [leadsByPipeline, setLeadsByPipeline] = useState<Record<string, Lead[]>>({});
 
-  // Charger les leads depuis Supabase
-  useEffect(() => {
+  // Fonction de chargement des leads depuis Supabase
+  const loadLeads = useCallback(async () => {
     if (!isSupabase || !supabase) return;
 
-    const loadLeads = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
+    try {
+      console.log('🔵 Loading leads from Supabase...');
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data) {
-          const leadsMap: Record<string, Lead[]> = {};
-          data.forEach(l => {
-            const lead: Lead = {
-              id: l.id,
-              name: l.name,
-              email: l.email,
-              phone: l.phone,
-              company: l.company,
-              address: l.address,
-              city: l.city,
-              zipCode: l.zip_code,
-              country: l.country,
-              stage: l.stage,
-              value: l.value,
-              probability: l.probability,
-              closedDate: l.closed_date,
-              notes: l.notes,
-              nextActions: l.next_actions || [],
-              createdAt: l.created_at,
-              updatedAt: l.updated_at,
-              pipelineId: l.pipeline_id
-            };
-            const pipelineId = lead.pipelineId || 'default';
-            if (!leadsMap[pipelineId]) leadsMap[pipelineId] = [];
-            leadsMap[pipelineId].push(lead);
-          });
-          setLeadsByPipeline(leadsMap);
-        }
-      } catch (error) {
-        console.error('❌ Error loading leads:', error);
+      if (data) {
+        const leadsMap: Record<string, Lead[]> = {};
+        data.forEach(l => {
+          const lead: Lead = {
+            id: l.id,
+            name: l.name,
+            email: l.email,
+            phone: l.phone,
+            company: l.company,
+            address: l.address,
+            city: l.city,
+            zipCode: l.zip_code,
+            country: l.country,
+            stage: l.stage,
+            value: l.value,
+            probability: l.probability,
+            closedDate: l.closed_date,
+            notes: l.notes,
+            nextActions: l.next_actions || [],
+            createdAt: l.created_at,
+            updatedAt: l.updated_at,
+            pipelineId: l.pipeline_id
+          };
+          const pipelineId = lead.pipelineId || 'default';
+          if (!leadsMap[pipelineId]) leadsMap[pipelineId] = [];
+          leadsMap[pipelineId].push(lead);
+        });
+        setLeadsByPipeline(leadsMap);
+        console.log('✅ Leads loaded:', Object.keys(leadsMap).reduce((sum, k) => sum + leadsMap[k].length, 0), 'total');
       }
-    };
-
-    loadLeads();
+    } catch (error) {
+      console.error('❌ Error loading leads:', error);
+    }
   }, [isSupabase]);
+
+  // Charger les leads au démarrage
+  useEffect(() => {
+    loadLeads();
+  }, [loadLeads]);
 
   // Récupérer les leads d'un pipeline
   const getPipelineLeads = useCallback((pipelineId: string): Lead[] => {
@@ -214,6 +217,7 @@ export function useLeads() {
     updateLead,
     deleteLead,
     addBatchLeads,
-    deletePipelineLeads
+    deletePipelineLeads,
+    reloadLeads: loadLeads  // ✅ Expose la fonction de rechargement
   };
 }

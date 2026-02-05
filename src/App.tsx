@@ -80,7 +80,8 @@ function App() {
     updateLead: updateSingleLead,
     deleteLead: deleteSingleLead,
     addBatchLeads,
-    deletePipelineLeads
+    deletePipelineLeads,
+    reloadLeads  // ✅ Ajout de reloadLeads
   } = useLeads();
 
   const { stages } = usePipelineStages();
@@ -314,6 +315,12 @@ function App() {
       await addBatchLeads(targetPipelineId, newLeads);  // ✅ Utilise targetPipelineId
 
       console.log('✅ handleImport: Import completed successfully');
+
+      // ✅ Recharger les leads depuis Supabase pour rafraîchir l'UI
+      console.log('🔄 Reloading leads from Supabase...');
+      await reloadLeads();
+      console.log('✅ Leads reloaded');
+
       showToast(`${importedLeads.length} leads importés avec succès`, 'success');
       setIsImportWizardOpen(false);
     } catch (error) {
