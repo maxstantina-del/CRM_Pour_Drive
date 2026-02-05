@@ -154,6 +154,11 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
   const [importing, setImporting] = useState(false);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(currentPipelineId);
 
+  // ✅ FIX: Sync selectedPipelineId avec currentPipelineId quand il change
+  React.useEffect(() => {
+    setSelectedPipelineId(currentPipelineId);
+  }, [currentPipelineId]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
