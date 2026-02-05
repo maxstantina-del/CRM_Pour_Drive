@@ -58,7 +58,15 @@ export function useLeads() {
           leadsMap[pipelineId].push(lead);
         });
         setLeadsByPipeline(leadsMap);
-        console.log('✅ Leads loaded:', Object.keys(leadsMap).reduce((sum, k) => sum + leadsMap[k].length, 0), 'total');
+
+        const totalLeads = Object.keys(leadsMap).reduce((sum, k) => sum + leadsMap[k].length, 0);
+        const uniquePipelineIds = Object.keys(leadsMap);
+
+        console.log('✅ Leads loaded:', totalLeads, 'total');
+        console.log('🟣 Unique pipelineIds in data:', uniquePipelineIds);
+        console.log('🟣 Leads per pipeline:', Object.fromEntries(
+          uniquePipelineIds.map(id => [id, leadsMap[id].length])
+        ));
       }
     } catch (error) {
       console.error('❌ Error loading leads:', error);
