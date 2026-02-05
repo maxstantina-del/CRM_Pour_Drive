@@ -11,9 +11,10 @@ export interface LeadFormProps {
   lead?: Lead;
   onSubmit: (leadData: Partial<Lead>) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
-export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
+export function LeadForm({ lead, onSubmit, onCancel, isLoading = false }: LeadFormProps) {
   const [formData, setFormData] = useState<Partial<Lead>>({
     name: '',
     contactName: '',
@@ -38,7 +39,7 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
     }
   }, [lead]);
 
-  const handleChange = (field: keyof Lead, value: any) => {
+  const handleChange = (field: keyof Lead, value: Lead[keyof Lead]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -164,10 +165,10 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
       />
 
       <div className="flex items-center justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={isLoading}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" loading={isLoading}>
           {lead ? 'Modifier' : 'Créer'}
         </Button>
       </div>
