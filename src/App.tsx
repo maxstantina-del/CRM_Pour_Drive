@@ -89,14 +89,6 @@ function App() {
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
   const leads = effectivePipelineId ? getPipelineLeads(effectivePipelineId) : [];
 
-  // 🔍 DEBUG: Log filtrage des leads pour le pipeline
-  React.useEffect(() => {
-    console.log('🔵 Pipeline filter - currentPipelineId:', currentPipelineId);
-    console.log('🔵 Pipeline filter - effectivePipelineId:', effectivePipelineId);
-    console.log('🔵 Pipeline filter - leads count:', leads.length);
-    console.log('🔵 Pipeline filter - current view:', currentView);
-  }, [currentPipelineId, effectivePipelineId, leads.length, currentView]);
-
   // Create leads manager with optimized single-lead operations
   const leadsManager = useMemo(() => {
     return {
