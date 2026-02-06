@@ -258,18 +258,20 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
                 const numValue = parseFloat(stringValue);
                 if (!isNaN(numValue)) {
                   (lead as any)[field] = numValue;
-                } else {
-                                  // Normalize stage value
-                                  if (field === 'stage') {
-                                                      (lead as any)[field] = normalizeStage(stringValue);
-                                  } else {
-                                                      (lead as any)[field] = stringValue;
-                                  }
-                                
                 }
-              });
+              } else if (field === 'stage') {
+                // Normalize stage value
+                (lead as any)[field] = normalizeStage(stringValue);
+              } else {
+                (lead as any)[field] = stringValue;
+              }
+            });
 
-            
+            // Only add if we have at least a name or company
+            if (lead.name || lead.company) {
+              leads.push(lead);
+            }
+          }
 
           resolve(leads);
         } catch (error) {
@@ -315,15 +317,13 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
           const numValue = parseFloat(value);
           if (!isNaN(numValue)) {
             (lead as any)[field] = numValue;
-          } else {
-                            // Normalize stage value
-                            if (field === 'stage') {
-                                                (lead as any)[field] = normalizeStage(value);
-                            } else {
-                                                (lead as any)[field] = value;
-                            }
           }
-        });
+        } else if (field === 'stage') {
+          // Normalize stage value
+          (lead as any)[field] = normalizeStage(value);
+        } else {
+          (lead as any)[field] = value;
+        }
       });
 
       // Only add if we have at least a name or company
