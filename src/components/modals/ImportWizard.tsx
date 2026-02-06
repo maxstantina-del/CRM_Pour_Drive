@@ -165,7 +165,44 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
     }
   };
 
-  /**
+168
+
+    /**
+       * Normalize stage value to match CRM pipeline stages
+          * Maps unknown stages to "Nouveau" (default)
+             */
+    function normalizeStage(stage: string | undefined): string {
+          if (!stage) return 'Nouveau';
+
+                const normalized = stage.toLowerCase().trim();
+
+          // Valid stages in the CRM
+          const validStages = [
+                  'Nouveau',
+                  'Contacté',
+                  'Qualifié',
+                  'RDV Planifié',
+                  'Proposition',
+                  'Négociation',
+                  'Gagné',
+                  'Perdu'
+                ];
+
+          // Check if the stage matches any valid stage (case insensitive)
+          const matchedStage = validStages.find(
+                  validStage => validStage.toLowerCase() === normalized
+                        );
+
+          if (matchedStage) {
+                  return matchedStage;
+          }
+
+                // Default to "Nouveau" for any unknown stage
+                console.log(`⚠️  Unknown stage "${stage}" mapped to "Nouveau"`);
+          return 'Nouveau';
+    }
+  
+  
    * Parse XLSX file using SheetJS
    */
   const parseXLSX = async (file: File): Promise<Partial<Lead>[]> => {
@@ -226,6 +263,12 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
               }
             });
 
+                            // Normalize stage value
+                            if (field === 'stage') {
+                                                (lead as any)[field] = normalizeStage(stringValue);
+                            } else {
+                                                (lead as any)[field] = stringValue;
+                            }
             // Only add if we have at least a name or company
             if (lead.name || lead.company) {
               leads.push(lead);
@@ -277,7 +320,13 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
           if (!isNaN(numValue)) {
             (lead as any)[field] = numValue;
           }
-        } else {
+                // Normalize stage value
+                if (field === 'stage') {
+                            (lead as any)[field] = normalizeStage(value);
+                } else {
+
+                }
+                } else {
           (lead as any)[field] = value;
         }
       });
