@@ -1,3 +1,4 @@
+260
 /**
  * Import wizard for CSV/JSON/XLSX files
  */
@@ -257,17 +258,18 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
                 const numValue = parseFloat(stringValue);
                 if (!isNaN(numValue)) {
                   (lead as any)[field] = numValue;
+                } else {
+                                  // Normalize stage value
+                                  if (field === 'stage') {
+                                                      (lead as any)[field] = normalizeStage(stringValue);
+                                  } else {
+                                                      (lead as any)[field] = stringValue;
+                                  }
+                                
                 }
+              });
 
-            });
-          } else {
-                            // Normalize stage value
-                            if (field === 'stage') {
-                                                (lead as any)[field] = normalizeStage(stringValue);
-                            } else {
-                                                (lead as any)[field] = stringValue;
-                            }
-          }
+            
 
           resolve(leads);
         } catch (error) {
@@ -313,16 +315,15 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
           const numValue = parseFloat(value);
           if (!isNaN(numValue)) {
             (lead as any)[field] = numValue;
+          } else {
+                            // Normalize stage value
+                            if (field === 'stage') {
+                                                (lead as any)[field] = normalizeStage(value);
+                            } else {
+                                                (lead as any)[field] = value;
+                            }
           }
-                // Normalize stage value
-                if (field === 'stage') {
-                            (lead as any)[field] = normalizeStage(value);
-                } else {
-
-                }
-                } else {
-          (lead as any)[field] = value;
-        }
+        });
       });
 
       // Only add if we have at least a name or company
