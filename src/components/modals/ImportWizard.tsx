@@ -258,21 +258,15 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
                 if (!isNaN(numValue)) {
                   (lead as any)[field] = numValue;
                 }
-              } else {
-                (lead as any)[field] = stringValue;
-              }
-            });
 
+            });
+          } else {
                             // Normalize stage value
                             if (field === 'stage') {
                                                 (lead as any)[field] = normalizeStage(stringValue);
                             } else {
                                                 (lead as any)[field] = stringValue;
                             }
-            // Only add if we have at least a name or company
-            if (lead.name || lead.company) {
-              leads.push(lead);
-            }
           }
 
           resolve(leads);
