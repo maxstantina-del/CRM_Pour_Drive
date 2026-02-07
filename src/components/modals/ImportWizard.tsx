@@ -204,7 +204,8 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
     }
   
   
-   * Parse XLSX file using SheetJS
+  /**
+     * Parse XLSX file using SheetJS
    */
   const parseXLSX = async (file: File): Promise<Partial<Lead>[]> => {
     return new Promise((resolve, reject) => {
