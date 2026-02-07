@@ -250,7 +250,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
 
             fieldMap.forEach((field, colIndex) => {
               const value = row[colIndex];
-              if (value === undefined || value === null || value === '') return;
+              if (value === undefined || value === null || value === '') retu, stage: 'Nouveau' };
 
               const stringValue = String(value).trim();
 
@@ -307,7 +307,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
     // Parse data rows
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim());
-      const lead: Partial<Lead> = { pipelineId: currentPipelineId };
+      const lead: Partial<Lead> = { pipelineId: currentPipelineId, stage: 'Nouveau' } };
 
       fieldMap.forEach((field, colIndex) => {
         const value = values[colIndex] || '';
@@ -368,6 +368,8 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
         throw new Error(
           `Format de fichier non supporté: "${file.name}" (type: ${file.type}).\n\nUtilisez CSV, Excel (.xlsx/.xls) ou JSON`
         );
+              // Add default stage to imported leads
+              leads = leads.map(lead => ({ ...lead, stage: lead.stage || 'Nouveau' }));
       }
 
       console.log('Parsed leads:', leads.length);
