@@ -250,7 +250,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
 
             fieldMap.forEach((field, colIndex) => {
               const value = row[colIndex];
-              if (value === undefined || value === null || value === '') retu, stage: 'Nouveau' };
+              if (value === undefined || value === null || value === '') return;
 
               const stringValue = String(value).trim();
 
