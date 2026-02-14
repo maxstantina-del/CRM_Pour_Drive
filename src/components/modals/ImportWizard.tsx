@@ -173,34 +173,44 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
           * Maps unknown stages to "Nouveau" (default)
              */
     function normalizeStage(stage: string | undefined): string {
-          if (!stage) return 'Nouveau';
+          if (!stage) return 'new';
 
                 const normalized = stage.toLowerCase().trim();
 
-          // Valid stages in the CRM
-          const validStages = [
-                  'Nouveau',
-                  'Contacté',
-                  'Qualifié',
-                  'RDV Planifié',
-                  'Proposition',
-                  'Négociation',
-                  'Gagné',
-                  'Perdu'
-                ];
+          // Map French labels and English IDs to valid stage IDs
+          const stageMap: Record<string, string> = {
+                  'nouveau': 'new',
+                  'new': 'new',
+                  'contacté': 'contacted',
+                  'contacte': 'contacted',
+                  'contacted': 'contacted',
+                  'contact': 'contacted',
+                  'qualifié': 'qualified',
+                  'qualifie': 'qualified',
+                  'qualified': 'qualified',
+                  'rdv planifié': 'meeting',
+                  'rdv planifie': 'meeting',
+                  'meeting': 'meeting',
+                  'proposition': 'proposal',
+                  'proposal': 'proposal',
+                  'négociation': 'negotiation',
+                  'negociation': 'negotiation',
+                  'negotiation': 'negotiation',
+                  'gagné': 'won',
+                  'gagne': 'won',
+                  'won': 'won',
+                  'perdu': 'lost',
+                  'lost': 'lost'
+                };
 
-          // Check if the stage matches any valid stage (case insensitive)
-          const matchedStage = validStages.find(
-                  validStage => validStage.toLowerCase() === normalized
-                        );
-
-          if (matchedStage) {
-                  return matchedStage;
+          const matched = stageMap[normalized];
+          if (matched) {
+                  return matched;
           }
 
-                // Default to "Nouveau" for any unknown stage
-                console.log(`⚠️  Unknown stage "${stage}" mapped to "Nouveau"`);
-          return 'Nouveau';
+                // Default to "new" for any unknown stage
+                console.log(`⚠️  Unknown stage "${stage}" mapped to "new"`);
+          return 'new';
     }
   
   
@@ -307,7 +317,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
     // Parse data rows
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim());
-      const lead: Partial<Lead> = { pipelineId: currentPipelineId, stage: 'Nouveau' } };
+      const lead: Partial<Lead> = { pipelineId: currentPipelineId, stage: 'new' };
 
       fieldMap.forEach((field, colIndex) => {
         const value = values[colIndex] || '';
@@ -369,7 +379,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
           `Format de fichier non supporté: "${file.name}" (type: ${file.type}).\n\nUtilisez CSV, Excel (.xlsx/.xls) ou JSON`
         );
               // Add default stage to imported leads
-              leads = leads.map(lead => ({ ...lead, stage: lead.stage || 'Nouveau' }));
+              leads = leads.map(lead => ({ ...lead, stage: lead.stage || 'new' }));
       }
 
       console.log('Parsed leads:', leads.length);
