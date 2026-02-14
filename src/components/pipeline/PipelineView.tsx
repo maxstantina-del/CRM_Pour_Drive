@@ -79,7 +79,7 @@ const LeadCard = memo(function LeadCard({
                         onEditLead(lead);
                         onMenuToggle(lead.id);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
                     >
                       <Edit size={14} />
                       Modifier
