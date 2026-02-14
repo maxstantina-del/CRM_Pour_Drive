@@ -84,7 +84,7 @@ export function Modal({
           />
 
           {/* Modal Container */}
-          <div className="flex min-h-screen items-center justify-center p-4">
+          <div className="flex min-h-screen items-center justify-center p-4 relative z-50">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}

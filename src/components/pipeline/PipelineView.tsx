@@ -13,6 +13,7 @@ export interface PipelineViewProps {
   onUpdateStage: (leadId: string, newStage: Lead['stage']) => void;
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
+  onViewLead?: (lead: Lead) => void;
   onAddNextAction?: (leadId: string) => void;
   onToggleNextAction?: (leadId: string, actionId: string) => void;
   onDeleteNextAction?: (leadId: string, actionId: string) => void;
@@ -27,6 +28,7 @@ const LeadCard = memo(function LeadCard({
   onDragEnd,
   onEditLead,
   onDeleteLead,
+  onViewLead,
   onMenuToggle
 }: {
   lead: Lead;
@@ -36,6 +38,7 @@ const LeadCard = memo(function LeadCard({
   onDragEnd: (e: React.DragEvent) => void;
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
+  onViewLead?: (lead: Lead) => void;
   onMenuToggle: (leadId: string) => void;
 }) {
   return (
@@ -43,7 +46,8 @@ const LeadCard = memo(function LeadCard({
       draggable
       onDragStart={(e) => onDragStart(e, lead.id)}
       onDragEnd={onDragEnd}
-      className={`transition-all duration-75 cursor-move ${
+      onClick={() => onViewLead?.(lead)}
+      className={`transition-all duration-75 cursor-pointer ${
         isDragging ? 'scale-95 opacity-50' : 'scale-100 opacity-100'
       }`}
     >
@@ -120,7 +124,8 @@ export const PipelineView = memo(function PipelineView({
   stages,
   onUpdateStage,
   onEditLead,
-  onDeleteLead
+  onDeleteLead,
+  onViewLead
 }: PipelineViewProps) {
   const [draggedLead, setDraggedLead] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -216,6 +221,7 @@ export const PipelineView = memo(function PipelineView({
                     onDragEnd={handleDragEnd}
                     onEditLead={onEditLead}
                     onDeleteLead={onDeleteLead}
+                    onViewLead={onViewLead}
                     onMenuToggle={(leadId) => setOpenMenuId(openMenuId === leadId ? null : leadId)}
                   />
                 ))}

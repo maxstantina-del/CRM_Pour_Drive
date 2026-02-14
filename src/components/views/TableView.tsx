@@ -13,9 +13,10 @@ export interface TableViewProps {
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
   onUpdateStage: (leadId: string, newStage: Lead['stage']) => void;
+  onViewLead?: (lead: Lead) => void;
 }
 
-export function TableView({ leads, onEditLead, onDeleteLead }: TableViewProps) {
+export function TableView({ leads, onEditLead, onDeleteLead, onViewLead }: TableViewProps) {
   const [sortField, setSortField] = useState<keyof Lead>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -84,7 +85,7 @@ export function TableView({ leads, onEditLead, onDeleteLead }: TableViewProps) {
             </thead>
             <tbody className="divide-y">
               {sortedLeads.map(lead => (
-                <tr key={lead.id} className="hover:bg-gray-50">
+                <tr key={lead.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => onViewLead?.(lead)}>
                   <td className="px-4 py-3 font-medium text-gray-900">{lead.name}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {lead.contactName || '-'}
@@ -109,13 +110,13 @@ export function TableView({ leads, onEditLead, onDeleteLead }: TableViewProps) {
                         size="sm"
                         variant="ghost"
                         icon={<Edit size={14} />}
-                        onClick={() => onEditLead(lead)}
+                        onClick={(e) => { e.stopPropagation(); onEditLead(lead); }}
                       />
                       <Button
                         size="sm"
                         variant="ghost"
                         icon={<Trash2 size={14} />}
-                        onClick={() => onDeleteLead(lead.id)}
+                        onClick={(e) => { e.stopPropagation(); onDeleteLead(lead.id); }}
                       />
                     </div>
                   </td>

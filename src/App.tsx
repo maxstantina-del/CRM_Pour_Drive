@@ -448,6 +448,7 @@ function App() {
                 onUpdateStage={handleUpdateStage}
                 onEditLead={handleEditLead}
                 onDeleteLead={handleDeleteLead}
+                onViewLead={(lead) => setViewingLead(lead)}
               />
             )
           )}
@@ -458,6 +459,7 @@ function App() {
               onEditLead={handleEditLead}
               onDeleteLead={handleDeleteLead}
               onUpdateStage={handleUpdateStage}
+              onViewLead={(lead) => setViewingLead(lead)}
             />
           )}
 
