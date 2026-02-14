@@ -53,7 +53,7 @@ export function Header({
           <Button
             variant="ghost"
             size="sm"
-            icon={<Upload size={16} />}
+            icon={<Download size={16} />}
             onClick={onImport}
             title="Importer des leads (CSV, JSON)"
           >
@@ -63,7 +63,7 @@ export function Header({
           <Button
             variant="ghost"
             size="sm"
-            icon={<Download size={16} />}
+            icon={<Upload size={16} />}
             onClick={onExport}
             title="Exporter en CSV"
           >
