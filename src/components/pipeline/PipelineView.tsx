@@ -49,7 +49,7 @@ const LeadCard = memo(function LeadCard({
       onClick={() => onViewLead?.(lead)}
       className={`transition-all duration-75 cursor-pointer ${
         isDragging ? 'scale-95 opacity-50' : 'scale-100 opacity-100'
-      } ${isMenuOpen ? 'relative z-30' : ''}`
+      } ${isMenuOpen ? 'relative z-30' : ''}`}
     >
       <Card padding="sm" hover>
         <div className="space-y-2">
