@@ -49,7 +49,7 @@ const LeadCard = memo(function LeadCard({
       onClick={() => onViewLead?.(lead)}
       className={`transition-all duration-75 cursor-pointer ${
         isDragging ? 'scale-95 opacity-50' : 'scale-100 opacity-100'
-      }`}
+      } ${isMenuOpen ? 'relative z-30' : ''}`
     >
       <Card padding="sm" hover>
         <div className="space-y-2">
@@ -69,10 +69,10 @@ const LeadCard = memo(function LeadCard({
               {isMenuOpen && (
                 <>
                   <div
-                    className="fixed inset-0 z-10"
+                    className="fixed inset-0 z-30"
                     onClick={() => onMenuToggle(lead.id)}
                   />
-                  <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-20 min-w-[160px]">
+                  <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-40 min-w-[160px]">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
