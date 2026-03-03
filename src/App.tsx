@@ -61,6 +61,7 @@ function App() {
     message: '',
     onConfirm: null
   });
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   const { showToast } = useToast();
   const { shouldShowTour, completeTour } = useOnboarding();
@@ -227,15 +228,23 @@ function App() {
   };
 
   const handleSubmitLead = async (leadData: Partial<Lead>) => {
-    if (editingLead) {
-      await leadsManager.updateLead(editingLead.id, leadData);
-      showToast('Lead modifié', 'success');
-    } else {
-      await leadsManager.addLead(leadData);
-      showToast('Lead créé', 'success');
+    setIsFormSubmitting(true);
+    try {
+      if (editingLead) {
+        await leadsManager.updateLead(editingLead.id, leadData);
+        showToast('Lead modifié', 'success');
+      } else {
+        await leadsManager.addLead(leadData);
+        showToast('Lead créé', 'success');
+      }
+      setIsFormOpen(false);
+      setEditingLead(undefined);
+    } catch (error) {
+      console.error('Error submitting lead:', error);
+      showToast('Erreur lors de la sauvegarde', 'error');
+    } finally {
+      setIsFormSubmitting(false);
     }
-    setIsFormOpen(false);
-    setEditingLead(undefined);
   };
 
   const handleImportClick = () => {
@@ -499,6 +508,7 @@ function App() {
                   setIsFormOpen(false);
                   setEditingLead(undefined);
                 }}
+                loading={isFormSubmitting}
               />
             </div>
           </div>
