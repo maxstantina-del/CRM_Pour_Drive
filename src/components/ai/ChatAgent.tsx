@@ -1,12 +1,15 @@
 /**
- * Local CRM chat assistant.
- * Rule-based command engine — zero API cost. See chatCommands.ts.
+ * CRM chat assistant.
+ * Uses local Ollama if available (free, private) — falls back to the rule-based
+ * command engine (see chatCommands.ts) otherwise.
+ * Exact commands (stats, top, cherche…) always short-circuit the LLM for speed.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import type { Lead } from '../../lib/types';
-import { Send, Bot, X, Maximize2, Minimize2, Trash2 } from 'lucide-react';
-import { handle } from './chatCommands';
+import { Send, Bot, X, Maximize2, Minimize2, Trash2, Loader2, Zap, CircleDot } from 'lucide-react';
+import { handle, parseIntent } from './chatCommands';
+import { useOllama, buildSystemPrompt, type OllamaMessage } from '../../hooks/useOllama';
 
 export interface ChatAgentProps {
   leads: Lead[];
@@ -19,47 +22,110 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  source?: 'rules' | 'ollama';
 }
 
 const GREETING =
-  'Bonjour ! Tape "aide" pour voir ce que je peux faire (stats, top, relancer, cherche…).';
+  'Bonjour ! Parle-moi en langage naturel ou utilise les commandes (stats, top 5, cherche…). Tape "aide" pour la liste.';
 
 export function ChatAgent({ leads }: ChatAgentProps) {
+  const { status: ollama, chat: ollamaChat, refresh: refreshOllama } = useOllama();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'assistant', content: GREETING, timestamp: new Date() },
   ]);
   const [input, setInput] = useState('');
+  const [thinking, setThinking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
+  }, [messages, thinking]);
 
-  const send = (raw: string) => {
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
+  const pushMsg = (msg: Omit<Message, 'id' | 'timestamp'> & Partial<Pick<Message, 'id' | 'timestamp'>>) => {
+    setMessages(prev => [
+      ...prev,
+      {
+        id: msg.id ?? String(Date.now() + Math.random()),
+        timestamp: msg.timestamp ?? new Date(),
+        ...msg,
+      } as Message,
+    ]);
+  };
+
+  const send = async (raw: string) => {
     const text = raw.trim();
-    if (!text) return;
-    const now = Date.now();
-    const userMsg: Message = { id: String(now), role: 'user', content: text, timestamp: new Date() };
-    const reply: Message = {
-      id: String(now + 1),
-      role: 'assistant',
-      content: handle(text, leads),
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMsg, reply]);
+    if (!text || thinking) return;
+
+    pushMsg({ role: 'user', content: text });
     setInput('');
+
+    const intent = parseIntent(text);
+
+    // Commands always handled locally (fast, deterministic).
+    if (intent.kind !== 'unknown') {
+      pushMsg({ role: 'assistant', content: handle(text, leads), source: 'rules' });
+      return;
+    }
+
+    // Free-form question → try Ollama, fall back to rules.
+    if (!ollama.available || !ollama.model) {
+      pushMsg({
+        role: 'assistant',
+        content:
+          'Ollama n\'est pas détecté sur localhost:11434. Lance Ollama (avec OLLAMA_ORIGINS=*) pour discuter en langage naturel, ou tape "aide" pour les commandes.',
+        source: 'rules',
+      });
+      return;
+    }
+
+    setThinking(true);
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    try {
+      const history: OllamaMessage[] = [
+        { role: 'system', content: buildSystemPrompt(leads) },
+        ...messages
+          .slice(-12) // keep last 12 turns for context
+          .filter(m => m.role !== 'assistant' || m.id !== '1') // drop greeting
+          .map(m => ({ role: m.role, content: m.content } as OllamaMessage)),
+        { role: 'user', content: text },
+      ];
+      const reply = await ollamaChat(history, ctrl.signal);
+      pushMsg({ role: 'assistant', content: reply, source: 'ollama' });
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      pushMsg({
+        role: 'assistant',
+        content: `Erreur IA : ${(err as Error).message}. Essaye une commande (aide).`,
+        source: 'rules',
+      });
+    } finally {
+      setThinking(false);
+      abortRef.current = null;
+    }
   };
 
   const clearChat = () => {
+    abortRef.current?.abort();
     setMessages([{ id: '1', role: 'assistant', content: GREETING, timestamp: new Date() }]);
   };
 
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          refreshOllama();
+        }}
         className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all z-40"
         title="Assistant CRM"
       >
@@ -70,7 +136,7 @@ export function ChatAgent({ leads }: ChatAgentProps) {
 
   const containerClass = isExpanded
     ? 'fixed inset-4 z-40 flex flex-col bg-white rounded-lg shadow-2xl border border-gray-200'
-    : 'fixed bottom-6 right-6 z-40 flex flex-col bg-white rounded-lg shadow-2xl border border-gray-200 w-[400px] h-[550px]';
+    : 'fixed bottom-6 right-6 z-40 flex flex-col bg-white rounded-lg shadow-2xl border border-gray-200 w-[420px] h-[580px]';
 
   return (
     <div className={containerClass}>
@@ -79,15 +145,28 @@ export function ChatAgent({ leads }: ChatAgentProps) {
           <Bot className="text-blue-600" size={20} />
           <h3 className="font-semibold text-gray-900">Assistant CRM</h3>
           <span className="text-xs text-gray-500">{leads.length} leads</span>
+          {ollama.checking ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 flex items-center gap-1">
+              <Loader2 className="w-2.5 h-2.5 animate-spin" /> check
+            </span>
+          ) : ollama.available && ollama.model ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 flex items-center gap-1" title={`Ollama ${ollama.model}`}>
+              <CircleDot className="w-2.5 h-2.5" /> IA {ollama.model.split(':')[0]}
+            </span>
+          ) : (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-1" title="Ollama absent — mode commandes">
+              <Zap className="w-2.5 h-2.5" /> Commandes
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button onClick={clearChat} className="p-2 rounded hover:bg-gray-100 text-gray-500" title="Effacer">
             <Trash2 size={14} />
           </button>
-          <button onClick={() => setIsExpanded(v => !v)} className="p-2 rounded hover:bg-gray-100 text-gray-500" title={isExpanded ? 'Réduire' : 'Agrandir'}>
+          <button onClick={() => setIsExpanded(v => !v)} className="p-2 rounded hover:bg-gray-100 text-gray-500">
             {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
-          <button onClick={() => setIsOpen(false)} className="p-2 rounded hover:bg-gray-100 text-gray-500" title="Fermer">
+          <button onClick={() => setIsOpen(false)} className="p-2 rounded hover:bg-gray-100 text-gray-500">
             <X size={16} />
           </button>
         </div>
@@ -102,12 +181,21 @@ export function ChatAgent({ leads }: ChatAgentProps) {
               }`}
             >
               <pre className="text-sm whitespace-pre-wrap font-sans m-0">{m.content}</pre>
-              <p className="text-[10px] mt-1 opacity-60">
+              <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
                 {m.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                {m.source === 'ollama' && <span>· 🦙</span>}
               </p>
             </div>
           </div>
         ))}
+        {thinking && (
+          <div className="flex justify-start">
+            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              réflexion…
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="px-4 py-3 border-t border-gray-200 flex-shrink-0 bg-white rounded-b-lg">
@@ -116,7 +204,8 @@ export function ChatAgent({ leads }: ChatAgentProps) {
             <button
               key={cmd}
               onClick={() => send(cmd)}
-              className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+              disabled={thinking}
+              className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-gray-700"
             >
               {cmd}
             </button>
@@ -133,16 +222,17 @@ export function ChatAgent({ leads }: ChatAgentProps) {
                 send(input);
               }
             }}
-            placeholder="stats, top 5, cherche Annecy…"
+            placeholder={ollama.available ? 'Pose ta question…' : 'stats, top 5, cherche Annecy…'}
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            disabled={thinking}
           />
           <button
             onClick={() => send(input)}
-            disabled={!input.trim()}
+            disabled={!input.trim() || thinking}
             className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded"
             title="Envoyer"
           >
-            <Send size={16} />
+            {thinking ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
           </button>
         </div>
       </div>
