@@ -81,7 +81,6 @@ function App() {
     deleteLead: deleteSingleLead,
     addBatchLeads,
     deletePipelineLeads,
-    reloadLeads  // ✅ Ajout de reloadLeads
   } = useLeads();
 
   const { stages } = usePipelineStages();
@@ -243,90 +242,64 @@ function App() {
       setInputModal({
         isOpen: true,
         title: 'Créer un pipeline',
-        description: 'Vous devez d\'abord créer un pipeline avant d\'importer des leads.',
-        placeholder: 'Nom du pipeline',
         onSubmit: async (name) => {
-          console.log('🔵 Creating pipeline:', name);
           const newPipeline = await addPipeline(name);
-          console.log('🟢 Pipeline created:', newPipeline);
-          console.log('🟡 Setting currentPipelineId to:', newPipeline.id);
           setCurrentPipelineId(newPipeline.id);
-          console.log('🟣 pipelines state:', pipelines);
-          setInputModal({ isOpen: false, title: '', description: '', placeholder: '', onSubmit: async () => {} });
-          // Ouvrir l'import wizard après création du pipeline
-          setTimeout(() => {
-            console.log('⏰ Opening import wizard after 300ms');
-            setIsImportWizardOpen(true);
-          }, 300);
-        }
+          setInputModal((prev) => ({ ...prev, isOpen: false }));
+          setTimeout(() => setIsImportWizardOpen(true), 300);
+        },
       });
     } else {
       setIsImportWizardOpen(true);
     }
   };
 
-  const handleImport = async (importedLeads: Partial<Lead>[]) => {
-    // ✅ Recalculer le pipelineId MAINTENANT pour éviter les closures stale
+  const handleImport = async (
+    importedLeads: Partial<Lead>[],
+    onProgress: (p: { processed: number; total: number }) => void
+  ) => {
     const targetPipelineId = currentPipelineId || pipelines[0]?.id || '';
-
-    console.log('🔵 handleImport: Starting import of', importedLeads.length, 'leads');
-    console.log('🔵 currentPipelineId:', currentPipelineId);
-    console.log('🔵 pipelines:', pipelines);
-    console.log('🔵 targetPipelineId (recalculated):', targetPipelineId);
-    console.log('🔵 effectivePipelineId (old):', effectivePipelineId);
-
     if (!targetPipelineId) {
-      console.error('❌ No pipeline ID available for import!');
-      showToast('Erreur: Aucun pipeline disponible', 'error');
-      return;
+      showToast('Aucun pipeline disponible', 'error');
+      return { inserted: 0, errors: [{ index: -1, message: 'No pipeline' }] };
     }
 
-    try {
-      // Créer tous les nouveaux leads avec leurs IDs
-      const now = new Date().toISOString();
-      const newLeads: Lead[] = importedLeads.map(leadData => ({
-        id: generateId(),
-        name: leadData.name || 'Nouveau Lead',
-        contactName: leadData.contactName,
-        email: leadData.email,
-        phone: leadData.phone,
-        company: leadData.company,
-        siret: leadData.siret,
-        address: leadData.address,
-        city: leadData.city,
-        zipCode: leadData.zipCode,
-        country: leadData.country || 'France',
-        stage: leadData.stage || 'new',
-        value: leadData.value,
-        probability: leadData.probability,
-        closedDate: leadData.closedDate,
-        notes: leadData.notes,
-        nextActions: leadData.nextActions || [],
-        createdAt: now,
-        updatedAt: now,
-        pipelineId: targetPipelineId  // ✅ Utilise targetPipelineId recalculé
-      }));
+    const now = new Date().toISOString();
+    const newLeads: Lead[] = importedLeads.map((d) => ({
+      id: generateId(),
+      name: d.name || 'Nouveau Lead',
+      contactName: d.contactName,
+      email: d.email,
+      phone: d.phone,
+      company: d.company,
+      siret: d.siret,
+      address: d.address,
+      city: d.city,
+      zipCode: d.zipCode,
+      country: d.country || 'France',
+      stage: d.stage || 'new',
+      value: d.value,
+      probability: d.probability,
+      closedDate: d.closedDate,
+      notes: d.notes,
+      nextActions: d.nextActions || [],
+      createdAt: now,
+      updatedAt: now,
+      pipelineId: targetPipelineId,
+    }));
 
-      console.log('🟢 handleImport: Leads created with pipelineId:', targetPipelineId);
-      console.log('🟢 Sample lead:', newLeads[0]);
-      console.log('🟢 Calling addBatchLeads with pipelineId:', targetPipelineId);
+    const result = await addBatchLeads(targetPipelineId, newLeads, onProgress);
 
-      // Utiliser addBatchLeads pour une insertion optimisée
-      await addBatchLeads(targetPipelineId, newLeads);  // ✅ Utilise targetPipelineId
-
-      console.log('✅ handleImport: Import completed successfully');
-
-      // ✅ Recharger les leads depuis Supabase pour rafraîchir l'UI
-      console.log('🔄 Reloading leads from Supabase...');
-      await reloadLeads();
-      console.log('✅ Leads reloaded');
-
-      showToast(`${importedLeads.length} leads importés avec succès`, 'success');
-      setIsImportWizardOpen(false);
-    } catch (error) {
-      console.error('❌ Import error:', error);
-      showToast('Erreur lors de l\'import. Vérifiez la console.', 'error');
+    if (result.errors.length === 0) {
+      showToast(`${result.inserted.length} leads importés`, 'success');
+    } else {
+      showToast(
+        `${result.inserted.length} importés, ${result.errors.length} en erreur`,
+        'warning'
+      );
     }
+
+    return { inserted: result.inserted.length, errors: result.errors };
   };
 
   const handleExportCSV = () => {

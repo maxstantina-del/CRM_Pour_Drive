@@ -28,17 +28,11 @@ export function initSentry() {
     replaysOnErrorSampleRate: 1.0,
 
     integrations: [
-      // Browser profiling
       Sentry.browserTracingIntegration(),
-
-      // Session replay
       Sentry.replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),
-
-      // React error boundary
-      Sentry.reactRouterV6BrowserTracingIntegration(),
     ],
 
     // Filter out certain errors

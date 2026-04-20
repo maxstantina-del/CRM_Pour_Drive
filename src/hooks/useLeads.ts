@@ -1,216 +1,180 @@
 /**
- * ✨ REFACTORISÉ - Hook de gestion des leads
- * Gère UNIQUEMENT les leads, séparé de la gestion des pipelines
- * Source de vérité: Supabase
+ * Lead state hook. Delegates Supabase I/O to leadsService.
+ * Owner ID is injected from AuthContext.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Lead } from '../lib/types';
 import { isSupabaseConfigured } from '../lib/supabase';
-import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import * as leadsService from '../services/leadsService';
+import type { BatchProgress, BulkInsertResult } from '../services/leadsService';
 
 export function useLeads() {
   const isSupabase = isSupabaseConfigured();
-
-  // Leads organisés par pipeline
+  const { user } = useAuth();
   const [leadsByPipeline, setLeadsByPipeline] = useState<Record<string, Lead[]>>({});
 
-  // Fonction de chargement des leads depuis Supabase
   const loadLeads = useCallback(async () => {
-    if (!isSupabase || !supabase) return;
-
+    if (!isSupabase || !user) return;
     try {
-      console.log('🔵 Loading leads from Supabase...');
-      // ✅ FIX: Augmenter la limite à 10000 leads (défaut Supabase = 1000)
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10000);  // Support jusqu'à 10k leads
-
-      if (error) throw error;
-
-      if (data) {
-        const leadsMap: Record<string, Lead[]> = {};
-        data.forEach(l => {
-          const lead: Lead = {
-            id: l.id,
-            name: l.name,
-            email: l.email,
-            phone: l.phone,
-            company: l.company,
-            address: l.address,
-            city: l.city,
-            zipCode: l.zip_code,
-            country: l.country,
-            stage: l.stage,
-            value: l.value,
-            probability: l.probability,
-            closedDate: l.closed_date,
-            notes: l.notes,
-            nextActions: l.next_actions || [],
-            createdAt: l.created_at,
-            updatedAt: l.updated_at,
-            pipelineId: l.pipeline_id
-          };
-          const pipelineId = lead.pipelineId || 'default';
-          if (!leadsMap[pipelineId]) leadsMap[pipelineId] = [];
-          leadsMap[pipelineId].push(lead);
-        });
-        setLeadsByPipeline(leadsMap);
-        console.log('✅ Leads loaded:', Object.keys(leadsMap).reduce((sum, k) => sum + leadsMap[k].length, 0), 'total');
+      const data = await leadsService.listLeads();
+      const map: Record<string, Lead[]> = {};
+      for (const lead of data) {
+        const pid = lead.pipelineId || 'default';
+        (map[pid] ||= []).push(lead);
       }
+      setLeadsByPipeline(map);
     } catch (error) {
-      console.error('❌ Error loading leads:', error);
+      console.error('Error loading leads:', error);
     }
-  }, [isSupabase]);
+  }, [isSupabase, user]);
 
-  // Charger les leads au démarrage
   useEffect(() => {
     loadLeads();
   }, [loadLeads]);
 
-  // Récupérer les leads d'un pipeline
-  const getPipelineLeads = useCallback((pipelineId: string): Lead[] => {
-    return leadsByPipeline[pipelineId] || [];
-  }, [leadsByPipeline]);
+  const getPipelineLeads = useCallback(
+    (pipelineId: string): Lead[] => leadsByPipeline[pipelineId] || [],
+    [leadsByPipeline]
+  );
 
-  // Ajouter un lead
-  const addLead = useCallback(async (pipelineId: string, lead: Lead) => {
-    setLeadsByPipeline(prev => ({
-      ...prev,
-      [pipelineId]: [...(prev[pipelineId] || []), lead]
-    }));
+  const addLead = useCallback(
+    async (pipelineId: string, lead: Lead) => {
+      if (!user) throw new Error('Not authenticated');
+      const localLead = { ...lead, pipelineId };
 
-    if (isSupabase && supabase) {
+      // optimistic
+      setLeadsByPipeline((prev) => ({
+        ...prev,
+        [pipelineId]: [...(prev[pipelineId] || []), localLead],
+      }));
+
+      if (!isSupabase) return;
       try {
-        await supabase.from('leads').insert({
-          id: lead.id, name: lead.name, email: lead.email, phone: lead.phone,
-          company: lead.company, address: lead.address, city: lead.city,
-          zip_code: lead.zipCode, country: lead.country, stage: lead.stage,
-          value: lead.value, probability: lead.probability, closed_date: lead.closedDate,
-          notes: lead.notes, next_actions: lead.nextActions, created_at: lead.createdAt,
-          updated_at: lead.updatedAt, pipeline_id: lead.pipelineId
-        });
-      } catch (error) {
-        console.error('❌ Error adding lead:', error);
-        setLeadsByPipeline(prev => ({
+        const created = await leadsService.createLead(localLead, user.id);
+        // replace with authoritative row
+        setLeadsByPipeline((prev) => ({
           ...prev,
-          [pipelineId]: prev[pipelineId].filter(l => l.id !== lead.id)
+          [pipelineId]: (prev[pipelineId] || []).map((l) => (l.id === created.id ? created : l)),
         }));
-        throw error;
-      }
-    }
-  }, [isSupabase]);
-
-  // Mettre à jour un lead
-  const updateLead = useCallback(async (pipelineId: string, leadId: string, updates: Partial<Lead>) => {
-    setLeadsByPipeline(prev => ({
-      ...prev,
-      [pipelineId]: prev[pipelineId]?.map(l =>
-        l.id === leadId ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l
-      ) || []
-    }));
-
-    if (isSupabase && supabase) {
-      try {
-        const supabaseUpdates: any = { updated_at: new Date().toISOString() };
-        if (updates.name !== undefined) supabaseUpdates.name = updates.name;
-        if (updates.email !== undefined) supabaseUpdates.email = updates.email;
-        if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
-        if (updates.company !== undefined) supabaseUpdates.company = updates.company;
-        if (updates.address !== undefined) supabaseUpdates.address = updates.address;
-        if (updates.city !== undefined) supabaseUpdates.city = updates.city;
-        if (updates.zipCode !== undefined) supabaseUpdates.zip_code = updates.zipCode;
-        if (updates.country !== undefined) supabaseUpdates.country = updates.country;
-        if (updates.stage !== undefined) supabaseUpdates.stage = updates.stage;
-        if (updates.value !== undefined) supabaseUpdates.value = updates.value;
-        if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
-        if (updates.closedDate !== undefined) supabaseUpdates.closed_date = updates.closedDate;
-        if (updates.notes !== undefined) supabaseUpdates.notes = updates.notes;
-        if (updates.nextActions !== undefined) supabaseUpdates.next_actions = updates.nextActions;
-
-        await supabase.from('leads').update(supabaseUpdates).eq('id', leadId);
       } catch (error) {
-        console.error('❌ Error updating lead:', error);
-        throw error;
-      }
-    }
-  }, [isSupabase]);
-
-  // Supprimer un lead
-  const deleteLead = useCallback(async (pipelineId: string, leadId: string) => {
-    setLeadsByPipeline(prev => ({
-      ...prev,
-      [pipelineId]: prev[pipelineId]?.filter(l => l.id !== leadId) || []
-    }));
-
-    if (isSupabase && supabase) {
-      try {
-        await supabase.from('leads').delete().eq('id', leadId);
-      } catch (error) {
-        console.error('❌ Error deleting lead:', error);
-        throw error;
-      }
-    }
-  }, [isSupabase]);
-
-  // Import batch de leads
-  const addBatchLeads = useCallback(async (pipelineId: string, leads: Lead[]) => {
-    console.log('🔵 addBatchLeads called with pipelineId:', pipelineId);
-    console.log('🔵 addBatchLeads: Number of leads:', leads.length);
-    console.log('🔵 Sample lead pipelineId:', leads[0]?.pipelineId);
-
-    // ✅ Vérifier que le pipelineId n'est pas vide
-    if (!pipelineId) {
-      console.error('❌ addBatchLeads: pipelineId is empty!');
-      throw new Error('pipelineId cannot be empty');
-    }
-
-    setLeadsByPipeline(prev => ({
-      ...prev,
-      [pipelineId]: [...(prev[pipelineId] || []), ...leads]
-    }));
-
-    if (isSupabase && supabase) {
-      try {
-        const supabaseLeads = leads.map(lead => ({
-          id: lead.id, name: lead.name, email: lead.email, phone: lead.phone,
-          company: lead.company, address: lead.address, city: lead.city,
-          zip_code: lead.zipCode, country: lead.country, stage: lead.stage,
-          value: lead.value, probability: lead.probability, closed_date: lead.closedDate,
-          notes: lead.notes, next_actions: lead.nextActions, created_at: lead.createdAt,
-          updated_at: lead.updatedAt, pipeline_id: pipelineId  // ✅ Utilise le PARAMÈTRE pipelineId, pas lead.pipelineId
-        }));
-        console.log('🟢 Inserting to Supabase with pipeline_id:', pipelineId);
-        await supabase.from('leads').insert(supabaseLeads);
-        console.log('✅ Batch import OK');
-      } catch (error) {
-        console.error('❌ Error batch import:', error);
-        setLeadsByPipeline(prev => ({
+        // rollback
+        setLeadsByPipeline((prev) => ({
           ...prev,
-          [pipelineId]: prev[pipelineId].filter(l => !leads.find(nl => nl.id === l.id))
+          [pipelineId]: (prev[pipelineId] || []).filter((l) => l.id !== localLead.id),
         }));
         throw error;
       }
-    }
-  }, [isSupabase]);
+    },
+    [isSupabase, user]
+  );
 
-  // Supprimer tous les leads d'un pipeline
-  const deletePipelineLeads = useCallback(async (pipelineId: string) => {
-    setLeadsByPipeline(prev => {
-      const { [pipelineId]: _, ...rest } = prev;
-      return rest;
-    });
+  const updateLead = useCallback(
+    async (pipelineId: string, leadId: string, updates: Partial<Lead>) => {
+      const previous = leadsByPipeline[pipelineId]?.find((l) => l.id === leadId);
+      // optimistic
+      setLeadsByPipeline((prev) => ({
+        ...prev,
+        [pipelineId]: (prev[pipelineId] || []).map((l) =>
+          l.id === leadId ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l
+        ),
+      }));
 
-    if (isSupabase && supabase) {
+      if (!isSupabase) return;
       try {
-        await supabase.from('leads').delete().eq('pipeline_id', pipelineId);
+        const fresh = await leadsService.updateLead(leadId, updates);
+        setLeadsByPipeline((prev) => ({
+          ...prev,
+          [pipelineId]: (prev[pipelineId] || []).map((l) => (l.id === leadId ? fresh : l)),
+        }));
       } catch (error) {
-        console.error('❌ Error deleting pipeline leads:', error);
+        // rollback to previous
+        if (previous) {
+          setLeadsByPipeline((prev) => ({
+            ...prev,
+            [pipelineId]: (prev[pipelineId] || []).map((l) => (l.id === leadId ? previous : l)),
+          }));
+        }
+        throw error;
       }
-    }
-  }, [isSupabase]);
+    },
+    [isSupabase, leadsByPipeline]
+  );
+
+  const deleteLead = useCallback(
+    async (pipelineId: string, leadId: string) => {
+      const previous = leadsByPipeline[pipelineId]?.find((l) => l.id === leadId);
+      setLeadsByPipeline((prev) => ({
+        ...prev,
+        [pipelineId]: (prev[pipelineId] || []).filter((l) => l.id !== leadId),
+      }));
+
+      if (!isSupabase) return;
+      try {
+        await leadsService.deleteLead(leadId);
+      } catch (error) {
+        if (previous) {
+          setLeadsByPipeline((prev) => ({
+            ...prev,
+            [pipelineId]: [...(prev[pipelineId] || []), previous],
+          }));
+        }
+        throw error;
+      }
+    },
+    [isSupabase, leadsByPipeline]
+  );
+
+  const addBatchLeads = useCallback(
+    async (
+      pipelineId: string,
+      leads: Lead[],
+      onProgress?: (p: BatchProgress) => void
+    ): Promise<BulkInsertResult> => {
+      if (!user) throw new Error('Not authenticated');
+      if (!pipelineId) throw new Error('pipelineId cannot be empty');
+
+      // ensure all leads target the right pipeline
+      const scoped = leads.map((l) => ({ ...l, pipelineId }));
+
+      if (!isSupabase) {
+        setLeadsByPipeline((prev) => ({
+          ...prev,
+          [pipelineId]: [...(prev[pipelineId] || []), ...scoped],
+        }));
+        return { inserted: scoped, errors: [] };
+      }
+
+      const result = await leadsService.bulkInsertLeads(scoped, user.id, onProgress);
+      // commit only what Supabase confirmed
+      if (result.inserted.length > 0) {
+        setLeadsByPipeline((prev) => ({
+          ...prev,
+          [pipelineId]: [...(prev[pipelineId] || []), ...result.inserted],
+        }));
+      }
+      return result;
+    },
+    [isSupabase, user]
+  );
+
+  const deletePipelineLeads = useCallback(
+    async (pipelineId: string) => {
+      setLeadsByPipeline((prev) => {
+        const { [pipelineId]: _, ...rest } = prev;
+        return rest;
+      });
+      if (isSupabase) {
+        try {
+          await leadsService.deletePipelineLeads(pipelineId);
+        } catch (error) {
+          console.error('Error deleting pipeline leads:', error);
+        }
+      }
+    },
+    [isSupabase]
+  );
 
   return {
     leadsByPipeline,
@@ -220,7 +184,6 @@ export function useLeads() {
     deleteLead,
     addBatchLeads,
     deletePipelineLeads,
-    reloadLeads: loadLeads  // ✅ Expose la fonction de rechargement
+    reloadLeads: loadLeads,
   };
 }
-// Force redeploy - fix limit 10000

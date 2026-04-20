@@ -1,10 +1,6 @@
 /**
- * Pipelines management hook
- *
- * ✅ ARCHITECTURE PROPRE:
- * - Source de vérité: SUPABASE UNIQUEMENT
- * - localStorage: Seulement pour currentPipelineId (préférence UI)
- * - Pas de double sync localStorage/Supabase
+ * Pipelines hook. Source of truth: Supabase. Delegates I/O to pipelinesService.
+ * currentPipelineId persisted to localStorage as a UI preference.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,170 +9,117 @@ import { generateId } from '../lib/utils';
 import { getItem, setItem, STORAGE_KEYS } from '../lib/storage';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 import { DEFAULT_STAGES } from './usePipelineStages';
+import * as pipelinesService from '../services/pipelinesService';
 
-/**
- * Hook to manage pipelines (refactored - no longer manages leads)
- * Leads management is now in useLeads.ts hook
- */
 export function usePipelines() {
   const isSupabase = isSupabaseConfigured();
-
-  // Pipelines state - loaded from Supabase
+  const { user } = useAuth();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [currentPipelineId, setCurrentPipelineId] = useState<string>(() =>
+    getItem<string>(STORAGE_KEYS.CURRENT_PIPELINE, '') || ''
+  );
 
-  // Current pipeline ID state - saved to localStorage (UI preference only)
-  const [currentPipelineId, setCurrentPipelineId] = useState<string>(() => {
-    const stored = getItem<string>(STORAGE_KEYS.CURRENT_PIPELINE, '');
-    return stored || '';
-  });
+  const currentPipeline = pipelines.find((p) => p.id === currentPipelineId) || pipelines[0];
 
-  // Current pipeline
-  const currentPipeline = pipelines.find(p => p.id === currentPipelineId) || pipelines[0];
-
-  // Persist current pipeline ID to localStorage (UI preference only)
   useEffect(() => {
     setItem(STORAGE_KEYS.CURRENT_PIPELINE, currentPipelineId);
   }, [currentPipelineId]);
 
-  // Sync with Supabase if configured
   useEffect(() => {
-    if (!isSupabase || !supabase) return;
+    if (!isSupabase || !supabase || !user) return;
+    const client = supabase;
 
-    const supabaseClient = supabase;
-
-    // Load pipelines from Supabase
     const loadPipelines = async () => {
       try {
-        const { data, error } = await supabaseClient
-          .from('pipelines')
-          .select('*')
-          .order('created_at', { ascending: true});
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          const supabasePipelines: Pipeline[] = data.map(p => ({
-            id: p.id,
-            name: p.name,
-            stages: p.stages || DEFAULT_STAGES,
-            createdAt: p.created_at,
-            updatedAt: p.updated_at
-          }));
-          setPipelines(supabasePipelines);
-
-          // Set current pipeline to first one if default doesn't exist
-          if (supabasePipelines.length > 0 && !supabasePipelines.find(p => p.id === currentPipelineId)) {
-            setCurrentPipelineId(supabasePipelines[0].id);
-          }
-        } else {
-          // No pipelines - user will create their first one
-          setPipelines([]);
+        const data = await pipelinesService.listPipelines();
+        setPipelines(data);
+        if (data.length > 0 && !data.find((p) => p.id === currentPipelineId)) {
+          setCurrentPipelineId(data[0].id);
+        } else if (data.length === 0) {
           setCurrentPipelineId('');
         }
       } catch (error) {
-        console.error('Error loading pipelines from Supabase:', error);
+        console.error('Error loading pipelines:', error);
       }
     };
 
     loadPipelines();
 
-    // Subscribe to real-time changes
-    const pipelinesSubscription = supabaseClient
+    const channel = client
       .channel('pipelines_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pipelines' }, () => {
-        // For pipelines, reload is acceptable since they change rarely
         loadPipelines();
       })
       .subscribe();
 
     return () => {
-      supabaseClient.removeChannel(pipelinesSubscription);
+      client.removeChannel(channel);
     };
-  }, [isSupabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupabase, user]);
 
-  /**
-   * Add a new pipeline
-   */
-  const addPipeline = useCallback(async (name: string) => {
-    const newPipeline: Pipeline = {
-      id: generateId(),
-      name,
-      stages: DEFAULT_STAGES,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    setPipelines(prev => [...prev, newPipeline]);
-
-    // Sync with Supabase
-    if (isSupabase && supabase) {
-      try {
-        await supabase.from('pipelines').insert({
-          id: newPipeline.id,
-          name: newPipeline.name,
-          stages: newPipeline.stages,
-          created_at: newPipeline.createdAt,
-          updated_at: newPipeline.updatedAt
-        });
-      } catch (error) {
-        console.error('Error adding pipeline to Supabase:', error);
+  const addPipeline = useCallback(
+    async (name: string) => {
+      if (!user) throw new Error('Not authenticated');
+      const pipeline: Pipeline = {
+        id: generateId(),
+        name,
+        stages: DEFAULT_STAGES,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setPipelines((prev) => [...prev, pipeline]);
+      if (isSupabase) {
+        try {
+          await pipelinesService.createPipeline(pipeline, user.id);
+        } catch (error) {
+          setPipelines((prev) => prev.filter((p) => p.id !== pipeline.id));
+          throw error;
+        }
       }
-    }
+      return pipeline;
+    },
+    [isSupabase, user]
+  );
 
-    return newPipeline;
-  }, [isSupabase]);
-
-  /**
-   * Rename a pipeline
-   */
-  const renamePipeline = useCallback(async (pipelineId: string, newName: string) => {
-    setPipelines(prev =>
-      prev.map(p =>
-        p.id === pipelineId
-          ? { ...p, name: newName, updatedAt: new Date().toISOString() }
-          : p
-      )
-    );
-
-    // Sync with Supabase
-    if (isSupabase && supabase) {
-      try {
-        await supabase
-          .from('pipelines')
-          .update({ name: newName, updated_at: new Date().toISOString() })
-          .eq('id', pipelineId);
-      } catch (error) {
-        console.error('Error renaming pipeline in Supabase:', error);
+  const renamePipeline = useCallback(
+    async (pipelineId: string, newName: string) => {
+      setPipelines((prev) =>
+        prev.map((p) =>
+          p.id === pipelineId ? { ...p, name: newName, updatedAt: new Date().toISOString() } : p
+        )
+      );
+      if (isSupabase) {
+        try {
+          await pipelinesService.renamePipeline(pipelineId, newName);
+        } catch (error) {
+          console.error('Error renaming pipeline:', error);
+        }
       }
-    }
-  }, [isSupabase]);
+    },
+    [isSupabase]
+  );
 
-  /**
-   * Delete a pipeline
-   */
-  const deletePipeline = useCallback(async (pipelineId: string) => {
-    // Delete the pipeline
-    setPipelines(prev => prev.filter(p => p.id !== pipelineId));
-
-    // Switch to first remaining pipeline if current was deleted
-    if (currentPipelineId === pipelineId) {
-      const remaining = pipelines.filter(p => p.id !== pipelineId);
-      setCurrentPipelineId(remaining[0]?.id || '');
-    }
-
-    // Sync with Supabase
-    if (isSupabase && supabase) {
-      try {
-        await supabase.from('pipelines').delete().eq('id', pipelineId);
-        // Note: Leads deletion is handled by useLeads hook through cascade or App.tsx
-      } catch (error) {
-        console.error('Error deleting pipeline from Supabase:', error);
+  const deletePipeline = useCallback(
+    async (pipelineId: string) => {
+      setPipelines((prev) => prev.filter((p) => p.id !== pipelineId));
+      if (currentPipelineId === pipelineId) {
+        const remaining = pipelines.filter((p) => p.id !== pipelineId);
+        setCurrentPipelineId(remaining[0]?.id || '');
       }
-    }
-
-    return true;
-  }, [pipelines, currentPipelineId, isSupabase]);
+      if (isSupabase) {
+        try {
+          await pipelinesService.deletePipeline(pipelineId);
+        } catch (error) {
+          console.error('Error deleting pipeline:', error);
+        }
+      }
+      return true;
+    },
+    [pipelines, currentPipelineId, isSupabase]
+  );
 
   return {
     pipelines,
@@ -185,6 +128,6 @@ export function usePipelines() {
     setCurrentPipelineId,
     addPipeline,
     renamePipeline,
-    deletePipeline
+    deletePipeline,
   };
 }

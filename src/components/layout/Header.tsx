@@ -11,6 +11,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { Button } from '../ui';
+import { UserMenu } from '../auth/UserMenu';
 
 export interface HeaderProps {
   onNewLead: () => void;
@@ -92,6 +93,9 @@ export function Header({
           >
             Restaurer
           </Button>
+
+          <div className="h-8 w-px bg-gray-300 mx-1" />
+          <UserMenu />
         </div>
       </div>
     </header>

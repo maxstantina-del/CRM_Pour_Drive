@@ -1,492 +1,342 @@
-260
 /**
- * Import wizard for CSV/JSON/XLSX files
+ * Import wizard for CSV/JSON/XLSX files.
+ * Reports progress and per-row errors via the onImport callback contract.
  */
 
-import React, { useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import * as XLSX from 'xlsx';
-import type { Lead } from '../../lib/types';
+import type { Lead, LeadStage } from '../../lib/types';
 import { Modal, ModalFooter, Button } from '../ui';
-import { Upload, FileText, CheckCircle } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
 import { readFileAsText } from '../../lib/utils';
+
+export interface ImportProgress {
+  processed: number;
+  total: number;
+}
+
+export interface ImportOutcome {
+  inserted: number;
+  errors: Array<{ index: number; message: string }>;
+}
 
 export interface ImportWizardProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (leads: Partial<Lead>[]) => void;
+  onImport: (
+    leads: Partial<Lead>[],
+    onProgress: (p: ImportProgress) => void
+  ) => Promise<ImportOutcome>;
   currentPipelineId: string;
   pipelines?: Array<{ id: string; name: string }>;
 }
 
-/**
- * Normalize header for intelligent column mapping
- * Handles: snake_case, camelCase, spaces, accents, etc.
- */
 function normalizeHeader(header: string): string {
   return header
     .toLowerCase()
-    .normalize('NFD') // Decompose accented characters
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-    .replace(/[_\s-]+/g, ' ') // Replace underscores, spaces, hyphens with space
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_\s-]+/g, ' ')
     .trim();
 }
 
-/**
- * Map a column header to a Lead field
- */
 function mapHeaderToField(header: string): keyof Lead | null {
-  const normalized = normalizeHeader(header);
-
-  // Name / Nom / Project name
-  if (
-    normalized.includes('nom') ||
-    normalized.includes('name') ||
-    normalized.includes('projet') ||
-    normalized.includes('project')
-  ) {
-    return 'name';
-  }
-
-  // Contact name / Nom du contact
-  if (
-    normalized.includes('contact name') ||
-    normalized.includes('nom contact') ||
-    normalized.includes('nom du contact') ||
-    normalized === 'contact'
-  ) {
-    return 'contactName';
-  }
-
-  // Email / E-mail / Courriel
-  if (normalized.includes('email') || normalized.includes('mail') || normalized.includes('courriel')) {
-    return 'email';
-  }
-
-  // Phone / Téléphone / Tel
-  if (
-    normalized.includes('phone') ||
-    normalized.includes('telephone') ||
-    normalized.includes('tel') ||
-    normalized.includes('mobile')
-  ) {
-    return 'phone';
-  }
-
-  // Company / Entreprise / Société
-  if (
-    normalized.includes('entreprise') ||
-    normalized.includes('company') ||
-    normalized.includes('societe') ||
-    normalized.includes('society')
-  ) {
-    return 'company';
-  }
-
-  // SIRET
-  if (normalized.includes('siret')) {
-    return 'siret';
-  }
-
-  // Address / Adresse
-  if (normalized.includes('adresse') || normalized.includes('address') || normalized.includes('rue')) {
-    return 'address';
-  }
-
-  // City / Ville
-  if (normalized.includes('ville') || normalized.includes('city')) {
-    return 'city';
-  }
-
-  // Zip code / Code postal
-  if (
-    normalized.includes('code postal') ||
-    normalized.includes('zip') ||
-    normalized.includes('postal code') ||
-    normalized.includes('cp')
-  ) {
-    return 'zipCode';
-  }
-
-  // Country / Pays
-  if (normalized.includes('pays') || normalized.includes('country')) {
-    return 'country';
-  }
-
-  // Value / Valeur / Montant
-  if (
-    normalized.includes('valeur') ||
-    normalized.includes('value') ||
-    normalized.includes('montant') ||
-    normalized.includes('amount')
-  ) {
-    return 'value';
-  }
-
-  // Probability / Probabilité
-  if (normalized.includes('probabilite') || normalized.includes('probability') || normalized.includes('prob')) {
-    return 'probability';
-  }
-
-  // Notes / Commentaires / Comments
-  if (
-    normalized.includes('notes') ||
-    normalized.includes('note') ||
-    normalized.includes('commentaire') ||
-    normalized.includes('comment')
-  ) {
-    return 'notes';
-  }
-
-  // Stage / Étape / Statut
-  if (
-    normalized.includes('stage') ||
-    normalized.includes('etape') ||
-    normalized.includes('statut') ||
-    normalized.includes('status')
-  ) {
-    return 'stage';
-  }
-
+  const n = normalizeHeader(header);
+  if (n.includes('contact name') || n.includes('nom contact') || n.includes('nom du contact') || n === 'contact') return 'contactName';
+  if (n.includes('nom') || n.includes('name') || n.includes('projet') || n.includes('project')) return 'name';
+  if (n.includes('email') || n.includes('mail') || n.includes('courriel')) return 'email';
+  if (n.includes('phone') || n.includes('telephone') || n.includes('tel') || n.includes('mobile')) return 'phone';
+  if (n.includes('entreprise') || n.includes('company') || n.includes('societe')) return 'company';
+  if (n.includes('siret')) return 'siret';
+  if (n.includes('adresse') || n.includes('address') || n.includes('rue')) return 'address';
+  if (n.includes('ville') || n.includes('city')) return 'city';
+  if (n.includes('code postal') || n.includes('zip') || n.includes('postal code') || n === 'cp') return 'zipCode';
+  if (n.includes('pays') || n.includes('country')) return 'country';
+  if (n.includes('valeur') || n.includes('value') || n.includes('montant') || n.includes('amount')) return 'value';
+  if (n.includes('probabilite') || n.includes('probability') || n.includes('prob')) return 'probability';
+  if (n.includes('notes') || n.includes('note') || n.includes('commentaire') || n.includes('comment')) return 'notes';
+  if (n.includes('stage') || n.includes('etape') || n.includes('statut') || n.includes('status')) return 'stage';
   return null;
 }
 
+const STAGE_ALIASES: Record<string, LeadStage> = {
+  nouveau: 'new', new: 'new',
+  contacte: 'contacted', contacted: 'contacted',
+  qualifie: 'qualified', qualified: 'qualified',
+  rdv: 'meeting', meeting: 'meeting', 'rdv planifie': 'meeting',
+  proposition: 'proposal', proposal: 'proposal',
+  negociation: 'negotiation', negotiation: 'negotiation',
+  gagne: 'won', won: 'won', closed_won: 'closed_won',
+  perdu: 'lost', lost: 'lost', closed_lost: 'closed_lost',
+};
+
+function normalizeStage(raw: unknown): LeadStage {
+  if (!raw) return 'new';
+  const key = normalizeHeader(String(raw));
+  return STAGE_ALIASES[key] ?? 'new';
+}
+
+function buildLead(
+  fieldMap: Map<number, keyof Lead>,
+  row: unknown[],
+  pipelineId: string
+): Partial<Lead> | null {
+  const lead: Partial<Lead> = { pipelineId };
+  fieldMap.forEach((field, idx) => {
+    const value = row[idx];
+    if (value === undefined || value === null || value === '') return;
+    const str = String(value).trim();
+    if (field === 'value' || field === 'probability') {
+      const num = parseFloat(str);
+      if (!isNaN(num)) (lead as any)[field] = num;
+    } else if (field === 'stage') {
+      lead.stage = normalizeStage(str);
+    } else {
+      (lead as any)[field] = str;
+    }
+  });
+  if (!lead.name && !lead.company) return null;
+  return lead;
+}
+
+async function parseXLSX(file: File, pipelineId: string): Promise<Partial<Lead>[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        if (!data) throw new Error('Empty file');
+        const wb = XLSX.read(data, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: '' });
+        if (rows.length < 2) return resolve([]);
+        const headers = rows[0];
+        const fieldMap = new Map<number, keyof Lead>();
+        headers.forEach((h, i) => {
+          const f = mapHeaderToField(String(h));
+          if (f) fieldMap.set(i, f);
+        });
+        const leads: Partial<Lead>[] = [];
+        for (let i = 1; i < rows.length; i++) {
+          const lead = buildLead(fieldMap, rows[i], pipelineId);
+          if (lead) leads.push(lead);
+        }
+        resolve(leads);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsBinaryString(file);
+  });
+}
+
+function parseCSV(content: string, pipelineId: string): Partial<Lead>[] {
+  const lines = content.split('\n').filter((l) => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map((h) => h.trim());
+  const fieldMap = new Map<number, keyof Lead>();
+  headers.forEach((h, i) => {
+    const f = mapHeaderToField(h);
+    if (f) fieldMap.set(i, f);
+  });
+  const leads: Partial<Lead>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map((v) => v.trim());
+    const lead = buildLead(fieldMap, values, pipelineId);
+    if (lead) leads.push(lead);
+  }
+  return leads;
+}
+
+type Phase = 'idle' | 'parsing' | 'importing' | 'done';
+
 export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pipelines = [] }: ImportWizardProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [importing, setImporting] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [progress, setProgress] = useState<ImportProgress>({ processed: 0, total: 0 });
+  const [outcome, setOutcome] = useState<ImportOutcome | null>(null);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(currentPipelineId);
 
-  // ✅ FIX: Sync selectedPipelineId avec currentPipelineId quand il change
-  React.useEffect(() => {
-    setSelectedPipelineId(currentPipelineId);
-  }, [currentPipelineId]);
+  useEffect(() => setSelectedPipelineId(currentPipelineId), [currentPipelineId]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
+  const reset = () => {
+    setFile(null);
+    setPhase('idle');
+    setProgress({ processed: 0, total: 0 });
+    setOutcome(null);
   };
 
-168
-
-    /**
-       * Normalize stage value to match CRM pipeline stages
-          * Maps unknown stages to "Nouveau" (default)
-             */
-    function normalizeStage(stage: string | undefined): string {
-          if (!stage) return 'new';
-
-                const normalized = stage.toLowerCase().trim();
-
-          // Map French labels and English IDs to valid stage IDs
-          const stageMap: Record<string, string> = {
-                  'nouveau': 'new',
-                  'new': 'new',
-                  'contacté': 'contacted',
-                  'contacte': 'contacted',
-                  'contacted': 'contacted',
-                  'contact': 'contacted',
-                  'qualifié': 'qualified',
-                  'qualifie': 'qualified',
-                  'qualified': 'qualified',
-                  'rdv planifié': 'meeting',
-                  'rdv planifie': 'meeting',
-                  'meeting': 'meeting',
-                  'proposition': 'proposal',
-                  'proposal': 'proposal',
-                  'négociation': 'negotiation',
-                  'negociation': 'negotiation',
-                  'negotiation': 'negotiation',
-                  'gagné': 'won',
-                  'gagne': 'won',
-                  'won': 'won',
-                  'perdu': 'lost',
-                  'lost': 'lost'
-                };
-
-          const matched = stageMap[normalized];
-          if (matched) {
-                  return matched;
-          }
-
-                // Default to "new" for any unknown stage
-                console.log(`⚠️  Unknown stage "${stage}" mapped to "new"`);
-          return 'new';
-    }
-  
-  
-  /**
-     * Parse XLSX file using SheetJS
-   */
-  const parseXLSX = async (file: File): Promise<Partial<Lead>[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        try {
-          const data = e.target?.result;
-          if (!data) throw new Error('Failed to read file');
-
-          const workbook = XLSX.read(data, { type: 'binary' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-
-          // Convert to JSON with header row
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-            header: 1,
-            defval: ''
-          }) as string[][];
-
-          if (jsonData.length < 2) {
-            resolve([]);
-            return;
-          }
-
-          const headers = jsonData[0];
-          const leads: Partial<Lead>[] = [];
-
-          // Map headers to Lead fields
-          const fieldMap = new Map<number, keyof Lead>();
-          headers.forEach((header, index) => {
-            const field = mapHeaderToField(String(header));
-            if (field) {
-              fieldMap.set(index, field);
-            }
-          });
-
-          // Parse data rows
-          for (let i = 1; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            const lead: Partial<Lead> = { pipelineId: selectedPipelineId };
-
-            fieldMap.forEach((field, colIndex) => {
-              const value = row[colIndex];
-              if (value === undefined || value === null || value === '') return;
-
-              const stringValue = String(value).trim();
-
-              // Type conversion based on field
-              if (field === 'value' || field === 'probability') {
-                const numValue = parseFloat(stringValue);
-                if (!isNaN(numValue)) {
-                  (lead as any)[field] = numValue;
-                }
-              } else if (field === 'stage') {
-                // Normalize stage value
-                (lead as any)[field] = normalizeStage(stringValue);
-              } else {
-                (lead as any)[field] = stringValue;
-              }
-            });
-
-            // Only add if we have at least a name or company
-            if (lead.name || lead.company) {
-              leads.push(lead);
-            }
-          }
-
-          resolve(leads);
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsBinaryString(file);
-    });
+  const handleClose = () => {
+    if (phase === 'importing') return;
+    reset();
+    onClose();
   };
 
-  /**
-   * Parse CSV file
-   */
-  const parseCSV = (content: string): Partial<Lead>[] => {
-    const lines = content.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) setFile(e.target.files[0]);
+  };
 
-    const headers = lines[0].split(',').map(h => h.trim());
-    const leads: Partial<Lead>[] = [];
-
-    // Map headers to Lead fields
-    const fieldMap = new Map<number, keyof Lead>();
-    headers.forEach((header, index) => {
-      const field = mapHeaderToField(header);
-      if (field) {
-        fieldMap.set(index, field);
-      }
-    });
-
-    // Parse data rows
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      const lead: Partial<Lead> = { pipelineId: currentPipelineId, stage: 'new' };
-
-      fieldMap.forEach((field, colIndex) => {
-        const value = values[colIndex] || '';
-        if (!value) return;
-
-        // Type conversion based on field
-        if (field === 'value' || field === 'probability') {
-          const numValue = parseFloat(value);
-          if (!isNaN(numValue)) {
-            (lead as any)[field] = numValue;
-          }
-        } else if (field === 'stage') {
-          // Normalize stage value
-          (lead as any)[field] = normalizeStage(value);
-        } else {
-          (lead as any)[field] = value;
-        }
-      });
-
-      // Only add if we have at least a name or company
-      if (lead.name || lead.company) {
-        leads.push(lead);
-      }
-    }
-
-    return leads;
+  const downloadErrorReport = () => {
+    if (!outcome || outcome.errors.length === 0) return;
+    const csv = ['index,message', ...outcome.errors.map((e) => `${e.index},"${e.message.replace(/"/g, '""')}"`)].join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `import_errors_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleImport = async () => {
-    if (!file) return;
+    if (!file || !selectedPipelineId) return;
+    setPhase('parsing');
+    setOutcome(null);
 
-    setImporting(true);
     try {
+      const fname = file.name.toLowerCase();
+      const ftype = file.type;
       let leads: Partial<Lead>[] = [];
 
-      console.log('Starting import for file:', file.name, 'Size:', file.size, 'bytes', 'Type:', file.type);
-
-      const fileName = file.name.toLowerCase();
-      const fileType = file.type;
-
-      if (
-        fileName.endsWith('.xlsx') ||
-        fileName.endsWith('.xls') ||
-        fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        fileType === 'application/vnd.ms-excel'
-      ) {
-        console.log('Detected Excel file');
-        leads = await parseXLSX(file);
-      } else if (fileName.endsWith('.csv') || fileType === 'text/csv') {
-        console.log('Detected CSV file');
-        const content = await readFileAsText(file);
-        leads = parseCSV(content);
-      } else if (fileName.endsWith('.json') || fileType === 'application/json') {
-        console.log('Detected JSON file');
-        const content = await readFileAsText(file);
-        leads = JSON.parse(content);
+      if (fname.endsWith('.xlsx') || fname.endsWith('.xls') ||
+          ftype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+          ftype === 'application/vnd.ms-excel') {
+        leads = await parseXLSX(file, selectedPipelineId);
+      } else if (fname.endsWith('.csv') || ftype === 'text/csv') {
+        leads = parseCSV(await readFileAsText(file), selectedPipelineId);
+      } else if (fname.endsWith('.json') || ftype === 'application/json') {
+        leads = JSON.parse(await readFileAsText(file));
       } else {
-        throw new Error(
-          `Format de fichier non supporté: "${file.name}" (type: ${file.type}).\n\nUtilisez CSV, Excel (.xlsx/.xls) ou JSON`
-        );
-              // Add default stage to imported leads
-              leads = leads.map(lead => ({ ...lead, stage: lead.stage || 'new' }));
+        throw new Error(`Format non supporté: ${file.name}`);
       }
-
-      console.log('Parsed leads:', leads.length);
 
       if (leads.length === 0) {
-        alert(
-          'Aucun lead trouvé dans le fichier.\n\n' +
-            'Vérifiez que votre fichier contient :\n' +
-            '- Une première ligne avec des en-têtes\n' +
-            '- Au moins une colonne "Nom", "Name", "Entreprise" ou "Company"\n' +
-            '- Des données dans les lignes suivantes'
-        );
-        return;
+        throw new Error('Aucun lead détecté. Vérifie les en-têtes (Nom, Email, Téléphone…).');
       }
 
-      console.log('Importing', leads.length, 'leads...');
-      console.log('Sample lead:', leads[0]);
-      onImport(leads);
-      onClose();
+      setPhase('importing');
+      setProgress({ processed: 0, total: leads.length });
+
+      const result = await onImport(leads, (p) => setProgress(p));
+      setOutcome(result);
+      setPhase('done');
     } catch (error) {
-      console.error('Import error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      alert(
-        `Erreur lors de l'import:\n\n${errorMessage}\n\n` +
-          'Vérifiez le format de votre fichier et consultez la console (F12) pour plus de détails.'
-      );
-    } finally {
-      setImporting(false);
-      setFile(null);
+      setPhase('idle');
+      const msg = error instanceof Error ? error.message : 'Erreur inconnue';
+      setOutcome({ inserted: 0, errors: [{ index: -1, message: msg }] });
     }
   };
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Importer des Leads" size="md">
-      <div className="space-y-6">
-        <div className="text-center">
-          <Upload className="mx-auto text-gray-400 mb-4" size={48} />
-          <p className="text-sm text-gray-600">
-            Formats supportés: Excel (.xlsx, .xls), CSV, JSON
-          </p>
-        </div>
+  const pct = progress.total > 0 ? Math.round((progress.processed / progress.total) * 100) : 0;
 
-        {pipelines.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              📌 Pipeline de destination
-            </label>
-            <select
-              value={selectedPipelineId}
-              onChange={(e) => setSelectedPipelineId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {pipelines.map((pipeline) => (
-                <option key={pipeline.id} value={pipeline.id}>
-                  {pipeline.name}
-                </option>
-              ))}
-            </select>
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} title="Importer des Leads" size="md">
+      <div className="space-y-6">
+        {phase === 'idle' && (
+          <>
+            <div className="text-center">
+              <Upload className="mx-auto text-gray-400 mb-4" size={48} />
+              <p className="text-sm text-gray-600">Formats: Excel (.xlsx, .xls), CSV, JSON</p>
+            </div>
+
+            {pipelines.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Pipeline de destination</label>
+                <select
+                  value={selectedPipelineId}
+                  onChange={(e) => setSelectedPipelineId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  {pipelines.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <input
+                type="file"
+                accept=".csv,.json,.xlsx,.xls"
+                onChange={handleFileChange}
+                className="hidden"
+                id="file-upload"
+              />
+              <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                {file ? (
+                  <>
+                    <CheckCircle className="text-green-500 mb-2" size={32} />
+                    <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                    <p className="text-xs text-gray-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="text-gray-400 mb-2" size={32} />
+                    <p className="text-sm font-medium text-gray-900">Sélectionner un fichier</p>
+                  </>
+                )}
+              </label>
+            </div>
+          </>
+        )}
+
+        {(phase === 'parsing' || phase === 'importing') && (
+          <div className="text-center py-8 space-y-4">
+            <p className="text-sm font-medium text-gray-900">
+              {phase === 'parsing' ? 'Lecture du fichier…' : `Import en cours: ${progress.processed} / ${progress.total}`}
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="h-3 bg-indigo-600 transition-all duration-200"
+                style={{ width: `${phase === 'parsing' ? 5 : pct}%` }}
+              />
+            </div>
+            {phase === 'importing' && (
+              <p className="text-xs text-gray-500">
+                {pct}% — n'interrompez pas la fenêtre.
+              </p>
+            )}
           </div>
         )}
 
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <input
-            type="file"
-            accept=".csv,.json,.xlsx,.xls,text/csv,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-            onChange={handleFileChange}
-            className="hidden"
-            id="file-upload"
-          />
-          <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
-            {file ? (
-              <>
-                <CheckCircle className="text-green-500 mb-2" size={32} />
-                <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                <p className="text-xs text-gray-500 mt-1">{(file.size / 1024).toFixed(2)} KB</p>
-              </>
-            ) : (
-              <>
-                <FileText className="text-gray-400 mb-2" size={32} />
-                <p className="text-sm font-medium text-gray-900">Cliquez pour sélectionner un fichier</p>
-                <p className="text-xs text-gray-500 mt-1">ou glissez-déposez votre fichier ici</p>
-              </>
+        {phase === 'done' && outcome && (
+          <div className="space-y-3">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-emerald-800">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-medium">{outcome.inserted} leads importés</span>
+              </div>
+            </div>
+            {outcome.errors.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-amber-800 mb-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="font-medium">{outcome.errors.length} erreurs</span>
+                </div>
+                <button onClick={downloadErrorReport} className="text-sm text-amber-700 underline">
+                  Télécharger le rapport CSV
+                </button>
+              </div>
             )}
-          </label>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-          <p className="font-medium mb-2">📋 Colonnes reconnues automatiquement:</p>
-          <ul className="list-disc list-inside space-y-1 text-xs">
-            <li>Nom/Name, Contact, Email, Téléphone/Phone</li>
-            <li>Entreprise/Company, SIRET, Adresse/Address</li>
-            <li>Ville/City, Code postal/Zip, Pays/Country</li>
-            <li>Valeur/Value, Probabilité, Notes, Stage</li>
-          </ul>
-          <p className="mt-2 text-xs text-blue-600">
-            ✨ Fonctionne avec snake_case, camelCase, espaces et accents !
-          </p>
-        </div>
+          </div>
+        )}
       </div>
 
       <ModalFooter>
-        <Button variant="ghost" onClick={onClose} disabled={importing}>
-          Annuler
-        </Button>
-        <Button variant="primary" onClick={handleImport} disabled={!file || importing} loading={importing}>
-          Importer
-        </Button>
+        {phase === 'idle' && (
+          <>
+            <Button variant="ghost" onClick={handleClose}>Annuler</Button>
+            <Button variant="primary" onClick={handleImport} disabled={!file || !selectedPipelineId}>
+              Importer
+            </Button>
+          </>
+        )}
+        {(phase === 'parsing' || phase === 'importing') && (
+          <Button variant="ghost" disabled>Veuillez patienter…</Button>
+        )}
+        {phase === 'done' && (
+          <Button variant="primary" onClick={handleClose}>Fermer</Button>
+        )}
       </ModalFooter>
     </Modal>
   );
