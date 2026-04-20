@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardBody, Button } from '../ui';
 import { Settings as SettingsIcon, Info, Trash2, Edit, Plus } from 'lucide-react';
+import { MembersPanel } from '../members/MembersPanel';
 
 export interface SettingsViewProps {
   pipelines: Array<{ id: string; name: string }>;
@@ -124,6 +125,17 @@ export function SettingsView({
           </div>
         </CardBody>
       </Card>
+
+      {currentPipelineId && (
+        <Card variant="elevated">
+          <CardBody>
+            <MembersPanel
+              pipelineId={currentPipelineId}
+              pipelineName={pipelines.find(p => p.id === currentPipelineId)?.name ?? 'Pipeline'}
+            />
+          </CardBody>
+        </Card>
+      )}
 
       <Card variant="elevated">
         <CardHeader>

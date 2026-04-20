@@ -8,6 +8,8 @@ import { Modal, ModalFooter, Button, Badge } from '../ui';
 import { Edit, Trash2, Mail, Phone, Building, MapPin } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatDate, formatCurrency } from '../../lib/utils';
+import { ActivityTimeline } from '../activities/ActivityTimeline';
+import { TagPicker } from '../tags/TagPicker';
 
 export interface LeadDetailsModalProps {
   isOpen: boolean;
@@ -139,6 +141,17 @@ END:VCARD`;
             </ul>
           </div>
         )}
+
+        {/* Tags */}
+        <div className="pt-4 border-t">
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Tags</h4>
+          <TagPicker leadId={lead.id} />
+        </div>
+
+        {/* Activity Timeline */}
+        <div className="pt-4 border-t">
+          <ActivityTimeline leadId={lead.id} />
+        </div>
 
         {/* Metadata */}
         <div className="text-xs text-gray-500 pt-4 border-t">

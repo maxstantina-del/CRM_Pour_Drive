@@ -20,6 +20,9 @@ import { usePipelineStages } from './hooks/usePipelineStages';
 import { useBackup } from './hooks/useBackup';
 import type { Lead, ViewType } from './lib/types';
 import { generateId } from './lib/utils';
+import { createActivity } from './services/activitiesService';
+import { useAuth } from './contexts/AuthContext';
+import { SearchBar } from './components/layout/SearchBar';
 
 function App() {
   // Charger la dernière vue depuis localStorage ou utiliser 'pipeline' par défaut
@@ -64,6 +67,7 @@ function App() {
 
   const { showToast } = useToast();
   const { shouldShowTour, completeTour } = useOnboarding();
+  const { user } = useAuth();
 
   const {
     pipelines,
@@ -86,7 +90,19 @@ function App() {
   const { stages } = usePipelineStages();
 
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
-  const leads = effectivePipelineId ? getPipelineLeads(effectivePipelineId) : [];
+  const allLeads = effectivePipelineId ? getPipelineLeads(effectivePipelineId) : [];
+  const [searchQuery, setSearchQuery] = useState('');
+  const leads = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return allLeads;
+    return allLeads.filter(l => {
+      const hay = [l.name, l.company, l.contactName, l.email, l.phone, l.city]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [allLeads, searchQuery]);
 
   // Create leads manager with optimized single-lead operations
   const leadsManager = useMemo(() => {
@@ -192,6 +208,12 @@ function App() {
     // Mise à jour optimiste + Supabase avec updateSingleLead (1 seul UPDATE!)
     try {
       await updateSingleLead(effectivePipelineId, leadId, { stage: newStage });
+      if (user && previousStage && previousStage !== newStage) {
+        createActivity(leadId, user.id, 'stage_change', {
+          from: previousStage,
+          to: newStage,
+        }).catch(() => void 0);
+      }
     } catch (error) {
       console.error('Erreur mise à jour stage:', error);
       // Rollback en cas d'erreur
@@ -388,6 +410,15 @@ function App() {
           onBackup={handleBackup}
           onRestore={handleRestore}
         />
+
+        {pipelines.length > 0 && (
+          <div className="px-6 py-2 border-b border-gray-200 bg-white flex items-center gap-3">
+            <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher nom, company, ville, email…" />
+            {searchQuery && (
+              <span className="text-xs text-gray-500">{leads.length} / {allLeads.length} leads</span>
+            )}
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto bg-gray-50">
           {currentView === 'dashboard' && <DashboardView leads={leads} />}
