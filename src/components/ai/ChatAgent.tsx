@@ -39,8 +39,8 @@ export function ChatAgent({ leads }: ChatAgentProps) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSend = () => {
-    const text = input.trim();
+  const send = (raw: string) => {
+    const text = raw.trim();
     if (!text) return;
     const now = Date.now();
     const userMsg: Message = { id: String(now), role: 'user', content: text, timestamp: new Date() };
@@ -53,6 +53,8 @@ export function ChatAgent({ leads }: ChatAgentProps) {
     setMessages(prev => [...prev, userMsg, reply]);
     setInput('');
   };
+
+  const handleSend = () => send(input);
 
   const clearChat = () => {
     setMessages([{ id: '1', role: 'assistant', content: GREETING, timestamp: new Date() }]);
@@ -120,10 +122,7 @@ export function ChatAgent({ leads }: ChatAgentProps) {
               {['stats', 'top 5', 'relancer 7', 'aide'].map(cmd => (
                 <button
                   key={cmd}
-                  onClick={() => {
-                    setInput(cmd);
-                    setTimeout(handleSend, 0);
-                  }}
+                  onClick={() => send(cmd)}
                   className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
                 >
                   {cmd}
@@ -134,7 +133,12 @@ export function ChatAgent({ leads }: ChatAgentProps) {
               <Input
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleSend()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    send(input);
+                  }
+                }}
                 placeholder="stats, top 5, cherche Annecy…"
                 fullWidth
               />
