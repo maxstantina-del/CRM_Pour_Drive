@@ -8,6 +8,7 @@ import type { Lead, LeadStage } from '../../lib/types';
 import { Input, Textarea, Select, Button } from '../ui';
 import { DEFAULT_STAGES } from '../../hooks/usePipelineStages';
 import { useTags } from '../../hooks/useTags';
+import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
 import { Check, Plus, X, Bell } from 'lucide-react';
 
 export interface LeadFormExtras {
@@ -25,6 +26,7 @@ const TAG_COLORS = ['#6366f1', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5
 
 export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
   const { tags, getTagsForLead, createTag } = useTags();
+  const { labels: recentLabels, addLabel, defaultLabel } = useRecentActionLabels();
 
   const [formData, setFormData] = useState<Partial<Lead>>({
     name: '',
@@ -54,7 +56,7 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
   const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0]);
   const [creatingTag, setCreatingTag] = useState(false);
 
-  const [nextActionText, setNextActionText] = useState('Relancer');
+  const [nextActionText, setNextActionText] = useState(defaultLabel);
   const [nextActionDate, setNextActionDate] = useState('');
 
   useEffect(() => {
@@ -89,12 +91,12 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const label = nextActionText.trim() || 'Relancer';
     const extras: LeadFormExtras = {
       tagIds: selectedTagIds,
-      ...(nextActionDate
-        ? { nextAction: { text: nextActionText.trim() || 'Relancer', dueDate: nextActionDate } }
-        : {}),
+      ...(nextActionDate ? { nextAction: { text: label, dueDate: nextActionDate } } : {}),
     };
+    if (nextActionDate) addLabel(label);
     onSubmit(formData, extras);
   };
 
@@ -289,8 +291,12 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
             value={nextActionText}
             onChange={(e) => setNextActionText(e.target.value)}
             placeholder="Libellé (ex: Rappeler le gérant)"
+            list="leadform-recent-action-labels"
             className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
+          <datalist id="leadform-recent-action-labels">
+            {recentLabels.map((l) => <option key={l} value={l} />)}
+          </datalist>
           <input
             type="date"
             value={nextActionDate}

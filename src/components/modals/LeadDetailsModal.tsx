@@ -10,6 +10,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { ActivityTimeline } from '../activities/ActivityTimeline';
 import { TagPicker } from '../tags/TagPicker';
+import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
 
 export interface LeadDetailsModalProps {
   isOpen: boolean;
@@ -32,7 +33,8 @@ export function LeadDetailsModal({
   onToggleNextAction,
   onDeleteNextAction,
 }: LeadDetailsModalProps) {
-  const [newActionText, setNewActionText] = useState('Relancer');
+  const { labels: recentLabels, addLabel, defaultLabel } = useRecentActionLabels();
+  const [newActionText, setNewActionText] = useState(defaultLabel);
   const [newActionDate, setNewActionDate] = useState('');
   const [adding, setAdding] = useState(false);
 
@@ -43,8 +45,10 @@ export function LeadDetailsModal({
     if (!newActionDate || !onAddNextAction || adding) return;
     setAdding(true);
     try {
-      await onAddNextAction(lead.id, newActionText.trim() || 'Relancer', newActionDate);
-      setNewActionText('Relancer');
+      const label = newActionText.trim() || 'Relancer';
+      await onAddNextAction(lead.id, label, newActionDate);
+      addLabel(label);
+      setNewActionText(label); // keep it selected for quick chaining
       setNewActionDate('');
     } finally {
       setAdding(false);
@@ -204,8 +208,12 @@ END:VCARD`;
                 value={newActionText}
                 onChange={(e) => setNewActionText(e.target.value)}
                 placeholder="Libellé (ex: Rappeler le gérant)"
+                list="recent-action-labels"
                 className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
+              <datalist id="recent-action-labels">
+                {recentLabels.map((l) => <option key={l} value={l} />)}
+              </datalist>
               <input
                 type="date"
                 value={newActionDate}
