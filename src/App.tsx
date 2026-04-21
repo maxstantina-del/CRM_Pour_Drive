@@ -12,6 +12,7 @@ import { ConfirmModal } from './components/modals/ConfirmModal';
 import { LeadDetailsModal } from './components/modals/LeadDetailsModal';
 import { OnboardingTour, useOnboarding } from './components/onboarding/OnboardingTour';
 import { ChatAgent } from './components/ai/ChatAgent';
+import { BulkActionBar } from './components/bulk';
 import { usePipelines } from './hooks/usePipelines';
 import { useLeads } from './hooks/useLeads';
 import { Layers, Plus } from 'lucide-react';
@@ -64,6 +65,12 @@ function App() {
     message: '',
     onConfirm: null
   });
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+
+  // Clear selection when leaving the table view
+  useEffect(() => {
+    if (currentView !== 'table') setSelectedLeadIds(new Set());
+  }, [currentView]);
 
   const { showToast } = useToast();
   const { shouldShowTour, completeTour } = useOnboarding();
@@ -84,6 +91,8 @@ function App() {
     updateLead: updateSingleLead,
     deleteLead: deleteSingleLead,
     addBatchLeads,
+    bulkDelete,
+    bulkUpdate,
     deletePipelineLeads,
   } = useLeads();
 
@@ -245,6 +254,38 @@ function App() {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
       }
     });
+  };
+
+  const handleBulkDelete = () => {
+    const ids = Array.from(selectedLeadIds);
+    if (ids.length === 0) return;
+    setConfirmModal({
+      isOpen: true,
+      title: `Supprimer ${ids.length} lead${ids.length > 1 ? 's' : ''}`,
+      message: `Êtes-vous sûr ? Cette action est irréversible.`,
+      onConfirm: async () => {
+        try {
+          await bulkDelete(effectivePipelineId, ids);
+          showToast(`${ids.length} lead${ids.length > 1 ? 's supprimés' : ' supprimé'}`, 'success');
+          setSelectedLeadIds(new Set());
+        } catch (err) {
+          showToast('Erreur lors de la suppression', 'error');
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleBulkChangeStage = async (stageId: string) => {
+    const ids = Array.from(selectedLeadIds);
+    if (ids.length === 0 || !stageId) return;
+    try {
+      await bulkUpdate(effectivePipelineId, ids, { stage: stageId as Lead['stage'] });
+      showToast(`${ids.length} lead${ids.length > 1 ? 's déplacés' : ' déplacé'}`, 'success');
+      setSelectedLeadIds(new Set());
+    } catch (err) {
+      showToast('Erreur lors du changement d\'étape', 'error');
+    }
   };
 
   const handleSubmitLead = async (leadData: Partial<Lead>) => {
@@ -464,6 +505,8 @@ function App() {
               onDeleteLead={handleDeleteLead}
               onUpdateStage={handleUpdateStage}
               onViewLead={(lead) => setViewingLead(lead)}
+              selectedIds={selectedLeadIds}
+              onSelectionChange={setSelectedLeadIds}
             />
           )}
 
@@ -487,6 +530,16 @@ function App() {
           )}
         </main>
       </div>
+
+      {currentView === 'table' && (
+        <BulkActionBar
+          count={selectedLeadIds.size}
+          stages={stages}
+          onChangeStage={handleBulkChangeStage}
+          onDelete={handleBulkDelete}
+          onClear={() => setSelectedLeadIds(new Set())}
+        />
+      )}
 
       {/* Modals */}
       {isFormOpen && (

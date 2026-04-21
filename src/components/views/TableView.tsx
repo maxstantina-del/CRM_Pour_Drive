@@ -1,8 +1,8 @@
 /**
- * Table view with sortable columns
+ * Table view with sortable columns + multi-select for bulk actions.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import type { Lead } from '../../lib/types';
 import { Button, Badge } from '../ui';
 import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
@@ -14,13 +14,35 @@ export interface TableViewProps {
   onDeleteLead: (leadId: string) => void;
   onUpdateStage: (leadId: string, newStage: Lead['stage']) => void;
   onViewLead?: (lead: Lead) => void;
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
 }
 
-export function TableView({ leads, onEditLead, onDeleteLead, onViewLead }: TableViewProps) {
+export function TableView({
+  leads,
+  onEditLead,
+  onDeleteLead,
+  onViewLead,
+  selectedIds,
+  onSelectionChange,
+}: TableViewProps) {
   const [sortField, setSortField] = useState<keyof Lead>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
-  const sortedLeads = sortLeads(leads, sortField, sortDirection);
+  const sortedLeads = useMemo(
+    () => sortLeads(leads, sortField, sortDirection),
+    [leads, sortField, sortDirection]
+  );
+
+  const allSelected = sortedLeads.length > 0 && sortedLeads.every((l) => selectedIds.has(l.id));
+  const someSelected = sortedLeads.some((l) => selectedIds.has(l.id));
+
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [someSelected, allSelected]);
 
   const handleSort = (field: keyof Lead) => {
     if (field === sortField) {
@@ -31,8 +53,27 @@ export function TableView({ leads, onEditLead, onDeleteLead, onViewLead }: Table
     }
   };
 
+  const toggleRow = (leadId: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(leadId)) next.delete(leadId);
+    else next.add(leadId);
+    onSelectionChange(next);
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      const next = new Set(selectedIds);
+      sortedLeads.forEach((l) => next.delete(l.id));
+      onSelectionChange(next);
+    } else {
+      const next = new Set(selectedIds);
+      sortedLeads.forEach((l) => next.add(l.id));
+      onSelectionChange(next);
+    }
+  };
+
   return (
-    <div className="p-6">
+    <div className="p-6 pb-32">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Vue Tableau</h1>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -40,6 +81,16 @@ export function TableView({ leads, onEditLead, onDeleteLead, onViewLead }: Table
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
+                <th className="px-4 py-3 w-10">
+                  <input
+                    ref={headerCheckboxRef}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    aria-label="Tout sélectionner"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('name')}
@@ -84,44 +135,61 @@ export function TableView({ leads, onEditLead, onDeleteLead, onViewLead }: Table
               </tr>
             </thead>
             <tbody className="divide-y">
-              {sortedLeads.map(lead => (
-                <tr key={lead.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => onViewLead?.(lead)}>
-                  <td className="px-4 py-3 font-medium text-gray-900">{lead.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {lead.contactName || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {lead.company || '-'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="blue" size="sm">
-                      {lead.stage}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                    {lead.value ? formatCurrency(lead.value) : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {formatDate(lead.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={<Edit size={14} />}
-                        onClick={(e) => { e.stopPropagation(); onEditLead(lead); }}
+              {sortedLeads.map(lead => {
+                const checked = selectedIds.has(lead.id);
+                return (
+                  <tr
+                    key={lead.id}
+                    className={`${checked ? 'bg-blue-50' : 'hover:bg-gray-50'} cursor-pointer`}
+                    onClick={() => onViewLead?.(lead)}
+                  >
+                    <td className="px-4 py-3" onClick={(e) => { e.stopPropagation(); toggleRow(lead.id); }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleRow(lead.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        aria-label={`Sélectionner ${lead.name}`}
                       />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={<Trash2 size={14} />}
-                        onClick={(e) => { e.stopPropagation(); onDeleteLead(lead.id); }}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{lead.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {lead.contactName || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {lead.company || '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="blue" size="sm">
+                        {lead.stage}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                      {lead.value ? formatCurrency(lead.value) : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {formatDate(lead.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={<Edit size={14} />}
+                          onClick={(e) => { e.stopPropagation(); onEditLead(lead); }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={<Trash2 size={14} />}
+                          onClick={(e) => { e.stopPropagation(); onDeleteLead(lead.id); }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

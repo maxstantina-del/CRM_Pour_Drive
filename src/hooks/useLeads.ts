@@ -159,6 +159,57 @@ export function useLeads() {
     [isSupabase, user]
   );
 
+  const bulkDelete = useCallback(
+    async (pipelineId: string, ids: string[]) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      const previous = leadsByPipeline[pipelineId] || [];
+      // optimistic remove
+      setLeadsByPipeline((prev) => ({
+        ...prev,
+        [pipelineId]: (prev[pipelineId] || []).filter((l) => !idSet.has(l.id)),
+      }));
+      if (!isSupabase) return;
+      try {
+        await leadsService.bulkDeleteLeads(ids);
+      } catch (error) {
+        // rollback full list
+        setLeadsByPipeline((prev) => ({ ...prev, [pipelineId]: previous }));
+        throw error;
+      }
+    },
+    [isSupabase, leadsByPipeline]
+  );
+
+  const bulkUpdate = useCallback(
+    async (pipelineId: string, ids: string[], updates: Partial<Lead>) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      const previous = leadsByPipeline[pipelineId] || [];
+      const now = new Date().toISOString();
+      // optimistic
+      setLeadsByPipeline((prev) => ({
+        ...prev,
+        [pipelineId]: (prev[pipelineId] || []).map((l) =>
+          idSet.has(l.id) ? { ...l, ...updates, updatedAt: now } : l
+        ),
+      }));
+      if (!isSupabase) return;
+      try {
+        const fresh = await leadsService.bulkUpdateLeads(ids, updates);
+        const freshById = new Map(fresh.map((l) => [l.id, l]));
+        setLeadsByPipeline((prev) => ({
+          ...prev,
+          [pipelineId]: (prev[pipelineId] || []).map((l) => freshById.get(l.id) ?? l),
+        }));
+      } catch (error) {
+        setLeadsByPipeline((prev) => ({ ...prev, [pipelineId]: previous }));
+        throw error;
+      }
+    },
+    [isSupabase, leadsByPipeline]
+  );
+
   const deletePipelineLeads = useCallback(
     async (pipelineId: string) => {
       setLeadsByPipeline((prev) => {
@@ -183,6 +234,8 @@ export function useLeads() {
     updateLead,
     deleteLead,
     addBatchLeads,
+    bulkDelete,
+    bulkUpdate,
     deletePipelineLeads,
     reloadLeads: loadLeads,
   };

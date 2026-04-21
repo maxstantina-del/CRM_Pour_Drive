@@ -166,6 +166,43 @@ export async function deletePipelineLeads(pipelineId: string): Promise<void> {
   if (error) throw error;
 }
 
+const BULK_CHUNK = 500;
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+export async function bulkDeleteLeads(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const supabase = getSupabaseClient();
+  for (const batch of chunk(ids, BULK_CHUNK)) {
+    const { error } = await supabase.from('leads').delete().in('id', batch);
+    if (error) throw error;
+  }
+}
+
+export async function bulkUpdateLeads(
+  ids: string[],
+  updates: Partial<Lead>
+): Promise<Lead[]> {
+  if (ids.length === 0) return [];
+  const supabase = getSupabaseClient();
+  const row = partialLeadToRow(updates);
+  const rows: DbLeadRow[] = [];
+  for (const batch of chunk(ids, BULK_CHUNK)) {
+    const { data, error } = await supabase
+      .from('leads')
+      .update(row)
+      .in('id', batch)
+      .select();
+    if (error) throw error;
+    rows.push(...((data ?? []) as DbLeadRow[]));
+  }
+  return rows.map(rowToLead);
+}
+
 /**
  * Bulk insert with chunks, retry on transient failures, progress callback.
  * Returns rows that succeeded (authoritative) plus a per-row error list.
