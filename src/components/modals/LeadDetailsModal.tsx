@@ -50,22 +50,22 @@ END:VCARD`;
           <div className="space-y-2">
             {lead.contactName && (
               <div className="flex items-center gap-2 text-sm">
-                <Building size={16} className="text-gray-400" />
-                <span>{lead.contactName}</span>
+                <Building size={16} className="text-gray-500" />
+                <span className="text-gray-900 font-medium">{lead.contactName}</span>
               </div>
             )}
             {lead.email && (
               <div className="flex items-center gap-2 text-sm">
-                <Mail size={16} className="text-gray-400" />
-                <a href={`mailto:${lead.email}`} className="text-blue-600 hover:underline">
+                <Mail size={16} className="text-gray-500" />
+                <a href={`mailto:${lead.email}`} className="text-blue-700 hover:text-blue-800 hover:underline font-medium">
                   {lead.email}
                 </a>
               </div>
             )}
             {lead.phone && (
               <div className="flex items-center gap-2 text-sm">
-                <Phone size={16} className="text-gray-400" />
-                <a href={`tel:${lead.phone}`} className="text-blue-600 hover:underline">
+                <Phone size={16} className="text-gray-500" />
+                <a href={`tel:${lead.phone}`} className="text-blue-700 hover:text-blue-800 hover:underline font-medium">
                   {lead.phone}
                 </a>
               </div>
@@ -78,15 +78,15 @@ END:VCARD`;
           <div className="space-y-2">
             {lead.company && (
               <div className="flex items-center gap-2 text-sm">
-                <Building size={16} className="text-gray-400" />
-                <span>{lead.company}</span>
-                {lead.siret && <span className="text-gray-500">• SIRET: {lead.siret}</span>}
+                <Building size={16} className="text-gray-500" />
+                <span className="text-gray-900 font-medium">{lead.company}</span>
+                {lead.siret && <span className="text-gray-600">• SIRET: {lead.siret}</span>}
               </div>
             )}
             {lead.address && (
               <div className="flex items-start gap-2 text-sm">
-                <MapPin size={16} className="text-gray-400 mt-0.5" />
-                <span>
+                <MapPin size={16} className="text-gray-500 mt-0.5" />
+                <span className="text-gray-900">
                   {lead.address}
                   {lead.city && `, ${lead.city}`}
                   {lead.zipCode && ` ${lead.zipCode}`}
@@ -102,14 +102,14 @@ END:VCARD`;
           <div className="flex gap-4 text-sm">
             {lead.value && (
               <div>
-                <span className="text-gray-500">Valeur: </span>
-                <span className="font-semibold">{formatCurrency(lead.value)}</span>
+                <span className="text-gray-600">Valeur : </span>
+                <span className="font-bold text-gray-900">{formatCurrency(lead.value)}</span>
               </div>
             )}
             {lead.probability !== undefined && (
               <div>
-                <span className="text-gray-500">Probabilité: </span>
-                <span className="font-semibold">{lead.probability}%</span>
+                <span className="text-gray-600">Probabilité : </span>
+                <span className="font-bold text-gray-900">{lead.probability}%</span>
               </div>
             )}
           </div>
@@ -118,23 +118,23 @@ END:VCARD`;
         {/* Notes */}
         {lead.notes && (
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Notes</h4>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{lead.notes}</p>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Notes</h4>
+            <p className="text-sm text-gray-800 whitespace-pre-wrap">{lead.notes}</p>
           </div>
         )}
 
         {/* Next Actions */}
         {lead.nextActions && lead.nextActions.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Actions à venir</h4>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Actions à venir</h4>
             <ul className="space-y-1">
               {lead.nextActions.map(action => (
                 <li key={action.id} className="text-sm">
-                  <span className={action.completed ? 'line-through text-gray-500' : 'text-gray-700'}>
+                  <span className={action.completed ? 'line-through text-gray-500' : 'text-gray-900'}>
                     • {action.text}
                   </span>
                   {action.dueDate && (
-                    <span className="text-gray-500 ml-2">({formatDate(action.dueDate)})</span>
+                    <span className="text-gray-600 ml-2">({formatDate(action.dueDate)})</span>
                   )}
                 </li>
               ))}
