@@ -80,16 +80,19 @@ export function Modal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-            onClick={handleBackdropClick}
           />
 
-          {/* Modal Container */}
-          <div className="flex min-h-screen items-center justify-center p-4 relative z-50">
+          {/* Modal Container — captures clicks outside the inner content */}
+          <div
+            className="flex min-h-screen items-center justify-center p-4 relative z-50"
+            onClick={handleBackdropClick}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
               className={cn(
                 'relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full',
                 sizeStyles[size]
