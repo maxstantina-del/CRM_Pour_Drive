@@ -35,31 +35,33 @@ export function parseIntent(raw: string): Intent {
   if (!q || q === 'help' || q === 'aide' || q === '?' || q === '/help')
     return { kind: 'help', params: {} };
 
-  if (q.includes('stat') || q.includes('bilan') || q.includes('resume') || q.includes('overview'))
-    return { kind: 'stats', params: {} };
+  // Commandes strictes : seulement si au début ET message court (≤ 5 mots).
+  // Les phrases longues ou naturelles passent à l'IA.
+  const wordCount = q.split(/\s+/).length;
+  const isCommand = wordCount <= 5;
 
-  const topMatch = q.match(/top\s*(\d+)?/);
-  if (topMatch || q.includes('meilleur') || q.includes('plus gros'))
-    return { kind: 'top', params: { n: Number(topMatch?.[1] ?? 5) } };
+  if (isCommand) {
+    if (q === 'stats' || q === 'bilan' || q === 'resume' || q === 'overview')
+      return { kind: 'stats', params: {} };
 
-  const recallMatch = q.match(/relanc\w*\s*(\d+)?/);
-  if (recallMatch || q.includes('a relancer') || q.includes('sans news') || q.includes('dormant'))
-    return { kind: 'recall', params: { days: Number(recallMatch?.[1] ?? 7) } };
+    const topMatch = q.match(/^top\s*(\d+)?$/);
+    if (topMatch) return { kind: 'top', params: { n: Number(topMatch[1] ?? 5) } };
 
-  const cityMatch = q.match(/ville\s+([a-z0-9\- ]+)/);
-  if (cityMatch) return { kind: 'byCity', params: { city: cityMatch[1].trim() } };
+    const recallMatch = q.match(/^(?:relanc\w*|a relancer|sans news|dormant)\s*(\d+)?$/);
+    if (recallMatch) return { kind: 'recall', params: { days: Number(recallMatch[1] ?? 7) } };
 
-  const stageMatch = q.match(/(?:stage|etape|statut)\s+([a-z_]+)/);
-  if (stageMatch) return { kind: 'byStage', params: { stage: stageMatch[1].trim() } };
+    const cityMatch = q.match(/^ville\s+([a-z0-9\- ]+)$/);
+    if (cityMatch) return { kind: 'byCity', params: { city: cityMatch[1].trim() } };
 
-  const emailMatch = q.match(/email\s+([a-z_]+)?/);
-  if (emailMatch) return { kind: 'email', params: { stage: emailMatch[1] ?? 'new' } };
+    const stageMatch = q.match(/^(?:stage|etape|statut)\s+([a-z_]+)$/);
+    if (stageMatch) return { kind: 'byStage', params: { stage: stageMatch[1].trim() } };
 
-  const searchMatch = q.match(/(?:cherche|chercher|trouve|search)\s+(.+)/);
-  if (searchMatch) return { kind: 'search', params: { query: searchMatch[1].trim() } };
+    const emailMatch = q.match(/^email\s+([a-z_]+)?$/);
+    if (emailMatch) return { kind: 'email', params: { stage: emailMatch[1] ?? 'new' } };
 
-  if (q.includes('combien') && q.includes('lead'))
-    return { kind: 'stats', params: {} };
+    const searchMatch = q.match(/^(?:cherche|chercher|trouve|search)\s+(.+)$/);
+    if (searchMatch) return { kind: 'search', params: { query: searchMatch[1].trim() } };
+  }
 
   return { kind: 'unknown', params: { raw: q } };
 }

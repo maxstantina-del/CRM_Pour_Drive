@@ -12,7 +12,9 @@ const leads: Lead[] = [
 describe('chatCommands', () => {
   it('parses "stats" intent', () => {
     expect(parseIntent('stats').kind).toBe('stats');
-    expect(parseIntent('montre le bilan').kind).toBe('stats');
+    expect(parseIntent('bilan').kind).toBe('stats');
+    // Phrases naturelles longues → route vers IA (unknown)
+    expect(parseIntent('montre le bilan de mon pipeline svp').kind).toBe('unknown');
   });
 
   it('stats returns counts', () => {
