@@ -131,7 +131,7 @@ function App() {
         const now = new Date().toISOString();
         const newLead: Lead = {
           id: generateId(),
-          name: leadData.name || 'Nouveau Lead',
+          name: leadData.name || leadData.company || 'Nouveau Lead',
           contactName: leadData.contactName,
           email: leadData.email,
           phone: leadData.phone,
@@ -341,7 +341,7 @@ function App() {
     const now = new Date().toISOString();
     const newLeads: Lead[] = importedLeads.map((d) => ({
       id: generateId(),
-      name: d.name || 'Nouveau Lead',
+      name: d.name || d.company || 'Nouveau Lead',
       contactName: d.contactName,
       email: d.email,
       phone: d.phone,
