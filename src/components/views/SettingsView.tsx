@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardBody, Button } from '../ui';
 import { Settings as SettingsIcon, Info, Trash2, Edit, Plus, Layers } from 'lucide-react';
 import { MembersPanel } from '../members/MembersPanel';
-import { StagesManager } from '../settings';
+import { StagesManager, ThemeToggle } from '../settings';
 import type { StageConfig, LeadStage } from '../../lib/types';
 
 export interface SettingsViewProps {
@@ -61,7 +61,13 @@ export function SettingsView({
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Paramètres</h1>
+
+      <Card variant="elevated">
+        <CardBody>
+          <ThemeToggle />
+        </CardBody>
+      </Card>
 
       <Card variant="elevated">
         <CardHeader>

@@ -20,9 +20,9 @@ export function Card({
   ...props
 }: CardProps) {
   const variantStyles = {
-    default: 'bg-white border border-gray-200',
-    outlined: 'bg-white border-2 border-gray-300',
-    elevated: 'bg-white shadow-lg border border-gray-100'
+    default: 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800',
+    outlined: 'bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700',
+    elevated: 'bg-white dark:bg-gray-900 shadow-lg border border-gray-100 dark:border-gray-800'
   };
 
   const paddingStyles = {
@@ -53,7 +53,7 @@ export function Card({
  */
 export function CardHeader({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('pb-3 border-b border-gray-200', className)} {...props}>
+    <div className={cn('pb-3 border-b border-gray-200 dark:border-gray-800', className)} {...props}>
       {children}
     </div>
   );
@@ -64,7 +64,7 @@ export function CardHeader({ children, className, ...props }: HTMLAttributes<HTM
  */
 export function CardTitle({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={cn('text-lg font-semibold text-gray-900', className)} {...props}>
+    <h3 className={cn('text-lg font-semibold text-gray-900 dark:text-gray-100', className)} {...props}>
       {children}
     </h3>
   );
@@ -86,7 +86,7 @@ export function CardBody({ children, className, ...props }: HTMLAttributes<HTMLD
  */
 export function CardFooter({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('pt-3 border-t border-gray-200', className)} {...props}>
+    <div className={cn('pt-3 border-t border-gray-200 dark:border-gray-800', className)} {...props}>
       {children}
     </div>
   );

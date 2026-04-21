@@ -91,18 +91,18 @@ export function Modal({
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
               className={cn(
-                'relative bg-white rounded-lg shadow-xl w-full',
+                'relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full',
                 sizeStyles[size]
               )}
             >
               {/* Header */}
               {(title || showCloseButton) && (
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                  {title && <h2 className="text-xl font-semibold text-gray-900">{title}</h2>}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+                  {title && <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>}
                   {showCloseButton && (
                     <button
                       onClick={onClose}
-                      className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                       aria-label="Close modal"
                     >
                       <X size={20} />
@@ -126,7 +126,7 @@ export function Modal({
  */
 export function ModalFooter({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50', className)}>
+    <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900', className)}>
       {children}
     </div>
   );

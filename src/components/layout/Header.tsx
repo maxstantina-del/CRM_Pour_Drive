@@ -29,11 +29,11 @@ export function Header({
   onRestore
 }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Gestion des Leads</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Gestion des Leads</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             Gérez vos prospects et suivez votre pipeline de vente
           </p>
         </div>
@@ -49,7 +49,7 @@ export function Header({
           </Button>
 
           {/* Import/Export Actions */}
-          <div className="h-8 w-px bg-gray-300 mx-1" />
+          <div className="h-8 w-px bg-gray-300 dark:bg-gray-700 mx-1" />
 
           <Button
             variant="ghost"
@@ -72,7 +72,7 @@ export function Header({
           </Button>
 
           {/* Backup Actions */}
-          <div className="h-8 w-px bg-gray-300 mx-1" />
+          <div className="h-8 w-px bg-gray-300 dark:bg-gray-700 mx-1" />
 
           <Button
             variant="ghost"
@@ -94,7 +94,7 @@ export function Header({
             Restaurer
           </Button>
 
-          <div className="h-8 w-px bg-gray-300 mx-1" />
+          <div className="h-8 w-px bg-gray-300 dark:bg-gray-700 mx-1" />
           <UserMenu />
         </div>
       </div>

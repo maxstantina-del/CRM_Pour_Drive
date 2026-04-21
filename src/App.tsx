@@ -464,7 +464,7 @@ function App() {
         />
 
         {pipelines.length > 0 && (
-          <div className="px-6 py-2 border-b border-gray-200 bg-white space-y-2">
+          <div className="px-6 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-2">
             <div className="flex items-center gap-3">
               <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher nom, company, ville, email…" />
               <FilterButton
@@ -492,7 +492,7 @@ function App() {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
           {currentView === 'dashboard' && <DashboardView leads={leads} stages={stages} />}
 
           {currentView === 'pipeline' && (
