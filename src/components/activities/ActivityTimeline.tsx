@@ -32,14 +32,13 @@ const COLOR: Record<ActivityType, string> = {
 
 function formatWhen(iso: string): string {
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffH = Math.floor(diffMs / 3_600_000);
-  if (diffH < 1) return 'il y a qq min';
-  if (diffH < 24) return `il y a ${diffH}h`;
-  const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `il y a ${diffD}j`;
-  return d.toLocaleDateString('fr-FR');
+  return d.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function renderSummary(a: { type: ActivityType; payload: Record<string, unknown> }): string {
@@ -71,7 +70,7 @@ export function ActivityTimeline({ leadId }: { leadId: string }) {
 
   return (
     <div className="space-y-3">
-      <h4 className="text-sm font-medium text-gray-900">Historique</h4>
+      <h4 className="text-sm font-semibold text-gray-900">Activité</h4>
 
       <form onSubmit={submit} className="flex gap-2">
         <select
@@ -117,9 +116,9 @@ export function ActivityTimeline({ leadId }: { leadId: string }) {
                 <Icon className="w-3 h-3" />
               </span>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span className="font-medium text-gray-700">{LABEL[a.type]}</span>
-                  <span>· {formatWhen(a.occurredAt)}</span>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="font-semibold text-gray-800">{LABEL[a.type]}</span>
+                  <span className="text-gray-600">· {formatWhen(a.occurredAt)}</span>
                 </div>
                 <p className="text-sm text-gray-900 truncate">{renderSummary(a) || '—'}</p>
               </div>
