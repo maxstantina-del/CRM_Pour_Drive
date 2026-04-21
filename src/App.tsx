@@ -13,6 +13,10 @@ import { LeadDetailsModal } from './components/modals/LeadDetailsModal';
 import { OnboardingTour, useOnboarding } from './components/onboarding/OnboardingTour';
 import { ChatAgent } from './components/ai/ChatAgent';
 import { BulkActionBar } from './components/bulk';
+import { FilterButton, ActiveFilterChips } from './components/filters';
+import { useLeadFilters } from './hooks/useLeadFilters';
+import { useTags } from './hooks/useTags';
+import { applyLeadFilters, extractCities } from './lib/leadFilters';
 import { usePipelines } from './hooks/usePipelines';
 import { useLeads } from './hooks/useLeads';
 import { Layers, Plus } from 'lucide-react';
@@ -97,21 +101,28 @@ function App() {
   } = useLeads();
 
   const { stages } = usePipelineStages();
+  const { tags, leadTags } = useTags();
 
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
   const allLeads = effectivePipelineId ? getPipelineLeads(effectivePipelineId) : [];
-  const [searchQuery, setSearchQuery] = useState('');
-  const leads = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return allLeads;
-    return allLeads.filter(l => {
-      const hay = [l.name, l.company, l.contactName, l.email, l.phone, l.city]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [allLeads, searchQuery]);
+
+  const { filters, setFilters, updateFilter, resetFilters, activeCount } = useLeadFilters();
+
+  const citiesOptions = useMemo(() => extractCities(allLeads), [allLeads]);
+
+  const tagIdsByLead = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const [leadId, list] of leadTags) m.set(leadId, list.map((t) => t.id));
+    return m;
+  }, [leadTags]);
+
+  const leads = useMemo(
+    () => applyLeadFilters(allLeads, filters, tagIdsByLead),
+    [allLeads, filters, tagIdsByLead]
+  );
+
+  const searchQuery = filters.search;
+  const setSearchQuery = (v: string) => updateFilter('search', v);
 
   // Create leads manager with optimized single-lead operations
   const leadsManager = useMemo(() => {
@@ -453,11 +464,31 @@ function App() {
         />
 
         {pipelines.length > 0 && (
-          <div className="px-6 py-2 border-b border-gray-200 bg-white flex items-center gap-3">
-            <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher nom, company, ville, email…" />
-            {searchQuery && (
-              <span className="text-xs text-gray-500">{leads.length} / {allLeads.length} leads</span>
-            )}
+          <div className="px-6 py-2 border-b border-gray-200 bg-white space-y-2">
+            <div className="flex items-center gap-3">
+              <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher nom, company, ville, email…" />
+              <FilterButton
+                activeCount={activeCount}
+                filters={filters}
+                onChange={setFilters}
+                onReset={resetFilters}
+                cities={citiesOptions}
+                stages={stages}
+                tags={tags}
+              />
+              {(activeCount > 0 || searchQuery) && (
+                <span className="text-xs text-gray-500 ml-auto">
+                  {leads.length} / {allLeads.length} leads
+                </span>
+              )}
+            </div>
+            <ActiveFilterChips
+              filters={filters}
+              onChange={setFilters}
+              onClearAll={resetFilters}
+              stages={stages}
+              tags={tags}
+            />
           </div>
         )}
 
