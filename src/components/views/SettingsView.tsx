@@ -109,15 +109,17 @@ export function SettingsView({
                 ) : (
                   <>
                     <div>
-                      <p className="font-medium">{pipeline.name}</p>
+                      <p className="font-semibold text-gray-900">
+                        {pipeline.name || <span className="italic text-gray-400">Sans nom</span>}
+                      </p>
                       {pipeline.id === currentPipelineId && (
-                        <p className="text-xs text-blue-600">Pipeline actif</p>
+                        <p className="text-xs text-blue-600 mt-0.5">Pipeline actif</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleStartEdit(pipeline)}
-                        className="p-2 hover:bg-gray-100 rounded"
+                        className="p-2 hover:bg-gray-100 rounded text-gray-600"
                         title="Renommer"
                       >
                         <Edit size={16} />
