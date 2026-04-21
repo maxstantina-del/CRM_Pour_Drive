@@ -43,7 +43,12 @@ export function useRecentActionLabels() {
     });
   }, []);
 
+  const removeLabel = useCallback((raw: string) => {
+    const label = raw.trim().toLowerCase();
+    setLabels((prev) => prev.filter((l) => l.toLowerCase() !== label));
+  }, []);
+
   const defaultLabel = labels[0] ?? 'Relancer';
 
-  return { labels, addLabel, defaultLabel };
+  return { labels, addLabel, removeLabel, defaultLabel };
 }

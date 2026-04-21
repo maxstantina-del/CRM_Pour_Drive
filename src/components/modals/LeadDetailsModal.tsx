@@ -5,7 +5,7 @@
 import React, { useState, type FormEvent } from 'react';
 import type { Lead } from '../../lib/types';
 import { Modal, ModalFooter, Button, Badge } from '../ui';
-import { Edit, Trash2, Mail, Phone, Building, MapPin, Bell, Plus } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone, Building, MapPin, Bell, Plus, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { ActivityTimeline } from '../activities/ActivityTimeline';
@@ -33,7 +33,7 @@ export function LeadDetailsModal({
   onToggleNextAction,
   onDeleteNextAction,
 }: LeadDetailsModalProps) {
-  const { labels: recentLabels, addLabel, defaultLabel } = useRecentActionLabels();
+  const { labels: recentLabels, addLabel, removeLabel, defaultLabel } = useRecentActionLabels();
   const [newActionText, setNewActionText] = useState(defaultLabel);
   const [newActionDate, setNewActionDate] = useState('');
   const [adding, setAdding] = useState(false);
@@ -231,6 +231,45 @@ END:VCARD`;
                 Ajouter
               </button>
             </form>
+          )}
+
+          {onAddNextAction && recentLabels.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400 self-center mr-1">Rapides :</span>
+              {recentLabels.map((l) => (
+                <span
+                  key={l}
+                  className="group inline-flex items-center gap-1 pl-2 pr-0.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full border border-gray-200 dark:border-gray-700"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setNewActionText(l)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400"
+                    title="Utiliser ce libellé"
+                  >
+                    {l}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeLabel(l)}
+                    className="p-0.5 rounded-full opacity-40 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-600 dark:hover:text-red-400 transition-opacity"
+                    title="Retirer de la liste"
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+              {newActionText.trim() && !recentLabels.some((l) => l.toLowerCase() === newActionText.trim().toLowerCase()) && (
+                <button
+                  type="button"
+                  onClick={() => addLabel(newActionText)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                  title="Épingler ce libellé"
+                >
+                  <Plus size={10} /> épingler
+                </button>
+              )}
+            </div>
           )}
 
           {(!lead.nextActions || lead.nextActions.length === 0) && !onAddNextAction && (
