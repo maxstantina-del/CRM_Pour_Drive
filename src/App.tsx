@@ -100,7 +100,7 @@ function App() {
     deletePipelineLeads,
   } = useLeads();
 
-  const { stages } = usePipelineStages();
+  const { stages, addStage, updateStage, removeStage, reorderStages } = usePipelineStages();
   const { tags, leadTags } = useTags();
 
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
@@ -557,6 +557,11 @@ function App() {
               onAddPipeline={handleNewPipeline}
               onRenamePipeline={renamePipeline}
               onDeletePipeline={handleDeletePipeline}
+              stages={stages}
+              onAddStage={addStage}
+              onUpdateStage={updateStage}
+              onRemoveStage={removeStage}
+              onReorderStages={reorderStages}
             />
           )}
         </main>

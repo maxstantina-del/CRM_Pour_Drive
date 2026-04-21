@@ -6,6 +6,7 @@ import React, { useState, useMemo, memo } from 'react';
 import type { Lead, StageConfig } from '../../lib/types';
 import { Card } from '../ui';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { getStageIcon, getStageColorHex } from '../../lib/stageIcons';
 
 export interface PipelineViewProps {
   leads: Lead[];
@@ -204,8 +205,20 @@ export const PipelineView = memo(function PipelineView({
               }`}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">{stage.label}</h3>
-                <span className="text-sm text-gray-500">
+                <div className="flex items-center gap-2 min-w-0">
+                  {(() => {
+                    const Icon = getStageIcon(stage.icon);
+                    return <Icon size={16} style={{ color: getStageColorHex(stage.color) }} />;
+                  })()}
+                  <h3 className="font-semibold text-gray-900 truncate">{stage.label}</h3>
+                </div>
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: `${getStageColorHex(stage.color)}20`,
+                    color: getStageColorHex(stage.color),
+                  }}
+                >
                   {leadsByStage[stage.id]?.length || 0}
                 </span>
               </div>

@@ -70,14 +70,20 @@ export interface StageConfig {
  */
 export type StageColor =
   | 'blue'
+  | 'indigo'
+  | 'violet'
+  | 'purple'
+  | 'pink'
+  | 'red'
+  | 'orange'
+  | 'amber'
   | 'yellow'
   | 'green'
-  | 'purple'
-  | 'orange'
-  | 'red'
-  | 'gray'
-  | 'pink'
-  | 'indigo';
+  | 'emerald'
+  | 'teal'
+  | 'cyan'
+  | 'slate'
+  | 'gray';
 
 /**
  * Sales pipeline

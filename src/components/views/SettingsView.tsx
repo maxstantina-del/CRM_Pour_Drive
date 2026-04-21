@@ -4,8 +4,10 @@
 
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardBody, Button } from '../ui';
-import { Settings as SettingsIcon, Info, Trash2, Edit, Plus } from 'lucide-react';
+import { Settings as SettingsIcon, Info, Trash2, Edit, Plus, Layers } from 'lucide-react';
 import { MembersPanel } from '../members/MembersPanel';
+import { StagesManager } from '../settings';
+import type { StageConfig, LeadStage } from '../../lib/types';
 
 export interface SettingsViewProps {
   pipelines: Array<{ id: string; name: string }>;
@@ -13,6 +15,11 @@ export interface SettingsViewProps {
   onAddPipeline: () => void;
   onRenamePipeline: (id: string, name: string) => void;
   onDeletePipeline: (id: string) => void;
+  stages: StageConfig[];
+  onAddStage: (stage: StageConfig) => void;
+  onUpdateStage: (stageId: LeadStage, updates: Partial<StageConfig>) => void;
+  onRemoveStage: (stageId: LeadStage) => void;
+  onReorderStages: (from: number, to: number) => void;
 }
 
 export function SettingsView({
@@ -20,7 +27,12 @@ export function SettingsView({
   currentPipelineId,
   onAddPipeline,
   onRenamePipeline,
-  onDeletePipeline
+  onDeletePipeline,
+  stages,
+  onAddStage,
+  onUpdateStage,
+  onRemoveStage,
+  onReorderStages,
 }: SettingsViewProps) {
   const [editingPipeline, setEditingPipeline] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -123,6 +135,24 @@ export function SettingsView({
               </div>
             ))}
           </div>
+        </CardBody>
+      </Card>
+
+      <Card variant="elevated">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Layers size={20} />
+            <CardTitle>Étapes & colonnes du pipeline</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <StagesManager
+            stages={stages}
+            onAdd={onAddStage}
+            onUpdate={onUpdateStage}
+            onRemove={onRemoveStage}
+            onReorder={onReorderStages}
+          />
         </CardBody>
       </Card>
 
