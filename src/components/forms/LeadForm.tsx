@@ -58,6 +58,7 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
 
   const [nextActionText, setNextActionText] = useState(defaultLabel);
   const [nextActionDate, setNextActionDate] = useState('');
+  const [nextActionTime, setNextActionTime] = useState('');
 
   useEffect(() => {
     if (lead) {
@@ -92,9 +93,10 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const label = nextActionText.trim() || 'Relancer';
+    const dueDate = nextActionTime ? `${nextActionDate}T${nextActionTime}:00` : nextActionDate;
     const extras: LeadFormExtras = {
       tagIds: selectedTagIds,
-      ...(nextActionDate ? { nextAction: { text: label, dueDate: nextActionDate } } : {}),
+      ...(nextActionDate ? { nextAction: { text: label, dueDate } } : {}),
     };
     if (nextActionDate) addLabel(label);
     onSubmit(formData, extras);
@@ -285,7 +287,7 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
           <Bell size={14} />
           Prochaine relance
         </label>
-        <div className="grid grid-cols-[1fr_auto_40px] gap-2 items-stretch">
+        <div className="grid grid-cols-[1fr_auto_auto_40px] gap-2 items-stretch">
           <input
             type="text"
             value={nextActionText}
@@ -303,10 +305,19 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
             onChange={(e) => setNextActionDate(e.target.value)}
             className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded"
           />
+          <input
+            type="time"
+            value={nextActionTime}
+            onChange={(e) => setNextActionTime(e.target.value)}
+            step={60}
+            lang="fr-FR"
+            className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded"
+            title="Heure (optionnelle, 24h)"
+          />
           {nextActionDate && (
             <button
               type="button"
-              onClick={() => setNextActionDate('')}
+              onClick={() => { setNextActionDate(''); setNextActionTime(''); }}
               className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
               title="Retirer la relance"
             >

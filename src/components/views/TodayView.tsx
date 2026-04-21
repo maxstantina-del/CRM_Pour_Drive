@@ -41,8 +41,13 @@ export function TodayView({ leads, onEditLead }: TodayViewProps) {
                     )}
                     <div className="mt-2 space-y-1">
                       {lead.nextActions?.filter(a => !a.completed).map(action => (
-                        <p key={action.id} className="text-sm text-red-600">
+                        <p key={action.id} className="text-sm text-red-600 dark:text-red-400">
                           • {action.text}
+                          {action.dueDate && action.dueDate.includes('T') && (
+                            <span className="ml-2 text-xs opacity-80">
+                              {new Date(action.dueDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
                         </p>
                       ))}
                     </div>
@@ -81,6 +86,11 @@ export function TodayView({ leads, onEditLead }: TodayViewProps) {
                       {lead.nextActions?.filter(a => !a.completed).map(action => (
                         <p key={action.id} className="text-sm text-gray-700 dark:text-gray-300">
                           • {action.text}
+                          {action.dueDate && action.dueDate.includes('T') && (
+                            <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(action.dueDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
                         </p>
                       ))}
                     </div>

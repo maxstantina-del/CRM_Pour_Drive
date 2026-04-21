@@ -7,7 +7,12 @@ import type { Lead } from '../../lib/types';
 import { Modal, ModalFooter, Button, Badge } from '../ui';
 import { Edit, Trash2, Mail, Phone, Building, MapPin, Bell, Plus, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { formatDate, formatCurrency } from '../../lib/utils';
+import { formatDate, formatDateTime, formatCurrency } from '../../lib/utils';
+
+/** Show date + time if the dueDate string carries a time, else just the date. */
+function formatActionDue(raw: string): string {
+  return raw.includes('T') ? formatDateTime(raw) : formatDate(raw);
+}
 import { ActivityTimeline } from '../activities/ActivityTimeline';
 import { TagPicker } from '../tags/TagPicker';
 import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
@@ -36,6 +41,7 @@ export function LeadDetailsModal({
   const { labels: recentLabels, addLabel, removeLabel, defaultLabel } = useRecentActionLabels();
   const [newActionText, setNewActionText] = useState(defaultLabel);
   const [newActionDate, setNewActionDate] = useState('');
+  const [newActionTime, setNewActionTime] = useState('');
   const [adding, setAdding] = useState(false);
 
   if (!lead) return null;
@@ -46,10 +52,14 @@ export function LeadDetailsModal({
     setAdding(true);
     try {
       const label = newActionText.trim() || 'Relancer';
-      await onAddNextAction(lead.id, label, newActionDate);
+      const dueDate = newActionTime
+        ? `${newActionDate}T${newActionTime}:00`
+        : newActionDate;
+      await onAddNextAction(lead.id, label, dueDate);
       addLabel(label);
-      setNewActionText(label); // keep it selected for quick chaining
+      setNewActionText(label);
       setNewActionDate('');
+      setNewActionTime('');
     } finally {
       setAdding(false);
     }
@@ -183,7 +193,7 @@ END:VCARD`;
                     {action.text}
                     {action.dueDate && (
                       <span className="text-gray-600 dark:text-gray-400 ml-2 text-xs">
-                        ({formatDate(action.dueDate)})
+                        ({formatActionDue(action.dueDate)})
                       </span>
                     )}
                   </span>
@@ -202,7 +212,7 @@ END:VCARD`;
           )}
 
           {onAddNextAction && (
-            <form onSubmit={handleAddAction} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+            <form onSubmit={handleAddAction} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
               <input
                 type="text"
                 value={newActionText}
@@ -220,6 +230,15 @@ END:VCARD`;
                 onChange={(e) => setNewActionDate(e.target.value)}
                 className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded"
                 required
+              />
+              <input
+                type="time"
+                value={newActionTime}
+                onChange={(e) => setNewActionTime(e.target.value)}
+                step={60}
+                lang="fr-FR"
+                className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded"
+                title="Heure (optionnelle, 24h)"
               />
               <button
                 type="submit"
