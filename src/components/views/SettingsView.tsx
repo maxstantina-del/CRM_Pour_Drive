@@ -6,7 +6,8 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardBody, Button } from '../ui';
 import { Settings as SettingsIcon, Info, Trash2, Edit, Plus, Layers } from 'lucide-react';
 import { MembersPanel } from '../members/MembersPanel';
-import { StagesManager, ThemeToggle } from '../settings';
+import { StagesManager, ThemeToggle, TagsManager } from '../settings';
+import { Tag as TagIcon } from 'lucide-react';
 import type { StageConfig, LeadStage } from '../../lib/types';
 
 export interface SettingsViewProps {
@@ -161,6 +162,18 @@ export function SettingsView({
             onRemove={onRemoveStage}
             onReorder={onReorderStages}
           />
+        </CardBody>
+      </Card>
+
+      <Card variant="elevated">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <TagIcon size={20} />
+            <CardTitle>Gestion des tags</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <TagsManager />
         </CardBody>
       </Card>
 
