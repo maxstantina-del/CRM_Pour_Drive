@@ -14,6 +14,7 @@ import {
   autoDetectMapping,
   applyMapping,
   isMappingValid,
+  isMappingAutoSkippable,
 } from '../../lib/importParsers';
 import { ImportMappingPanel } from './ImportMappingPanel';
 
@@ -72,7 +73,55 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
     if (e.target.files && e.target.files[0]) setFile(e.target.files[0]);
   };
 
-  const handleParse = async () => {
+  const runImport = async (
+    data: PreviewData,
+    finalMapping: Record<number, LeadField>,
+    pipelineId: string
+  ) => {
+    const leads = applyMapping(data.headers, data.rows, finalMapping, pipelineId);
+    if (leads.length === 0) {
+      setParseError('Aucun lead valide avec le mapping actuel.');
+      setPhase('mapping');
+      return;
+    }
+    setPhase('importing');
+    setProgress({ processed: 0, total: leads.length });
+    try {
+      const result = await onImport(leads, setProgress);
+      setOutcome(result);
+      setPhase('done');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setOutcome({ inserted: 0, errors: [{ index: -1, message: msg }] });
+      setPhase('done');
+    }
+  };
+
+  /** Parse file then auto-skip to import if mapping is strong; otherwise show mapping. */
+  const handleParseAndImport = async () => {
+    if (!file || !selectedPipelineId) return;
+    setPhase('parsing');
+    setParseError(null);
+    try {
+      const data = await parseFilePreview(file);
+      if (data.rows.length === 0) throw new Error('Aucune ligne de données.');
+      const auto = autoDetectMapping(data.headers);
+      setPreview(data);
+      setMapping(auto);
+      if (isMappingAutoSkippable(auto)) {
+        await runImport(data, auto, selectedPipelineId);
+      } else {
+        setPhase('mapping');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur de lecture';
+      setParseError(msg);
+      setPhase('idle');
+    }
+  };
+
+  /** Force the mapping screen even when auto-detection would have been enough. */
+  const handleParseShowMapping = async () => {
     if (!file || !selectedPipelineId) return;
     setPhase('parsing');
     setParseError(null);
@@ -97,22 +146,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
 
   const handleConfirmMapping = async () => {
     if (!preview || !isMappingValid(mapping) || !selectedPipelineId) return;
-    const leads = applyMapping(preview.headers, preview.rows, mapping, selectedPipelineId);
-    if (leads.length === 0) {
-      setParseError('Aucun lead valide avec le mapping actuel.');
-      return;
-    }
-    setPhase('importing');
-    setProgress({ processed: 0, total: leads.length });
-    try {
-      const result = await onImport(leads, setProgress);
-      setOutcome(result);
-      setPhase('done');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
-      setOutcome({ inserted: 0, errors: [{ index: -1, message: msg }] });
-      setPhase('done');
-    }
+    await runImport(preview, mapping, selectedPipelineId);
   };
 
   const downloadErrorReport = () => {
@@ -239,8 +273,11 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
         {phase === 'idle' && (
           <>
             <Button variant="ghost" onClick={handleClose}>Annuler</Button>
-            <Button variant="primary" onClick={handleParse} disabled={!file || !selectedPipelineId}>
-              Prévisualiser
+            <Button variant="outline" onClick={handleParseShowMapping} disabled={!file || !selectedPipelineId}>
+              Vérifier le mapping
+            </Button>
+            <Button variant="primary" onClick={handleParseAndImport} disabled={!file || !selectedPipelineId}>
+              Importer
             </Button>
           </>
         )}

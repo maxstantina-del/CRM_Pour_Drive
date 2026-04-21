@@ -63,9 +63,14 @@ export function normalizeHeader(header: string): string {
 
 export function autoDetectField(header: string): LeadField | null {
   const n = normalizeHeader(header);
-  if (n.includes('contact name') || n.includes('nom contact') || n.includes('nom du contact') || n.includes('representant') || n === 'contact') return 'contactName';
+  // Priority: "Enseigne" / "Nom commercial" = primary display name (name)
+  if (n.includes('enseigne') || n.includes('nom commercial') || n.includes('nom d enseigne')) return 'name';
+  // Legal name / entity → company
   if (n.includes('entreprise') || n.includes('company') || n.includes('societe') || n.includes('denomination') || n.includes('raison sociale')) return 'company';
-  if (n.includes('nom') || n.includes('name') || n.includes('projet') || n.includes('project')) return 'name';
+  // Contact person
+  if (n.includes('contact name') || n.includes('nom contact') || n.includes('nom du contact') || n.includes('representant') || n === 'contact' || n.includes('dirigeant') || n.includes('gerant')) return 'contactName';
+  // Generic name fallback (project / lead name)
+  if (n === 'nom' || n === 'name' || n.includes('projet') || n.includes('project') || n.includes('lead')) return 'name';
   if (n.includes('email') || n.includes('mail') || n.includes('courriel')) return 'email';
   if (n.includes('phone') || n.includes('telephone') || n.includes('tel') || n.includes('mobile') || n.includes('fixe') || n.includes('portable')) return 'phone';
   if (n.includes('siret') || n.includes('siren')) return 'siret';
@@ -180,6 +185,17 @@ export function countImportable(
 export function isMappingValid(mapping: Record<number, LeadField>): boolean {
   const fields = new Set(Object.values(mapping));
   return fields.has('name') || fields.has('company');
+}
+
+/**
+ * True when auto-detection is confident enough to skip the manual mapping step:
+ * must have name OR company AND at least one contact channel (email/phone) or address.
+ */
+export function isMappingAutoSkippable(mapping: Record<number, LeadField>): boolean {
+  const fields = new Set(Object.values(mapping));
+  const hasIdentity = fields.has('name') || fields.has('company');
+  const hasContact = fields.has('email') || fields.has('phone') || fields.has('address') || fields.has('city');
+  return hasIdentity && hasContact;
 }
 
 async function readArrayBuffer(file: File): Promise<ArrayBuffer> {

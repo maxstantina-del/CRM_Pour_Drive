@@ -5,6 +5,7 @@ import {
   applyMapping,
   countImportable,
   isMappingValid,
+  isMappingAutoSkippable,
   sampleValues,
 } from './importParsers';
 
@@ -21,9 +22,29 @@ describe('autoDetectField', () => {
     expect(autoDetectField('Commune')).toBe('city');
   });
 
+  it('prioritizes Enseigne / Nom commercial as name (not company)', () => {
+    expect(autoDetectField('Enseigne')).toBe('name');
+    expect(autoDetectField('Nom commercial')).toBe('name');
+    expect(autoDetectField("Nom d'enseigne")).toBe('name');
+  });
+
+  it('maps dirigeant/gerant to contactName', () => {
+    expect(autoDetectField('Gérant')).toBe('contactName');
+    expect(autoDetectField('Dirigeant')).toBe('contactName');
+  });
+
   it('returns null for exotic/unknown headers', () => {
     expect(autoDetectField('Code NAF')).toBeNull();
     expect(autoDetectField('Forme juridique')).toBeNull();
+  });
+});
+
+describe('isMappingAutoSkippable', () => {
+  it('requires name/company AND a contact channel', () => {
+    expect(isMappingAutoSkippable({ 0: 'name', 1: 'email' })).toBe(true);
+    expect(isMappingAutoSkippable({ 0: 'company', 1: 'phone' })).toBe(true);
+    expect(isMappingAutoSkippable({ 0: 'name' })).toBe(false); // no contact
+    expect(isMappingAutoSkippable({ 0: 'email', 1: 'phone' })).toBe(false); // no identity
   });
 });
 
