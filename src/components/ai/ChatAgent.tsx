@@ -1,7 +1,7 @@
 /**
  * CRM chat assistant.
- * Uses local Ollama if available (free, private) — falls back to the rule-based
- * command engine (see chatCommands.ts) otherwise.
+ * Uses Cloudflare Workers AI via /api/chat (token stays server-side) —
+ * falls back to the rule-based command engine (see chatCommands.ts) otherwise.
  * Exact commands (stats, top, cherche…) always short-circuit the LLM for speed.
  */
 
@@ -9,7 +9,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { Lead } from '../../lib/types';
 import { Send, Bot, X, Maximize2, Minimize2, Trash2, Loader2, Zap, CircleDot } from 'lucide-react';
 import { handle, parseIntent } from './chatCommands';
-import { useOllama, buildSystemPrompt, type OllamaMessage } from '../../hooks/useOllama';
+import { useAI, buildSystemPrompt, type AIMessage } from '../../hooks/useAI';
 
 export interface ChatAgentProps {
   leads: Lead[];
@@ -22,14 +22,14 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  source?: 'rules' | 'ollama';
+  source?: 'rules' | 'ai';
 }
 
 const GREETING =
   'Bonjour ! Parle-moi en langage naturel ou utilise les commandes (stats, top 5, cherche…). Tape "aide" pour la liste.';
 
 export function ChatAgent({ leads }: ChatAgentProps) {
-  const { status: ollama, chat: ollamaChat, refresh: refreshOllama } = useOllama();
+  const { status: ai, chat: aiChat, refresh: refreshAI } = useAI();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -74,12 +74,12 @@ export function ChatAgent({ leads }: ChatAgentProps) {
       return;
     }
 
-    // Free-form question → try Ollama, fall back to rules.
-    if (!ollama.available || !ollama.model) {
+    // Free-form question → Workers AI, fall back to rules if unavailable.
+    if (!ai.available) {
       pushMsg({
         role: 'assistant',
         content:
-          'Ollama n\'est pas détecté sur localhost:11434. Lance Ollama (avec OLLAMA_ORIGINS=*) pour discuter en langage naturel, ou tape "aide" pour les commandes.',
+          "L'IA n'est pas disponible pour le moment. Tape \"aide\" pour voir les commandes.",
         source: 'rules',
       });
       return;
@@ -91,16 +91,16 @@ export function ChatAgent({ leads }: ChatAgentProps) {
     abortRef.current = ctrl;
 
     try {
-      const history: OllamaMessage[] = [
+      const history: AIMessage[] = [
         { role: 'system', content: buildSystemPrompt(leads) },
         ...messages
           .slice(-12) // keep last 12 turns for context
           .filter(m => m.role !== 'assistant' || m.id !== '1') // drop greeting
-          .map(m => ({ role: m.role, content: m.content } as OllamaMessage)),
+          .map(m => ({ role: m.role, content: m.content } as AIMessage)),
         { role: 'user', content: text },
       ];
-      const reply = await ollamaChat(history, ctrl.signal);
-      pushMsg({ role: 'assistant', content: reply, source: 'ollama' });
+      const reply = await aiChat(history, ctrl.signal);
+      pushMsg({ role: 'assistant', content: reply, source: 'ai' });
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       pushMsg({
@@ -124,7 +124,7 @@ export function ChatAgent({ leads }: ChatAgentProps) {
       <button
         onClick={() => {
           setIsOpen(true);
-          refreshOllama();
+          refreshAI();
         }}
         className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all z-40"
         title="Assistant CRM"
@@ -145,16 +145,16 @@ export function ChatAgent({ leads }: ChatAgentProps) {
           <Bot className="text-blue-600" size={20} />
           <h3 className="font-semibold text-gray-900">Assistant CRM</h3>
           <span className="text-xs text-gray-500">{leads.length} leads</span>
-          {ollama.checking ? (
+          {ai.checking ? (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 flex items-center gap-1">
               <Loader2 className="w-2.5 h-2.5 animate-spin" /> check
             </span>
-          ) : ollama.available && ollama.model ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 flex items-center gap-1" title={`Ollama ${ollama.model}`}>
-              <CircleDot className="w-2.5 h-2.5" /> IA {ollama.model.split(':')[0]}
+          ) : ai.available ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 flex items-center gap-1" title={ai.model ?? 'Workers AI'}>
+              <CircleDot className="w-2.5 h-2.5" /> IA
             </span>
           ) : (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-1" title="Ollama absent — mode commandes">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-1" title="IA indisponible — mode commandes">
               <Zap className="w-2.5 h-2.5" /> Commandes
             </span>
           )}
@@ -183,7 +183,7 @@ export function ChatAgent({ leads }: ChatAgentProps) {
               <pre className="text-sm whitespace-pre-wrap font-sans m-0">{m.content}</pre>
               <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
                 {m.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                {m.source === 'ollama' && <span>· 🦙</span>}
+                {m.source === 'ai' && <span>· 🤖</span>}
               </p>
             </div>
           </div>
@@ -222,7 +222,7 @@ export function ChatAgent({ leads }: ChatAgentProps) {
                 send(input);
               }
             }}
-            placeholder={ollama.available ? 'Pose ta question…' : 'stats, top 5, cherche Annecy…'}
+            placeholder={ai.available ? 'Pose ta question…' : 'stats, top 5, cherche Annecy…'}
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             disabled={thinking}
           />

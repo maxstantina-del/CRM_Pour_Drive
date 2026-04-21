@@ -9,6 +9,14 @@ export default defineConfig({
     port: 5173,
     strictPort: false, // Permet d'utiliser un port alternatif si 5173 est occupé
     open: false, // Le script batch ouvre déjà le navigateur
+    proxy: {
+      // Proxy /api/* vers la prod pour que useAI fonctionne en dev local
+      '/api': {
+        target: 'https://crm-pour-drive.vercel.app',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   optimizeDeps: {
     exclude: ['lucide-react', 'better-sqlite3', 'electron'],
