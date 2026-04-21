@@ -493,7 +493,7 @@ function App() {
         )}
 
         <main className="flex-1 overflow-y-auto bg-gray-50">
-          {currentView === 'dashboard' && <DashboardView leads={leads} />}
+          {currentView === 'dashboard' && <DashboardView leads={leads} stages={stages} />}
 
           {currentView === 'pipeline' && (
             pipelines.length === 0 ? (
