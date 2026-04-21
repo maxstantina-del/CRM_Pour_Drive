@@ -106,7 +106,7 @@ const LeadCard = memo(function LeadCard({
           {lead.contactName && (
             <p className="text-xs text-gray-700 dark:text-gray-300">{lead.contactName}</p>
           )}
-          {lead.company && (
+          {lead.company && lead.company !== lead.name && (
             <p className="text-xs text-gray-500 dark:text-gray-400">{lead.company}</p>
           )}
           {lead.value && (

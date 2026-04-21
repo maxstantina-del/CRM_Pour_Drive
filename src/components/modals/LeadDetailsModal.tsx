@@ -76,11 +76,17 @@ END:VCARD`;
         {/* Company & Address */}
         {(lead.company || lead.address) && (
           <div className="space-y-2">
-            {lead.company && (
+            {lead.company && lead.company !== lead.name && (
               <div className="flex items-center gap-2 text-sm">
                 <Building size={16} className="text-gray-500" />
                 <span className="text-gray-900 dark:text-gray-100 font-medium">{lead.company}</span>
                 {lead.siret && <span className="text-gray-600 dark:text-gray-300">• SIRET: {lead.siret}</span>}
+              </div>
+            )}
+            {lead.siret && lead.company === lead.name && (
+              <div className="flex items-center gap-2 text-sm">
+                <Building size={16} className="text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-300">SIRET: {lead.siret}</span>
               </div>
             )}
             {lead.address && (

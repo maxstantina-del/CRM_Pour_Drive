@@ -158,7 +158,7 @@ export function TableView({
                       {lead.contactName || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                      {lead.company || '-'}
+                      {lead.company && lead.company !== lead.name ? lead.company : '-'}
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="blue" size="sm">
