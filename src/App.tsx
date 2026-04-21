@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Sidebar, Header, Container } from './components/layout';
 import { DashboardView } from './components/dashboard';
 import { PipelineView } from './components/pipeline';
@@ -209,23 +209,20 @@ function App() {
   const { exportBackup, importBackup } = useBackup(pipelines, leadsByPipeline);
 
   // Event handlers
-  const handleUpdateStage = async (leadId: string, newStage: Lead['stage']) => {
+  const handleUpdateStage = useCallback(async (leadId: string, newStage: Lead['stage']) => {
     const lead = leads.find(l => l.id === leadId);
     const isWon = newStage === 'won' || newStage === 'closed_won';
     const wasWon = lead?.stage === 'won' || lead?.stage === 'closed_won';
     const previousStage = lead?.stage;
 
-    // Célébration si gagné
     if (lead && isWon && !wasWon) {
       setCelebration({ isVisible: true, leadName: lead.name });
       showToast(`🏆 ${lead.name} est gagné !`, 'success');
-
       setTimeout(() => {
         setCelebration({ isVisible: false, leadName: '' });
       }, 3000);
     }
 
-    // Mise à jour optimiste + Supabase avec updateSingleLead (1 seul UPDATE!)
     try {
       await updateSingleLead(effectivePipelineId, leadId, { stage: newStage });
       if (user && previousStage && previousStage !== newStage) {
@@ -236,25 +233,26 @@ function App() {
       }
     } catch (error) {
       console.error('Erreur mise à jour stage:', error);
-      // Rollback en cas d'erreur
       if (previousStage) {
         await updateSingleLead(effectivePipelineId, leadId, { stage: previousStage });
       }
       showToast('❌ Erreur: mise à jour annulée', 'error');
     }
-  };
+  }, [leads, effectivePipelineId, updateSingleLead, user, showToast]);
 
-  const handleNewLead = () => {
+  const handleNewLead = useCallback(() => {
     setEditingLead(undefined);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  const handleEditLead = (lead: Lead) => {
+  const handleEditLead = useCallback((lead: Lead) => {
     setEditingLead(lead);
     setIsFormOpen(true);
-  };
+  }, []);
 
-  const handleDeleteLead = async (leadId: string) => {
+  const handleViewLead = useCallback((lead: Lead) => setViewingLead(lead), []);
+
+  const handleDeleteLead = useCallback(async (leadId: string) => {
     setConfirmModal({
       isOpen: true,
       title: 'Confirmer la suppression',
@@ -265,7 +263,7 @@ function App() {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
       }
     });
-  };
+  }, [leadsManager, showToast]);
 
   const handleBulkDelete = () => {
     const ids = Array.from(selectedLeadIds);
@@ -524,7 +522,7 @@ function App() {
                 onUpdateStage={handleUpdateStage}
                 onEditLead={handleEditLead}
                 onDeleteLead={handleDeleteLead}
-                onViewLead={(lead) => setViewingLead(lead)}
+                onViewLead={handleViewLead}
               />
             )
           )}
@@ -535,7 +533,7 @@ function App() {
               onEditLead={handleEditLead}
               onDeleteLead={handleDeleteLead}
               onUpdateStage={handleUpdateStage}
-              onViewLead={(lead) => setViewingLead(lead)}
+              onViewLead={handleViewLead}
               selectedIds={selectedLeadIds}
               onSelectionChange={setSelectedLeadIds}
             />
