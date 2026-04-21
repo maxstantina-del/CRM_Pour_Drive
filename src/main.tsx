@@ -4,6 +4,7 @@ import App from './App.tsx';
 import { ToastProvider } from './contexts/ToastContext.tsx';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';
+import { TagsProvider } from './contexts/TagsContext.tsx';
 import { ProtectedRoute } from './components/auth/ProtectedRoute.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { initSentry } from './lib/sentry.ts';
@@ -19,11 +20,13 @@ createRoot(root).render(
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <ToastProvider>
-            <ProtectedRoute>
-              <App />
-            </ProtectedRoute>
-          </ToastProvider>
+          <TagsProvider>
+            <ToastProvider>
+              <ProtectedRoute>
+                <App />
+              </ProtectedRoute>
+            </ToastProvider>
+          </TagsProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
