@@ -2,10 +2,10 @@
  * Lead details modal
  */
 
-import React from 'react';
+import React, { useState, type FormEvent } from 'react';
 import type { Lead } from '../../lib/types';
 import { Modal, ModalFooter, Button, Badge } from '../ui';
-import { Edit, Trash2, Mail, Phone, Building, MapPin } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone, Building, MapPin, Bell, Plus } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { ActivityTimeline } from '../activities/ActivityTimeline';
@@ -17,10 +17,39 @@ export interface LeadDetailsModalProps {
   onClose: () => void;
   onEdit: (lead: Lead) => void;
   onDelete: (leadId: string) => void;
+  onAddNextAction?: (leadId: string, text: string, dueDate: string) => Promise<void> | void;
+  onToggleNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
+  onDeleteNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
 }
 
-export function LeadDetailsModal({ isOpen, lead, onClose, onEdit, onDelete }: LeadDetailsModalProps) {
+export function LeadDetailsModal({
+  isOpen,
+  lead,
+  onClose,
+  onEdit,
+  onDelete,
+  onAddNextAction,
+  onToggleNextAction,
+  onDeleteNextAction,
+}: LeadDetailsModalProps) {
+  const [newActionText, setNewActionText] = useState('Relancer');
+  const [newActionDate, setNewActionDate] = useState('');
+  const [adding, setAdding] = useState(false);
+
   if (!lead) return null;
+
+  const handleAddAction = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newActionDate || !onAddNextAction || adding) return;
+    setAdding(true);
+    try {
+      await onAddNextAction(lead.id, newActionText.trim() || 'Relancer', newActionDate);
+      setNewActionText('Relancer');
+      setNewActionDate('');
+    } finally {
+      setAdding(false);
+    }
+  };
 
   const vCardData = `BEGIN:VCARD
 VERSION:3.0
@@ -130,23 +159,76 @@ END:VCARD`;
         )}
 
         {/* Next Actions */}
-        {lead.nextActions && lead.nextActions.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Actions à venir</h4>
-            <ul className="space-y-1">
+        <div>
+          <h4 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            <Bell size={14} />
+            Prochaine relance / Actions à venir
+          </h4>
+
+          {lead.nextActions && lead.nextActions.length > 0 && (
+            <ul className="space-y-1.5 mb-3">
               {lead.nextActions.map(action => (
-                <li key={action.id} className="text-sm">
-                  <span className={action.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}>
-                    • {action.text}
+                <li key={action.id} className="flex items-center gap-2 text-sm group">
+                  <input
+                    type="checkbox"
+                    checked={action.completed}
+                    onChange={() => onToggleNextAction?.(lead.id, action.id)}
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className={action.completed ? 'line-through text-gray-500 dark:text-gray-400 flex-1' : 'text-gray-900 dark:text-gray-100 flex-1'}>
+                    {action.text}
+                    {action.dueDate && (
+                      <span className="text-gray-600 dark:text-gray-400 ml-2 text-xs">
+                        ({formatDate(action.dueDate)})
+                      </span>
+                    )}
                   </span>
-                  {action.dueDate && (
-                    <span className="text-gray-600 dark:text-gray-400 ml-2">({formatDate(action.dueDate)})</span>
+                  {onDeleteNextAction && (
+                    <button
+                      onClick={() => onDeleteNextAction(lead.id, action.id)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   )}
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          )}
+
+          {onAddNextAction && (
+            <form onSubmit={handleAddAction} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+              <input
+                type="text"
+                value={newActionText}
+                onChange={(e) => setNewActionText(e.target.value)}
+                placeholder="Libellé (ex: Rappeler le gérant)"
+                className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+              <input
+                type="date"
+                value={newActionDate}
+                onChange={(e) => setNewActionDate(e.target.value)}
+                className="px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded"
+                required
+              />
+              <button
+                type="submit"
+                disabled={!newActionDate || adding}
+                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-sm rounded flex items-center gap-1"
+                title="Ajouter la relance"
+              >
+                <Plus size={14} />
+                Ajouter
+              </button>
+            </form>
+          )}
+
+          {(!lead.nextActions || lead.nextActions.length === 0) && !onAddNextAction && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">Aucune action prévue.</p>
+          )}
+        </div>
 
         {/* Tags */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-800">

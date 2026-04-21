@@ -666,10 +666,13 @@ function App() {
 
       <LeadDetailsModal
         isOpen={viewingLead !== null}
-        lead={viewingLead}
+        lead={viewingLead ? allLeads.find((l) => l.id === viewingLead.id) ?? viewingLead : null}
         onClose={() => setViewingLead(null)}
         onEdit={handleEditLead}
         onDelete={handleDeleteLead}
+        onAddNextAction={(leadId, text, dueDate) => leadsManager.addNextAction(leadId, text, dueDate)}
+        onToggleNextAction={(leadId, actionId) => leadsManager.toggleNextAction(leadId, actionId)}
+        onDeleteNextAction={(leadId, actionId) => leadsManager.deleteNextAction(leadId, actionId)}
       />
 
       <WinCelebration
