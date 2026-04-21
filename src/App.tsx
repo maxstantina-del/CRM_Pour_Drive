@@ -585,6 +585,7 @@ function App() {
               onEditLead={handleEditLead}
               onDeleteLead={handleDeleteLead}
               onUpdateStage={handleUpdateStage}
+              onViewLead={handleViewLead}
             />
           )}
 

@@ -13,9 +13,11 @@ export interface TodayViewProps {
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
   onUpdateStage: (leadId: string, newStage: Lead['stage']) => void;
+  onViewLead?: (lead: Lead) => void;
 }
 
-export function TodayView({ leads, onEditLead }: TodayViewProps) {
+export function TodayView({ leads, onEditLead, onViewLead }: TodayViewProps) {
+  const openLead = onViewLead ?? onEditLead;
   const dueToday = getLeadsDueToday(leads);
   const overdue = getOverdueLeads(leads);
 
@@ -32,7 +34,7 @@ export function TodayView({ leads, onEditLead }: TodayViewProps) {
           </div>
           <div className="space-y-3">
             {overdue.map(lead => (
-              <Card key={lead.id} padding="md" hover onClick={() => onEditLead(lead)}>
+              <Card key={lead.id} padding="md" hover onClick={() => openLead(lead)}>
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-medium text-gray-900 dark:text-gray-100">{lead.name}</h3>
@@ -52,7 +54,7 @@ export function TodayView({ leads, onEditLead }: TodayViewProps) {
                       ))}
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => onEditLead(lead)}>
+                  <Button size="sm" onClick={(e) => { e.stopPropagation(); openLead(lead); }}>
                     Voir
                   </Button>
                 </div>
@@ -75,7 +77,7 @@ export function TodayView({ leads, onEditLead }: TodayViewProps) {
         ) : (
           <div className="space-y-3">
             {dueToday.map(lead => (
-              <Card key={lead.id} padding="md" hover onClick={() => onEditLead(lead)}>
+              <Card key={lead.id} padding="md" hover onClick={() => openLead(lead)}>
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-medium text-gray-900 dark:text-gray-100">{lead.name}</h3>
@@ -95,7 +97,7 @@ export function TodayView({ leads, onEditLead }: TodayViewProps) {
                       ))}
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => onEditLead(lead)}>
+                  <Button size="sm" onClick={(e) => { e.stopPropagation(); openLead(lead); }}>
                     Voir
                   </Button>
                 </div>
