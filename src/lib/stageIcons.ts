@@ -130,21 +130,63 @@ export function getStageIcon(name: string | undefined): LucideIcon {
 }
 
 export const STAGE_COLORS = [
-  { id: 'blue', label: 'Bleu', hex: '#2563EB' },
-  { id: 'indigo', label: 'Indigo', hex: '#4F46E5' },
-  { id: 'violet', label: 'Violet', hex: '#7C3AED' },
-  { id: 'purple', label: 'Pourpre', hex: '#9333EA' },
-  { id: 'pink', label: 'Rose', hex: '#DB2777' },
+  // Rouges
+  { id: 'red-light', label: 'Rouge clair', hex: '#FCA5A5' },
   { id: 'red', label: 'Rouge', hex: '#DC2626' },
-  { id: 'orange', label: 'Orange', hex: '#EA580C' },
-  { id: 'amber', label: 'Ambre', hex: '#D97706' },
-  { id: 'yellow', label: 'Jaune', hex: '#CA8A04' },
-  { id: 'green', label: 'Vert', hex: '#16A34A' },
-  { id: 'emerald', label: 'Émeraude', hex: '#059669' },
-  { id: 'teal', label: 'Teal', hex: '#0D9488' },
+  { id: 'red-dark', label: 'Rouge foncé', hex: '#991B1B' },
+  // Roses
+  { id: 'rose', label: 'Rose', hex: '#F43F5E' },
+  { id: 'pink', label: 'Rose vif', hex: '#DB2777' },
+  { id: 'fuchsia', label: 'Fuchsia', hex: '#C026D3' },
+  // Violets / pourpres
+  { id: 'purple-light', label: 'Lavande', hex: '#C4B5FD' },
+  { id: 'purple', label: 'Pourpre', hex: '#9333EA' },
+  { id: 'violet', label: 'Violet', hex: '#7C3AED' },
+  { id: 'indigo', label: 'Indigo', hex: '#4F46E5' },
+  // Bleus
+  { id: 'blue-light', label: 'Bleu clair', hex: '#60A5FA' },
+  { id: 'blue', label: 'Bleu', hex: '#2563EB' },
+  { id: 'blue-dark', label: 'Bleu marine', hex: '#1E3A8A' },
+  { id: 'sky', label: 'Ciel', hex: '#0EA5E9' },
   { id: 'cyan', label: 'Cyan', hex: '#0891B2' },
+  { id: 'teal', label: 'Teal', hex: '#0D9488' },
+  // Verts
+  { id: 'emerald', label: 'Émeraude', hex: '#059669' },
+  { id: 'green-light', label: 'Vert clair', hex: '#86EFAC' },
+  { id: 'green', label: 'Vert', hex: '#16A34A' },
+  { id: 'green-dark', label: 'Vert foncé', hex: '#166534' },
+  { id: 'lime', label: 'Citron vert', hex: '#84CC16' },
+  // Jaunes / ambres
+  { id: 'yellow-light', label: 'Jaune pâle', hex: '#FEF08A' },
+  { id: 'yellow', label: 'Jaune', hex: '#EAB308' },
+  { id: 'yellow-dark', label: 'Jaune moutarde', hex: '#A16207' },
+  { id: 'gold', label: 'Or', hex: '#D4A017' },
+  { id: 'amber', label: 'Ambre', hex: '#D97706' },
+  { id: 'amber-dark', label: 'Ambre foncé', hex: '#92400E' },
+  // Oranges
+  { id: 'orange-light', label: 'Pêche', hex: '#FDBA74' },
+  { id: 'orange', label: 'Orange', hex: '#EA580C' },
+  { id: 'orange-dark', label: 'Rouille', hex: '#9A3412' },
+  // Terres / bruns
+  { id: 'brown', label: 'Marron', hex: '#78350F' },
+  { id: 'stone', label: 'Pierre', hex: '#78716C' },
+  // Neutres
   { id: 'slate', label: 'Ardoise', hex: '#475569' },
+  { id: 'slate-dark', label: 'Ardoise foncée', hex: '#1E293B' },
   { id: 'gray', label: 'Gris', hex: '#4B5563' },
+  { id: 'gray-light', label: 'Gris clair', hex: '#9CA3AF' },
+  { id: 'gray-dark', label: 'Gris foncé', hex: '#1F2937' },
+  { id: 'zinc', label: 'Zinc', hex: '#52525B' },
+  { id: 'neutral', label: 'Neutre', hex: '#525252' },
+  // Accents spéciaux
+  { id: 'mint', label: 'Menthe', hex: '#10B981' },
+  { id: 'turquoise', label: 'Turquoise', hex: '#14B8A6' },
+  { id: 'coral', label: 'Corail', hex: '#FB7185' },
+  { id: 'plum', label: 'Prune', hex: '#6B21A8' },
+  { id: 'navy', label: 'Marine', hex: '#0C4A6E' },
+  { id: 'forest', label: 'Forêt', hex: '#064E3B' },
+  { id: 'chocolate', label: 'Chocolat', hex: '#451A03' },
+  { id: 'black', label: 'Noir', hex: '#111827' },
 ] as const;
 
 export type StageColorId = typeof STAGE_COLORS[number]['id'];

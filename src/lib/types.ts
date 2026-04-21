@@ -68,22 +68,8 @@ export interface StageConfig {
 /**
  * Color options for stages
  */
-export type StageColor =
-  | 'blue'
-  | 'indigo'
-  | 'violet'
-  | 'purple'
-  | 'pink'
-  | 'red'
-  | 'orange'
-  | 'amber'
-  | 'yellow'
-  | 'green'
-  | 'emerald'
-  | 'teal'
-  | 'cyan'
-  | 'slate'
-  | 'gray';
+/** Color identifier referenced by stages — see STAGE_COLORS in lib/stageIcons.ts for the full palette. */
+export type StageColor = string;
 
 /**
  * Sales pipeline
