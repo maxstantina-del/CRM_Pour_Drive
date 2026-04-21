@@ -1,14 +1,18 @@
 /**
- * Detect a local Ollama instance and expose a chat helper.
+ * Detect an Ollama instance and expose a chat helper.
  *
- * Ollama must be started with CORS allowed, e.g. on Windows:
- *   setx OLLAMA_ORIGINS "*"
- *   (restart Ollama)
+ * Priority:
+ *   1. VITE_OLLAMA_URL (e.g. https://ollama.chosen-mx.com via Cloudflare Tunnel) — works on HTTPS prod.
+ *   2. http://localhost:11434 — works in local dev only.
+ *
+ * Ollama must be started with CORS allowed for the app origin:
+ *   setx OLLAMA_ORIGINS "https://crm-pour-drive.vercel.app,https://ollama.chosen-mx.com,http://localhost:5173"
+ *   (then restart Ollama)
  */
 
 import { useCallback, useEffect, useState } from 'react';
 
-const OLLAMA_URL = 'http://localhost:11434';
+const OLLAMA_URL = (import.meta.env.VITE_OLLAMA_URL as string | undefined)?.replace(/\/+$/, '') || 'http://localhost:11434';
 const PREFERRED_MODELS = ['llama3.2:3b', 'llama3.2', 'mistral', 'llama3', 'phi3'];
 
 export interface OllamaMessage {
