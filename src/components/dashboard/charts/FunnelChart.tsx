@@ -21,7 +21,7 @@ function formatEuroShort(v: number): string {
 const GRADIENT = ['#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#EC4899', '#F97316', '#10B981', '#059669'];
 
 export function FunnelChart({ data }: FunnelChartProps) {
-  if (data.length === 0) return <div className="text-gray-400 text-sm p-4">Aucune donnée.</div>;
+  if (data.length === 0) return <div className="text-gray-400 dark:text-gray-500 text-sm p-4">Aucune donnée.</div>;
   const max = data[0].count || 1;
 
   return (
@@ -32,9 +32,9 @@ export function FunnelChart({ data }: FunnelChartProps) {
         const rate = row.dropOffPct;
         return (
           <div key={row.stageId} className="flex items-center gap-3">
-            <div className="w-32 text-sm text-gray-700 font-medium shrink-0">{row.label}</div>
+            <div className="w-32 text-sm text-gray-700 dark:text-gray-200 font-medium shrink-0">{row.label}</div>
 
-            <div className="flex-1 relative h-10 bg-gray-50 rounded-lg overflow-hidden">
+            <div className="flex-1 relative h-10 bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
               <div
                 className="h-full rounded-lg flex items-center justify-between px-3 transition-all duration-300"
                 style={{ width: `${widthPct}%`, backgroundColor: color }}
@@ -46,11 +46,11 @@ export function FunnelChart({ data }: FunnelChartProps) {
 
             <div className="w-20 text-right shrink-0">
               {rate === null ? (
-                <span className="text-xs text-gray-400">—</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
               ) : (
                 <span
                   className={`text-xs font-semibold ${
-                    rate >= 40 ? 'text-green-600' : rate >= 20 ? 'text-amber-600' : 'text-red-600'
+                    rate >= 40 ? 'text-green-600 dark:text-green-400' : rate >= 20 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
                   }`}
                   title={`${rate}% vs étape précédente`}
                 >

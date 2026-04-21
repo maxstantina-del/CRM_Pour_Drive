@@ -74,12 +74,12 @@ export function TableView({
 
   return (
     <div className="p-6 pb-32">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Vue Tableau</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Vue Tableau</h1>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow dark:shadow-none dark:border dark:border-gray-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
               <tr>
                 <th className="px-4 py-3 w-10">
                   <input
@@ -87,28 +87,28 @@ export function TableView({
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleAll}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     aria-label="Tout sélectionner"
                   />
                 </th>
                 <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('name')}
-                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 uppercase hover:text-gray-900"
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase hover:text-gray-900 dark:hover:text-gray-100"
                   >
                     Nom <ArrowUpDown size={12} />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
                   Contact
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
                   Entreprise
                 </th>
                 <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('stage')}
-                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 uppercase hover:text-gray-900"
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase hover:text-gray-900 dark:hover:text-gray-100"
                   >
                     Étape <ArrowUpDown size={12} />
                   </button>
@@ -116,7 +116,7 @@ export function TableView({
                 <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('value')}
-                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 uppercase hover:text-gray-900"
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase hover:text-gray-900 dark:hover:text-gray-100"
                   >
                     Valeur <ArrowUpDown size={12} />
                   </button>
@@ -124,7 +124,7 @@ export function TableView({
                 <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('createdAt')}
-                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 uppercase hover:text-gray-900"
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase hover:text-gray-900 dark:hover:text-gray-100"
                   >
                     Créé le <ArrowUpDown size={12} />
                   </button>
@@ -134,13 +134,13 @@ export function TableView({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {sortedLeads.map(lead => {
                 const checked = selectedIds.has(lead.id);
                 return (
                   <tr
                     key={lead.id}
-                    className={`${checked ? 'bg-blue-50' : 'hover:bg-gray-50'} cursor-pointer`}
+                    className={`${checked ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'} cursor-pointer`}
                     onClick={() => onViewLead?.(lead)}
                   >
                     <td className="px-4 py-3" onClick={(e) => { e.stopPropagation(); toggleRow(lead.id); }}>
@@ -149,15 +149,15 @@ export function TableView({
                         checked={checked}
                         onChange={() => toggleRow(lead.id)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         aria-label={`Sélectionner ${lead.name}`}
                       />
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{lead.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{lead.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {lead.contactName || '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {lead.company || '-'}
                     </td>
                     <td className="px-4 py-3">
@@ -165,10 +165,10 @@ export function TableView({
                         {lead.stage}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {lead.value ? formatCurrency(lead.value) : '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                       {formatDate(lead.createdAt)}
                     </td>
                     <td className="px-4 py-3 text-right">

@@ -26,12 +26,12 @@ function CustomTooltip({ active, payload }: TooltipPayload) {
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
-      <p className="font-semibold text-gray-900">{row.label}</p>
-      <p className="text-gray-600">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2 text-xs">
+      <p className="font-semibold text-gray-900 dark:text-gray-100">{row.label}</p>
+      <p className="text-gray-600 dark:text-gray-300">
         {row.wonCount} lead{row.wonCount > 1 ? 's' : ''} gagné{row.wonCount > 1 ? 's' : ''}
       </p>
-      <p className="font-bold text-green-600">{formatEuroShort(row.wonValue)}</p>
+      <p className="font-bold text-green-600 dark:text-green-400">{formatEuroShort(row.wonValue)}</p>
     </div>
   );
 }
@@ -41,7 +41,7 @@ export function MonthlyValueChart({ data }: MonthlyValueChartProps) {
 
   if (!hasData) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-64 text-gray-400 dark:text-gray-500 text-sm">
         Aucun lead gagné sur les 12 derniers mois.
       </div>
     );

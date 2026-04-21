@@ -58,7 +58,7 @@ export function WinCelebration({ isVisible, leadName }: WinCelebrationProps) {
           exit={{ opacity: 0, scale: 0.8 }}
           className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
         >
-          <div className="bg-white rounded-2xl shadow-2xl p-12 text-center max-w-md">
+          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl shadow-2xl p-12 text-center max-w-md">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1, rotate: 360 }}
@@ -67,8 +67,8 @@ export function WinCelebration({ isVisible, leadName }: WinCelebrationProps) {
             >
               <Trophy className="mx-auto text-yellow-500" size={96} />
             </motion.div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Félicitations ! 🎉</h2>
-            <p className="text-lg text-gray-600">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Félicitations ! 🎉</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
               <strong>{leadName}</strong> est gagné !
             </p>
           </div>

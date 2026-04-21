@@ -41,7 +41,7 @@ export function TagPicker({ leadId }: { leadId: string }) {
         ))}
         <button
           onClick={() => setOpen(v => !v)}
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full"
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full"
         >
           <TagIcon className="w-3 h-3" />
           {assigned.length === 0 ? 'Ajouter tag' : 'Gérer'}
@@ -49,7 +49,7 @@ export function TagPicker({ leadId }: { leadId: string }) {
       </div>
 
       {open && (
-        <div className="border border-gray-200 rounded-lg p-3 space-y-2 bg-white">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2 bg-white dark:bg-gray-900">
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {tags.map(t => {
@@ -63,7 +63,7 @@ export function TagPicker({ leadId }: { leadId: string }) {
                       color: t.color,
                       borderColor: t.color,
                     }}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border hover:bg-gray-50"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     {active && <Check className="w-3 h-3" />}
                     {t.name}
@@ -78,7 +78,7 @@ export function TagPicker({ leadId }: { leadId: string }) {
               value={newTagName}
               onChange={e => setNewTagName(e.target.value)}
               placeholder="Nouveau tag…"
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+              className="flex-1 px-2 py-1 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
             <div className="flex gap-0.5">
               {COLORS.map(c => (

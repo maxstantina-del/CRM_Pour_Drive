@@ -51,20 +51,20 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
-          <div className="max-w-md p-8 bg-white rounded-lg shadow-lg">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950">
+          <div className="max-w-md p-8 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-lg shadow-lg">
+            <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
               Une erreur est survenue
             </h1>
-            <p className="text-gray-700 mb-4">
+            <p className="text-gray-700 dark:text-gray-200 mb-4">
               {this.state.error?.message || 'Erreur inconnue'}
             </p>
             {this.state.errorInfo && (
-              <details className="mb-4 text-sm text-gray-600">
+              <details className="mb-4 text-sm text-gray-600 dark:text-gray-300">
                 <summary className="cursor-pointer font-medium">
                   Détails techniques
                 </summary>
-                <pre className="mt-2 p-2 bg-gray-100 rounded overflow-x-auto">
+                <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-x-auto">
                   {this.state.errorInfo.componentStack}
                 </pre>
               </details>

@@ -31,11 +31,11 @@ export function ConfirmModal({
     <Modal isOpen={isOpen} onClose={onCancel} title={title} size="sm">
       <div className="flex items-start gap-4">
         {danger && (
-          <div className="flex-shrink-0 p-2 bg-red-100 rounded-lg">
-            <AlertCircle className="text-red-600" size={24} />
+          <div className="flex-shrink-0 p-2 bg-red-100 dark:bg-red-900/40 rounded-lg">
+            <AlertCircle className="text-red-600 dark:text-red-400" size={24} />
           </div>
         )}
-        <p className="text-gray-700">{message}</p>
+        <p className="text-gray-700 dark:text-gray-200">{message}</p>
       </div>
       <ModalFooter>
         <Button variant="ghost" onClick={onCancel}>

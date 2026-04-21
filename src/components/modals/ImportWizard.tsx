@@ -178,17 +178,17 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
         {phase === 'idle' && (
           <>
             <div className="text-center">
-              <Upload className="mx-auto text-gray-400 mb-4" size={48} />
-              <p className="text-sm text-gray-600">Formats : Excel (.xlsx, .xls), CSV, JSON</p>
+              <Upload className="mx-auto text-gray-400 dark:text-gray-500 mb-4" size={48} />
+              <p className="text-sm text-gray-600 dark:text-gray-300">Formats : Excel (.xlsx, .xls), CSV, JSON</p>
             </div>
 
             {pipelines.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Pipeline de destination</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Pipeline de destination</label>
                 <select
                   value={selectedPipelineId}
                   onChange={(e) => setSelectedPipelineId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   {pipelines.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
@@ -197,7 +197,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
               </div>
             )}
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
               <input
                 type="file"
                 accept=".csv,.json,.xlsx,.xls"
@@ -209,13 +209,13 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
                 {file ? (
                   <>
                     <CheckCircle className="text-green-500 mb-2" size={32} />
-                    <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{file.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
                   </>
                 ) : (
                   <>
-                    <FileText className="text-gray-400 mb-2" size={32} />
-                    <p className="text-sm font-medium text-gray-900">Sélectionner un fichier</p>
+                    <FileText className="text-gray-400 dark:text-gray-500 mb-2" size={32} />
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Sélectionner un fichier</p>
                   </>
                 )}
               </label>
@@ -231,7 +231,7 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
 
         {phase === 'parsing' && (
           <div className="text-center py-8">
-            <p className="text-sm font-medium text-gray-900">Analyse du fichier…</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Analyse du fichier…</p>
           </div>
         )}
 
@@ -246,16 +246,16 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
 
         {phase === 'importing' && (
           <div className="text-center py-8 space-y-4">
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
               Import en cours : {progress.processed} / {progress.total}
             </p>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
               <div
                 className="h-3 bg-indigo-600 transition-all duration-200"
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500">{pct}% — n'interrompez pas la fenêtre.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{pct}% — n'interrompez pas la fenêtre.</p>
           </div>
         )}
 

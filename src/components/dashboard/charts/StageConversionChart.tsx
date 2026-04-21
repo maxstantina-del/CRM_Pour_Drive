@@ -20,11 +20,11 @@ function CustomTooltip({ active, payload }: TooltipPayload) {
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
-      <p className="font-semibold text-gray-900">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2 text-xs">
+      <p className="font-semibold text-gray-900 dark:text-gray-100">
         {row.fromLabel} → {row.toLabel}
       </p>
-      <p className="text-gray-600">
+      <p className="text-gray-600 dark:text-gray-300">
         {row.toCount} / {row.fromCount} leads
       </p>
       <p className="font-bold" style={{ color: conversionColor(row.rate) }}>
@@ -36,7 +36,7 @@ function CustomTooltip({ active, payload }: TooltipPayload) {
 
 export function StageConversionChart({ data }: StageConversionChartProps) {
   if (data.length === 0) {
-    return <div className="text-gray-400 text-sm p-4">Pas assez d'étapes pour calculer.</div>;
+    return <div className="text-gray-400 dark:text-gray-500 text-sm p-4">Pas assez d'étapes pour calculer.</div>;
   }
 
   const rows = data.map((r) => ({ ...r, label: `${r.fromLabel} → ${r.toLabel}` }));

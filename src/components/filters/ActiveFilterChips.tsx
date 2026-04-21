@@ -72,7 +72,7 @@ export function ActiveFilterChips({ filters, onChange, onClearAll, stages, tags 
         />
       )}
 
-      <button onClick={onClearAll} className="text-xs text-gray-500 hover:text-red-600 underline ml-1">
+      <button onClick={onClearAll} className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 underline ml-1">
         Effacer tout
       </button>
     </div>

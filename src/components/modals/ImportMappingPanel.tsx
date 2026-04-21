@@ -64,16 +64,16 @@ export function ImportMappingPanel({
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-600">
-            Fichier : <span className="font-medium text-gray-900">{fileName}</span>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Fichier : <span className="font-medium text-gray-900 dark:text-gray-100">{fileName}</span>
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {headers.length} colonne{headers.length > 1 ? 's' : ''} · {rows.length} lignes de données.
           </p>
         </div>
         <div className="text-right shrink-0">
           <p className="text-lg font-bold text-emerald-600">{importable}</p>
-          <p className="text-xs text-gray-500">à importer</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">à importer</p>
           {skipped > 0 && (
             <p className="text-xs text-amber-600 mt-1">{skipped} ignorés (ni nom ni entreprise)</p>
           )}
@@ -120,15 +120,15 @@ export function ImportMappingPanel({
         </div>
       )}
 
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
         <div className="max-h-[380px] overflow-y-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+            <thead className="bg-gray-50 dark:bg-gray-800/70 border-b border-gray-200 dark:border-gray-700 sticky top-0">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Colonne source</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase w-8"></th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase w-44">Mapper vers</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Échantillon</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Colonne source</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase w-8"></th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase w-44">Mapper vers</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Échantillon</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -139,9 +139,9 @@ export function ImportMappingPanel({
                 const isAutoMatch = autoField !== null && mapping[idx] === autoField;
                 const samples = sampleValues(rows, idx);
                 return (
-                  <tr key={idx} className={ignored ? 'bg-gray-50/50' : ''}>
-                    <td className="px-3 py-2 text-sm font-medium text-gray-900 align-top">
-                      {header || <span className="italic text-gray-400">Colonne {idx + 1}</span>}
+                  <tr key={idx} className={ignored ? 'bg-gray-50/50 dark:bg-gray-800/30' : ''}>
+                    <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 align-top">
+                      {header || <span className="italic text-gray-400 dark:text-gray-500">Colonne {idx + 1}</span>}
                     </td>
                     <td className="px-1 py-2 align-top">
                       {isAutoMatch ? (
@@ -154,7 +154,7 @@ export function ImportMappingPanel({
                       <select
                         value={current}
                         onChange={(e) => handleChange(idx, e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2 py-1 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value={IGNORE}>— Ignorer —</option>
                         {LEAD_FIELDS_ORDER.map((f) => {
@@ -169,9 +169,9 @@ export function ImportMappingPanel({
                     </td>
                     <td className="px-3 py-2 align-top">
                       {samples.length === 0 ? (
-                        <span className="text-xs text-gray-400 italic">vide</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 italic">vide</span>
                       ) : (
-                        <div className="text-xs text-gray-600 space-y-0.5">
+                        <div className="text-xs text-gray-600 dark:text-gray-300 space-y-0.5">
                           {samples.map((s, i) => (
                             <div key={i} className="truncate max-w-xs">{s}</div>
                           ))}

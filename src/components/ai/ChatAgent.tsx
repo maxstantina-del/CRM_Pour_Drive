@@ -135,18 +135,18 @@ export function ChatAgent({ leads }: ChatAgentProps) {
   }
 
   const containerClass = isExpanded
-    ? 'fixed inset-4 z-40 flex flex-col bg-white rounded-lg shadow-2xl border border-gray-200'
-    : 'fixed bottom-6 right-6 z-40 flex flex-col bg-white rounded-lg shadow-2xl border border-gray-200 w-[420px] h-[580px]';
+    ? 'fixed inset-4 z-40 flex flex-col bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-800'
+    : 'fixed bottom-6 right-6 z-40 flex flex-col bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-800 w-[420px] h-[580px]';
 
   return (
     <div className={containerClass}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <Bot className="text-blue-600" size={20} />
-          <h3 className="font-semibold text-gray-900">Assistant CRM</h3>
-          <span className="text-xs text-gray-500">{leads.length} leads</span>
+          <Bot className="text-blue-600 dark:text-blue-400" size={20} />
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">Assistant CRM</h3>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{leads.length} leads</span>
           {ai.checking ? (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 flex items-center gap-1">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center gap-1">
               <Loader2 className="w-2.5 h-2.5 animate-spin" /> check
             </span>
           ) : ai.available ? (
@@ -160,24 +160,24 @@ export function ChatAgent({ leads }: ChatAgentProps) {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={clearChat} className="p-2 rounded hover:bg-gray-100 text-gray-500" title="Effacer">
+          <button onClick={clearChat} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400" title="Effacer">
             <Trash2 size={14} />
           </button>
-          <button onClick={() => setIsExpanded(v => !v)} className="p-2 rounded hover:bg-gray-100 text-gray-500">
+          <button onClick={() => setIsExpanded(v => !v)} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400">
             {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
-          <button onClick={() => setIsOpen(false)} className="p-2 rounded hover:bg-gray-100 text-gray-500">
+          <button onClick={() => setIsOpen(false)} className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400">
             <X size={16} />
           </button>
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50 dark:bg-gray-950">
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 ${
-                m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-900 shadow-sm'
+                m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
               }`}
             >
               <pre className="text-sm whitespace-pre-wrap font-sans m-0">{m.content}</pre>
@@ -190,7 +190,7 @@ export function ChatAgent({ leads }: ChatAgentProps) {
         ))}
         {thinking && (
           <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-500 dark:text-gray-300 flex items-center gap-2">
               <Loader2 className="w-3 h-3 animate-spin" />
               réflexion…
             </div>
@@ -198,14 +198,14 @@ export function ChatAgent({ leads }: ChatAgentProps) {
         )}
       </div>
 
-      <div className="px-4 py-3 border-t border-gray-200 flex-shrink-0 bg-white rounded-b-lg">
+      <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 bg-white dark:bg-gray-900 rounded-b-lg">
         <div className="flex gap-1 mb-2 flex-wrap">
           {['stats', 'top 5', 'relancer 7', 'aide'].map(cmd => (
             <button
               key={cmd}
               onClick={() => send(cmd)}
               disabled={thinking}
-              className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-gray-700"
+              className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 rounded text-gray-700 dark:text-gray-200"
             >
               {cmd}
             </button>
@@ -223,7 +223,7 @@ export function ChatAgent({ leads }: ChatAgentProps) {
               }
             }}
             placeholder={ai.available ? 'Pose ta question…' : 'stats, top 5, cherche Annecy…'}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             disabled={thinking}
           />
           <button

@@ -38,8 +38,8 @@ export function DashboardView({ leads, stages }: DashboardViewProps) {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Vue d'ensemble de votre pipeline de vente</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Vue d'ensemble de votre pipeline de vente</p>
       </div>
 
       {/* KPI Cards */}
@@ -48,10 +48,10 @@ export function DashboardView({ leads, stages }: DashboardViewProps) {
           <Card key={index} variant="elevated" padding="md" hover>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{stat.title}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stat.value}</p>
               </div>
-              <div className="p-3 bg-gray-50 rounded-lg">{stat.icon}</div>
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{stat.icon}</div>
             </div>
           </Card>
         ))}
@@ -62,7 +62,7 @@ export function DashboardView({ leads, stages }: DashboardViewProps) {
         <Card variant="elevated">
           <CardHeader>
             <CardTitle>Funnel du pipeline</CardTitle>
-            <p className="text-xs text-gray-500 mt-1">% = taux de passage vs étape précédente</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">% = taux de passage vs étape précédente</p>
           </CardHeader>
           <CardBody>
             <FunnelChart data={funnel} />
@@ -72,7 +72,7 @@ export function DashboardView({ leads, stages }: DashboardViewProps) {
         <Card variant="elevated">
           <CardHeader>
             <CardTitle>Conversion entre étapes</CardTitle>
-            <p className="text-xs text-gray-500 mt-1">Rouge &lt; 20% · Orange 20-40% · Vert &gt; 40%</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Rouge &lt; 20% · Orange 20-40% · Vert &gt; 40%</p>
           </CardHeader>
           <CardBody>
             <StageConversionChart data={conversion} />

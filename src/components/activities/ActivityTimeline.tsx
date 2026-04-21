@@ -70,13 +70,13 @@ export function ActivityTimeline({ leadId }: { leadId: string }) {
 
   return (
     <div className="space-y-3">
-      <h4 className="text-sm font-semibold text-gray-900">Activité</h4>
+      <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Activité</h4>
 
       <form onSubmit={submit} className="flex gap-2">
         <select
           value={type}
           onChange={e => setType(e.target.value as ActivityType)}
-          className="px-2 py-1 border border-gray-300 rounded text-sm"
+          className="px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-sm"
         >
           <option value="note">Note</option>
           <option value="call">Appel</option>
@@ -89,7 +89,7 @@ export function ActivityTimeline({ leadId }: { leadId: string }) {
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder="Ajouter au journal…"
-          className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+          className="flex-1 px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
         />
         <button
           type="submit"
@@ -101,7 +101,7 @@ export function ActivityTimeline({ leadId }: { leadId: string }) {
       </form>
 
       {loading && activities.length === 0 && (
-        <p className="text-xs text-gray-500">Chargement…</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Chargement…</p>
       )}
       {!loading && activities.length === 0 && (
         <p className="text-xs text-gray-500">Aucune activité. Ajoute la première ci-dessus.</p>
@@ -117,14 +117,14 @@ export function ActivityTimeline({ leadId }: { leadId: string }) {
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold text-gray-800">{LABEL[a.type]}</span>
-                  <span className="text-gray-600">· {formatWhen(a.occurredAt)}</span>
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">{LABEL[a.type]}</span>
+                  <span className="text-gray-600 dark:text-gray-400">· {formatWhen(a.occurredAt)}</span>
                 </div>
-                <p className="text-sm text-gray-900 truncate">{renderSummary(a) || '—'}</p>
+                <p className="text-sm text-gray-900 dark:text-gray-100 truncate">{renderSummary(a) || '—'}</p>
               </div>
               <button
                 onClick={() => removeActivity(a.id)}
-                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 p-1"
+                className="opacity-0 group-hover:opacity-100 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 p-1"
                 title="Supprimer"
               >
                 <Trash2 className="w-3 h-3" />

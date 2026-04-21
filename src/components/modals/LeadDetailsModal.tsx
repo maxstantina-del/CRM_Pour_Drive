@@ -37,7 +37,7 @@ END:VCARD`;
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">{lead.name}</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{lead.name}</h3>
             <Badge variant="blue" size="sm" className="mt-2">
               {lead.stage}
             </Badge>
@@ -51,7 +51,7 @@ END:VCARD`;
             {lead.contactName && (
               <div className="flex items-center gap-2 text-sm">
                 <Building size={16} className="text-gray-500" />
-                <span className="text-gray-900 font-medium">{lead.contactName}</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">{lead.contactName}</span>
               </div>
             )}
             {lead.email && (
@@ -79,14 +79,14 @@ END:VCARD`;
             {lead.company && (
               <div className="flex items-center gap-2 text-sm">
                 <Building size={16} className="text-gray-500" />
-                <span className="text-gray-900 font-medium">{lead.company}</span>
-                {lead.siret && <span className="text-gray-600">• SIRET: {lead.siret}</span>}
+                <span className="text-gray-900 dark:text-gray-100 font-medium">{lead.company}</span>
+                {lead.siret && <span className="text-gray-600 dark:text-gray-300">• SIRET: {lead.siret}</span>}
               </div>
             )}
             {lead.address && (
               <div className="flex items-start gap-2 text-sm">
                 <MapPin size={16} className="text-gray-500 mt-0.5" />
-                <span className="text-gray-900">
+                <span className="text-gray-900 dark:text-gray-100">
                   {lead.address}
                   {lead.city && `, ${lead.city}`}
                   {lead.zipCode && ` ${lead.zipCode}`}
@@ -102,14 +102,14 @@ END:VCARD`;
           <div className="flex gap-4 text-sm">
             {lead.value && (
               <div>
-                <span className="text-gray-600">Valeur : </span>
-                <span className="font-bold text-gray-900">{formatCurrency(lead.value)}</span>
+                <span className="text-gray-600 dark:text-gray-300">Valeur : </span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">{formatCurrency(lead.value)}</span>
               </div>
             )}
             {lead.probability !== undefined && (
               <div>
-                <span className="text-gray-600">Probabilité : </span>
-                <span className="font-bold text-gray-900">{lead.probability}%</span>
+                <span className="text-gray-600 dark:text-gray-300">Probabilité : </span>
+                <span className="font-bold text-gray-900 dark:text-gray-100">{lead.probability}%</span>
               </div>
             )}
           </div>
@@ -118,23 +118,23 @@ END:VCARD`;
         {/* Notes */}
         {lead.notes && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Notes</h4>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{lead.notes}</p>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Notes</h4>
+            <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{lead.notes}</p>
           </div>
         )}
 
         {/* Next Actions */}
         {lead.nextActions && lead.nextActions.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Actions à venir</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Actions à venir</h4>
             <ul className="space-y-1">
               {lead.nextActions.map(action => (
                 <li key={action.id} className="text-sm">
-                  <span className={action.completed ? 'line-through text-gray-500' : 'text-gray-900'}>
+                  <span className={action.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}>
                     • {action.text}
                   </span>
                   {action.dueDate && (
-                    <span className="text-gray-600 ml-2">({formatDate(action.dueDate)})</span>
+                    <span className="text-gray-600 dark:text-gray-400 ml-2">({formatDate(action.dueDate)})</span>
                   )}
                 </li>
               ))}
@@ -143,18 +143,18 @@ END:VCARD`;
         )}
 
         {/* Tags */}
-        <div className="pt-4 border-t">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Tags</h4>
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Tags</h4>
           <TagPicker leadId={lead.id} />
         </div>
 
         {/* Activity Timeline */}
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
           <ActivityTimeline leadId={lead.id} />
         </div>
 
         {/* Metadata */}
-        <div className="text-xs text-gray-500 pt-4 border-t">
+        <div className="text-xs text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200 dark:border-gray-800">
           <p>Créé le {formatDate(lead.createdAt)}</p>
           <p>Modifié le {formatDate(lead.updatedAt)}</p>
         </div>

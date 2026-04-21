@@ -31,7 +31,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className={cn('flex flex-col gap-1.5', fullWidth && 'w-full')}>
         {label && (
-          <label htmlFor={selectId} className="text-sm font-medium text-gray-700">
+          <label htmlFor={selectId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
             {props.required && <span className="text-red-500 ml-1">*</span>}
           </label>
@@ -44,11 +44,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className={cn(
               'w-full px-3 py-2 pr-10 border rounded-lg appearance-none transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-              'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500',
-              'bg-white cursor-pointer',
+              'disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed disabled:text-gray-500',
+              'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 cursor-pointer',
               error
                 ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-300 hover:border-gray-400',
+                : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600',
               className
             )}
             {...props}
@@ -65,13 +65,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ))}
           </select>
 
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 dark:text-gray-500">
             <ChevronDown size={16} />
           </div>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
-        {helperText && !error && <p className="text-sm text-gray-500">{helperText}</p>}
+        {helperText && !error && <p className="text-sm text-gray-500 dark:text-gray-400">{helperText}</p>}
       </div>
     );
   }

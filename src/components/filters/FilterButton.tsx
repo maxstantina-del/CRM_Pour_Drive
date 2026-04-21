@@ -19,8 +19,8 @@ export function FilterButton({ activeCount, ...panelProps }: FilterButtonProps) 
         onClick={() => setOpen((o) => !o)}
         className={`inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-colors ${
           activeCount > 0
-            ? 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'
-            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+            : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
         }`}
       >
         <SlidersHorizontal size={16} />

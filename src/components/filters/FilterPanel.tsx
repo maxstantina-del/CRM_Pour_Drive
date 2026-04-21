@@ -42,12 +42,12 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
       {/* click-outside backdrop */}
       <div className="fixed inset-0 z-30" onClick={onClose} />
       <div
-        className="absolute right-0 top-full mt-2 z-40 w-[420px] max-h-[70vh] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-2xl"
+        className="absolute right-0 top-full mt-2 z-40 w-[420px] max-h-[70vh] overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 sticky top-0 bg-white">
-          <h3 className="font-semibold text-gray-900">Filtres avancés</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100" title="Fermer">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">Filtres avancés</h3>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300" title="Fermer">
             <X size={18} />
           </button>
         </div>
@@ -56,37 +56,37 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
           {/* Cities */}
           <section>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-gray-700">Villes</h4>
-              <span className="text-xs text-gray-500">{filters.cities.length || 'aucune'}</span>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Villes</h4>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{filters.cities.length || 'aucune'}</span>
             </div>
             {cities.length > 12 && (
               <div className="relative mb-2">
-                <Search className="absolute left-2 top-2 w-3.5 h-3.5 text-gray-400" />
+                <Search className="absolute left-2 top-2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   value={citySearch}
                   onChange={(e) => setCitySearch(e.target.value)}
                   placeholder="Filtrer villes…"
-                  className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                  className="w-full pl-7 pr-2 py-1.5 text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
                 />
               </div>
             )}
             {cities.length === 0 ? (
-              <p className="text-xs text-gray-500">Aucune ville renseignée.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Aucune ville renseignée.</p>
             ) : (
-              <div className="max-h-44 overflow-y-auto space-y-1 border border-gray-100 rounded p-2">
+              <div className="max-h-44 overflow-y-auto space-y-1 border border-gray-100 dark:border-gray-800 rounded p-2">
                 {visibleCities.map((c) => (
-                  <label key={c} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded">
+                  <label key={c} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-1 py-0.5 rounded">
                     <input
                       type="checkbox"
                       checked={filters.cities.includes(c)}
                       onChange={() => toggleCity(c)}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-gray-700">{c}</span>
+                    <span className="text-gray-700 dark:text-gray-200">{c}</span>
                   </label>
                 ))}
-                {visibleCities.length === 0 && <p className="text-xs text-gray-400 px-1">Aucun résultat.</p>}
+                {visibleCities.length === 0 && <p className="text-xs text-gray-400 dark:text-gray-500 px-1">Aucun résultat.</p>}
               </div>
             )}
           </section>
@@ -94,8 +94,8 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
           {/* Stages */}
           <section>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-gray-700">Étapes</h4>
-              <span className="text-xs text-gray-500">{filters.stages.length || 'toutes'}</span>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Étapes</h4>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{filters.stages.length || 'toutes'}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {stages.map((s) => {
@@ -107,7 +107,7 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
                     className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
                       active
                         ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
+                        : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-blue-400'
                     }`}
                   >
                     {s.label}
@@ -120,11 +120,11 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
           {/* Tags */}
           <section>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-gray-700">Tags</h4>
-              <span className="text-xs text-gray-500">{filters.tagIds.length || 'tous'}</span>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Tags</h4>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{filters.tagIds.length || 'tous'}</span>
             </div>
             {tags.length === 0 ? (
-              <p className="text-xs text-gray-500">Aucun tag créé. Ajoute-les depuis une fiche lead.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Aucun tag créé. Ajoute-les depuis une fiche lead.</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {tags.map((t) => {
@@ -135,7 +135,7 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
                       onClick={() => toggleTag(t.id)}
                       style={active ? { backgroundColor: t.color, borderColor: t.color, color: 'white' } : undefined}
                       className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
-                        active ? 'shadow-sm' : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                        active ? 'shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-gray-400'
                       }`}
                     >
                       {t.name}
@@ -149,9 +149,9 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
           {/* ValueMin */}
           <section>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-gray-700">Valeur minimum (€)</h4>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Valeur minimum (€)</h4>
               {typeof filters.valueMin === 'number' && filters.valueMin > 0 && (
-                <button onClick={() => setValueMin(undefined)} className="text-xs text-gray-500 hover:text-red-600">
+                <button onClick={() => setValueMin(undefined)} className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600">
                   Effacer
                 </button>
               )}
@@ -166,13 +166,13 @@ export function FilterPanel({ filters, onChange, onClose, onReset, cities, stage
                 setValueMin(Number.isFinite(v) && (v as number) >= 0 ? v : undefined);
               }}
               placeholder="ex: 1000"
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </section>
         </div>
 
-        <div className="flex items-center justify-between p-3 border-t border-gray-100 bg-gray-50 sticky bottom-0">
-          <button onClick={onReset} className="text-sm text-gray-600 hover:text-red-600 font-medium">
+        <div className="flex items-center justify-between p-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 sticky bottom-0">
+          <button onClick={onReset} className="text-sm text-gray-600 dark:text-gray-300 hover:text-red-600 font-medium">
             Effacer tout
           </button>
           <button

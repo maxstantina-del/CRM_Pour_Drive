@@ -56,7 +56,7 @@ const tourSteps = [
     description: 'La vue "Aujourd\'hui" vous montre toutes les actions à réaliser aujourd\'hui.'
   },
   {
-    icon: <Settings size={48} className="text-gray-500" />,
+    icon: <Settings size={48} className="text-gray-500 dark:text-gray-400" />,
     title: 'Import/Export',
     description: 'Importez vos leads depuis CSV ou Excel, et exportez vos données à tout moment.'
   }
@@ -91,8 +91,8 @@ export function OnboardingTour({ isOpen, onComplete }: OnboardingTourProps) {
         <div className="flex justify-center mb-6">
           {step.icon}
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">{step.title}</h2>
-        <p className="text-gray-600 mb-8 max-w-md mx-auto">{step.description}</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">{step.title}</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">{step.description}</p>
 
         {/* Progress dots */}
         <div className="flex justify-center gap-2 mb-6">
@@ -104,7 +104,7 @@ export function OnboardingTour({ isOpen, onComplete }: OnboardingTourProps) {
                   ? 'bg-blue-600 w-8'
                   : index < currentStep
                   ? 'bg-blue-400'
-                  : 'bg-gray-300'
+                  : 'bg-gray-300 dark:bg-gray-700'
               }`}
             />
           ))}

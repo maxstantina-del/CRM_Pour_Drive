@@ -77,23 +77,23 @@ export function MembersPanel({ pipelineId, pipelineName }: { pipelineId: string;
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Users className="w-5 h-5 text-gray-400" />
-        <h3 className="text-lg font-semibold text-gray-900">Partenaires de « {pipelineName} »</h3>
+        <Users className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Partenaires de « {pipelineName} »</h3>
       </div>
 
-      <form onSubmit={invite} className="flex gap-2 items-center bg-gray-50 p-3 rounded-lg">
+      <form onSubmit={invite} className="flex gap-2 items-center bg-gray-50 dark:bg-gray-800/60 p-3 rounded-lg">
         <input
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
           placeholder="email du partenaire (déjà inscrit)"
-          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded"
+          className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded placeholder:text-gray-400 dark:placeholder:text-gray-500"
           required
         />
         <select
           value={role}
           onChange={e => setRole(e.target.value as PipelineRole)}
-          className="px-2 py-2 text-sm border border-gray-300 rounded"
+          className="px-2 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded"
         >
           <option value="admin">Admin</option>
           <option value="member">Membre</option>
@@ -110,22 +110,22 @@ export function MembersPanel({ pipelineId, pipelineName }: { pipelineId: string;
       </form>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Chargement…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Chargement…</p>
       ) : members.length === 0 ? (
-        <p className="text-sm text-gray-500">Aucun partenaire pour le moment. Invite quelqu'un ci-dessus.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Aucun partenaire pour le moment. Invite quelqu'un ci-dessus.</p>
       ) : (
-        <ul className="divide-y divide-gray-100 border rounded-lg">
+        <ul className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg">
           {members.map(m => (
             <li key={m.userId} className="flex items-center justify-between p-3">
               <div>
-                <p className="text-sm font-medium text-gray-900">{m.email ?? m.userId}</p>
-                <p className="text-xs text-gray-500">Ajouté le {new Date(m.createdAt).toLocaleDateString('fr-FR')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{m.email ?? m.userId}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Ajouté le {new Date(m.createdAt).toLocaleDateString('fr-FR')}</p>
               </div>
               <div className="flex items-center gap-2">
                 <select
                   value={m.role}
                   onChange={e => changeRole(m, e.target.value as PipelineRole)}
-                  className="text-xs px-2 py-1 border border-gray-300 rounded"
+                  className="text-xs px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded"
                   disabled={m.role === 'owner'}
                 >
                   <option value="owner">{ROLE_LABEL.owner}</option>
@@ -136,7 +136,7 @@ export function MembersPanel({ pipelineId, pipelineName }: { pipelineId: string;
                 {m.role !== 'owner' && (
                   <button
                     onClick={() => remove(m)}
-                    className="p-1 text-gray-400 hover:text-red-600"
+                    className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                     title="Retirer"
                   >
                     <Trash2 className="w-4 h-4" />
