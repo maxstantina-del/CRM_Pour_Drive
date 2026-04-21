@@ -4,6 +4,7 @@
 
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import type { Lead } from '../../lib/types';
+import type { Tag } from '../../services/tagsService';
 import { Button, Badge } from '../ui';
 import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
 import { sortLeads, formatDate, formatCurrency } from '../../lib/utils';
@@ -16,6 +17,7 @@ export interface TableViewProps {
   onViewLead?: (lead: Lead) => void;
   selectedIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
+  tagsByLead?: Map<string, Tag[]>;
 }
 
 export function TableView({
@@ -25,6 +27,7 @@ export function TableView({
   onViewLead,
   selectedIds,
   onSelectionChange,
+  tagsByLead,
 }: TableViewProps) {
   const [sortField, setSortField] = useState<keyof Lead>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -105,6 +108,9 @@ export function TableView({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
                   Entreprise
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  Tags
+                </th>
                 <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('stage')}
@@ -159,6 +165,26 @@ export function TableView({
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {lead.company && lead.company !== lead.name ? lead.company : '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const tags = tagsByLead?.get(lead.id) ?? [];
+                        if (tags.length === 0) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>;
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {tags.map((t) => (
+                              <span
+                                key={t.id}
+                                style={{ backgroundColor: `${t.color}25`, color: t.color, borderColor: `${t.color}60` }}
+                                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full border leading-none"
+                                title={t.name}
+                              >
+                                {t.name}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="blue" size="sm">

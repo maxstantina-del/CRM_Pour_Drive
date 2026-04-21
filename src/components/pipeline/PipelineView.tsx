@@ -20,6 +20,7 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import type { Lead, StageConfig } from '../../lib/types';
+import type { Tag } from '../../services/tagsService';
 import { Card } from '../ui';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { getStageIcon, getStageColorHex } from '../../lib/stageIcons';
@@ -31,6 +32,7 @@ export interface PipelineViewProps {
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
   onViewLead?: (lead: Lead) => void;
+  tagsByLead?: Map<string, Tag[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -39,6 +41,7 @@ export interface PipelineViewProps {
 
 interface LeadCardProps {
   lead: Lead;
+  tags?: Tag[];
   isMenuOpen: boolean;
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
@@ -48,6 +51,7 @@ interface LeadCardProps {
 
 const DraggableLeadCard = memo(function DraggableLeadCard({
   lead,
+  tags,
   isMenuOpen,
   onEditLead,
   onDeleteLead,
@@ -78,6 +82,7 @@ const DraggableLeadCard = memo(function DraggableLeadCard({
     >
       <LeadCardContent
         lead={lead}
+        tags={tags}
         isMenuOpen={isMenuOpen}
         onEditLead={onEditLead}
         onDeleteLead={onDeleteLead}
@@ -96,11 +101,14 @@ const DraggableLeadCard = memo(function DraggableLeadCard({
   a.onEditLead === b.onEditLead &&
   a.onDeleteLead === b.onDeleteLead &&
   a.onViewLead === b.onViewLead &&
-  a.onMenuToggle === b.onMenuToggle
+  a.onMenuToggle === b.onMenuToggle &&
+  (a.tags?.length ?? 0) === (b.tags?.length ?? 0) &&
+  (a.tags ?? []).every((t, i) => t.id === b.tags?.[i]?.id)
 ));
 
 function LeadCardContent({
   lead,
+  tags,
   isMenuOpen,
   onEditLead,
   onDeleteLead,
@@ -172,6 +180,20 @@ function LeadCardContent({
             {lead.value}€
           </p>
         )}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {tags.map((t) => (
+              <span
+                key={t.id}
+                style={{ backgroundColor: `${t.color}25`, color: t.color, borderColor: `${t.color}60` }}
+                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full border leading-none"
+                title={t.name}
+              >
+                {t.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -186,6 +208,7 @@ interface ColumnProps {
   leads: Lead[];
   isActive: boolean;
   openMenuId: string | null;
+  tagsByLead?: Map<string, Tag[]>;
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
   onViewLead?: (lead: Lead) => void;
@@ -193,7 +216,7 @@ interface ColumnProps {
 }
 
 const Column = memo(function Column({
-  stage, leads, isActive, openMenuId, onEditLead, onDeleteLead, onViewLead, onMenuToggle,
+  stage, leads, isActive, openMenuId, tagsByLead, onEditLead, onDeleteLead, onViewLead, onMenuToggle,
 }: ColumnProps) {
   const { setNodeRef } = useDroppable({ id: stage.id });
   const color = getStageColorHex(stage.color);
@@ -228,6 +251,7 @@ const Column = memo(function Column({
             <DraggableLeadCard
               key={lead.id}
               lead={lead}
+              tags={tagsByLead?.get(lead.id)}
               isMenuOpen={openMenuId === lead.id}
               onEditLead={onEditLead}
               onDeleteLead={onDeleteLead}
@@ -246,7 +270,7 @@ const Column = memo(function Column({
 // ---------------------------------------------------------------------------
 
 export const PipelineView = memo(function PipelineView({
-  leads, stages, onUpdateStage, onEditLead, onDeleteLead, onViewLead,
+  leads, stages, onUpdateStage, onEditLead, onDeleteLead, onViewLead, tagsByLead,
 }: PipelineViewProps) {
   const [active, setActive] = useState<Active | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -308,6 +332,7 @@ export const PipelineView = memo(function PipelineView({
               leads={leadsByStage[stage.id] ?? []}
               isActive={false}
               openMenuId={openMenuId}
+              tagsByLead={tagsByLead}
               onEditLead={onEditLead}
               onDeleteLead={onDeleteLead}
               onViewLead={onViewLead}
@@ -321,6 +346,7 @@ export const PipelineView = memo(function PipelineView({
             <div className="w-80 opacity-90 rotate-1 shadow-2xl">
               <LeadCardContent
                 lead={activeLead}
+                tags={tagsByLead?.get(activeLead.id)}
                 isMenuOpen={false}
                 onEditLead={() => void 0}
                 onDeleteLead={() => void 0}

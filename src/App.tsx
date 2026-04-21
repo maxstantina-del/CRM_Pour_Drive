@@ -563,6 +563,7 @@ function App() {
                 onEditLead={handleEditLead}
                 onDeleteLead={handleDeleteLead}
                 onViewLead={handleViewLead}
+                tagsByLead={leadTags}
               />
             )
           )}
@@ -576,6 +577,7 @@ function App() {
               onViewLead={handleViewLead}
               selectedIds={selectedLeadIds}
               onSelectionChange={setSelectedLeadIds}
+              tagsByLead={leadTags}
             />
           )}
 
