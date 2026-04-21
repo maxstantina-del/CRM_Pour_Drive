@@ -7,6 +7,8 @@ import {
   isMappingValid,
   isMappingAutoSkippable,
   sampleValues,
+  detectHeaderRowIndex,
+  buildPreview,
 } from './importParsers';
 
 describe('autoDetectField', () => {
@@ -113,6 +115,45 @@ describe('countImportable / isMappingValid', () => {
     expect(countImportable(headers, rows, { 0: 'name', 1: 'email' })).toEqual({ importable: 1, skipped: 1 });
     expect(isMappingValid({ 0: 'name' })).toBe(true);
     expect(isMappingValid({ 0: 'email' })).toBe(false);
+  });
+});
+
+describe('detectHeaderRowIndex', () => {
+  it('finds the header row buried below section titles (Chablais-style)', () => {
+    const grid = [
+      ['', 'Sous-Secteur', 'Communes à exploiter', '', '', 'Profil de Potentiel'],
+      ['', 'Bassin Thononais', 'Thonon, Publier', '', '', 'Élevé'],
+      ['', 'Bas-Chablais', 'Douvaine, Sciez', '', '', 'Très élevé'],
+      [],
+      ['N°', 'Entreprise', 'Ville', 'Département', 'Téléphone', 'Dirigeant local'],
+      [1, 'Garage X', 'Thonon', '74', '04 50 00 00 00', 'Jean Martin'],
+      [2, 'Garage Y', 'Evian', '74', '04 50 11 11 11', 'Alice Durand'],
+    ];
+    expect(detectHeaderRowIndex(grid)).toBe(4);
+  });
+
+  it('falls back to 0 when no row has enough Lead-field cells', () => {
+    const grid = [
+      ['Garbage col A', 'Garbage col B'],
+      ['value1', 'value2'],
+    ];
+    expect(detectHeaderRowIndex(grid)).toBe(0);
+  });
+});
+
+describe('buildPreview', () => {
+  it('slices headers from chosen row, data from rows after', () => {
+    const grid = [
+      ['title'],
+      ['Nom', 'Email'],
+      ['Lead 1', 'a@x'],
+      ['Lead 2', 'b@x'],
+    ];
+    const preview = buildPreview(grid, 1, 'f.xlsx');
+    expect(preview.headers).toEqual(['Nom', 'Email']);
+    expect(preview.rows).toHaveLength(2);
+    expect(preview.headerRowIndex).toBe(1);
+    expect(preview.allRows).toHaveLength(4);
   });
 });
 

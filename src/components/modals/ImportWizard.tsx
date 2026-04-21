@@ -15,6 +15,7 @@ import {
   applyMapping,
   isMappingValid,
   isMappingAutoSkippable,
+  buildPreview,
 } from '../../lib/importParsers';
 import { ImportMappingPanel } from './ImportMappingPanel';
 
@@ -144,6 +145,13 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
     setPhase('idle');
   };
 
+  const handleHeaderRowShift = (nextIndex: number) => {
+    if (!preview) return;
+    const next = buildPreview(preview.allRows, nextIndex, preview.fileName);
+    setPreview(next);
+    setMapping(autoDetectMapping(next.headers));
+  };
+
   const handleConfirmMapping = async () => {
     if (!preview || !isMappingValid(mapping) || !selectedPipelineId) return;
     await runImport(preview, mapping, selectedPipelineId);
@@ -228,7 +236,12 @@ export function ImportWizard({ isOpen, onClose, onImport, currentPipelineId, pip
         )}
 
         {phase === 'mapping' && preview && (
-          <ImportMappingPanel preview={preview} mapping={mapping} onMappingChange={setMapping} />
+          <ImportMappingPanel
+            preview={preview}
+            mapping={mapping}
+            onMappingChange={setMapping}
+            onHeaderRowChange={handleHeaderRowShift}
+          />
         )}
 
         {phase === 'importing' && (

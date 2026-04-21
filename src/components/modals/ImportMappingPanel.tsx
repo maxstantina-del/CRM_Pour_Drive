@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import {
   type LeadField,
   type PreviewData,
@@ -20,12 +20,21 @@ export interface ImportMappingPanelProps {
   preview: PreviewData;
   mapping: Record<number, LeadField>;
   onMappingChange: (next: Record<number, LeadField>) => void;
+  /** Shift the header row to use for this file. Optional — omit to hide the stepper. */
+  onHeaderRowChange?: (nextIndex: number) => void;
 }
 
 const IGNORE = '__ignore__';
 
-export function ImportMappingPanel({ preview, mapping, onMappingChange }: ImportMappingPanelProps) {
-  const { headers, rows, fileName } = preview;
+export function ImportMappingPanel({
+  preview,
+  mapping,
+  onMappingChange,
+  onHeaderRowChange,
+}: ImportMappingPanelProps) {
+  const { headers, rows, fileName, headerRowIndex, allRows } = preview;
+  const canGoUp = !!onHeaderRowChange && headerRowIndex > 0;
+  const canGoDown = !!onHeaderRowChange && headerRowIndex < allRows.length - 1;
 
   const { importable, skipped } = useMemo(
     () => countImportable(headers, rows, mapping),
@@ -59,8 +68,7 @@ export function ImportMappingPanel({ preview, mapping, onMappingChange }: Import
             Fichier : <span className="font-medium text-gray-900">{fileName}</span>
           </p>
           <p className="text-xs text-gray-500 mt-0.5">
-            {headers.length} colonne{headers.length > 1 ? 's' : ''} · {rows.length} lignes détectées.
-            Ajuste les correspondances si nécessaire.
+            {headers.length} colonne{headers.length > 1 ? 's' : ''} · {rows.length} lignes de données.
           </p>
         </div>
         <div className="text-right shrink-0">
@@ -71,6 +79,37 @@ export function ImportMappingPanel({ preview, mapping, onMappingChange }: Import
           )}
         </div>
       </div>
+
+      {onHeaderRowChange && (
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+          <span className="text-xs text-blue-700">
+            Ligne d'en-têtes utilisée : <strong>{headerRowIndex + 1}</strong>
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => canGoUp && onHeaderRowChange!(headerRowIndex - 1)}
+              disabled={!canGoUp}
+              className="p-1 rounded hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed text-blue-700"
+              title="Ligne précédente"
+            >
+              <ChevronUp size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => canGoDown && onHeaderRowChange!(headerRowIndex + 1)}
+              disabled={!canGoDown}
+              className="p-1 rounded hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed text-blue-700"
+              title="Ligne suivante"
+            >
+              <ChevronDown size={14} />
+            </button>
+          </div>
+          <span className="text-xs text-blue-600 italic ml-auto">
+            Ajuste si les colonnes ne correspondent pas.
+          </span>
+        </div>
+      )}
 
       {!valid && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">

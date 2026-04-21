@@ -50,6 +50,10 @@ export interface PreviewData {
   headers: string[];
   rows: unknown[][];
   fileName: string;
+  /** Index (0-based) of the row selected as the header in the raw grid. */
+  headerRowIndex: number;
+  /** Full file grid, kept so the user can shift the header row after parsing. */
+  allRows: unknown[][];
 }
 
 export function normalizeHeader(header: string): string {
@@ -198,6 +202,54 @@ export function isMappingAutoSkippable(mapping: Record<number, LeadField>): bool
   return hasIdentity && hasContact;
 }
 
+/**
+ * Score a candidate header row: how many non-empty cells match a known Lead field pattern.
+ */
+function scoreHeaderRow(row: unknown[]): number {
+  let score = 0;
+  for (const cell of row) {
+    if (cell === null || cell === undefined) continue;
+    const s = String(cell).trim();
+    if (!s) continue;
+    if (autoDetectField(s) !== null) score++;
+  }
+  return score;
+}
+
+/**
+ * Finds the most likely header row by scanning the first N rows and picking
+ * the one with the highest count of auto-detectable field names.
+ * Returns 0 as fallback if no row meets the minimum threshold.
+ */
+export function detectHeaderRowIndex(allRows: unknown[][], maxSearch = 15, minScore = 3): number {
+  if (allRows.length === 0) return 0;
+  let bestIdx = 0;
+  let bestScore = 0;
+  const limit = Math.min(maxSearch, allRows.length);
+  for (let i = 0; i < limit; i++) {
+    const s = scoreHeaderRow(allRows[i]);
+    if (s > bestScore) {
+      bestScore = s;
+      bestIdx = i;
+    }
+  }
+  return bestScore >= minScore ? bestIdx : 0;
+}
+
+/**
+ * Assemble a PreviewData from the raw grid given a chosen header row index.
+ */
+export function buildPreview(
+  allRows: unknown[][],
+  headerRowIndex: number,
+  fileName: string
+): PreviewData {
+  const safeIdx = Math.max(0, Math.min(headerRowIndex, allRows.length - 1));
+  const headers = (allRows[safeIdx] ?? []).map((h) => String(h ?? '').trim());
+  const rows = allRows.slice(safeIdx + 1);
+  return { headers, rows, fileName, headerRowIndex: safeIdx, allRows };
+}
+
 async function readArrayBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -211,7 +263,9 @@ async function parseJSONPreview(file: File): Promise<PreviewData> {
   const text = await readFileAsText(file);
   const parsed = JSON.parse(text);
   if (!Array.isArray(parsed)) throw new Error('JSON doit être un tableau de leads.');
-  if (parsed.length === 0) return { headers: [], rows: [], fileName: file.name };
+  if (parsed.length === 0) {
+    return { headers: [], rows: [], fileName: file.name, headerRowIndex: 0, allRows: [] };
+  }
 
   const keySet = new Set<string>();
   for (const obj of parsed) {
@@ -223,7 +277,8 @@ async function parseJSONPreview(file: File): Promise<PreviewData> {
   const rows = parsed.map((obj) =>
     headers.map((k) => (obj as Record<string, unknown>)[k] ?? '')
   );
-  return { headers, rows, fileName: file.name };
+  // JSON: headers come from keys, not a row in the data grid.
+  return { headers, rows, fileName: file.name, headerRowIndex: 0, allRows: [headers, ...rows] };
 }
 
 export async function parseFilePreview(file: File): Promise<PreviewData> {
@@ -239,12 +294,11 @@ export async function parseFilePreview(file: File): Promise<PreviewData> {
   const wb = XLSX.read(buf, { type: 'array', raw: false });
   if (wb.SheetNames.length === 0) throw new Error('Fichier vide ou illisible.');
   const ws = wb.Sheets[wb.SheetNames[0]];
-  const rawRows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '', raw: false });
-  if (rawRows.length < 2) throw new Error('Le fichier doit avoir une ligne d\'en-tête et au moins une ligne de données.');
+  const allRows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '', raw: false });
+  if (allRows.length < 2) throw new Error('Le fichier doit avoir une ligne d\'en-tête et au moins une ligne de données.');
 
-  const headers = (rawRows[0] as unknown[]).map((h) => String(h ?? '').trim());
-  const rows = rawRows.slice(1) as unknown[][];
-  return { headers, rows, fileName: file.name };
+  const headerIdx = detectHeaderRowIndex(allRows);
+  return buildPreview(allRows, headerIdx, file.name);
 }
 
 /** Extract up to N non-empty sample values per column, truncated. */
