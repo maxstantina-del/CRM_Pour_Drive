@@ -42,6 +42,11 @@ describe('ImportWizard', () => {
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => screen.getByText('leads.xlsx'));
 
+    // Step 1: go to preview/mapping
+    fireEvent.click(screen.getByText('Prévisualiser'));
+    await waitFor(() => screen.getByText(/à importer/));
+
+    // Step 2: confirm mapping
     fireEvent.click(screen.getByText('Importer'));
 
     await waitFor(() => expect(onImport).toHaveBeenCalled());
