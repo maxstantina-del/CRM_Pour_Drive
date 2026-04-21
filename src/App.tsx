@@ -101,7 +101,7 @@ function App() {
   } = useLeads();
 
   const { stages, addStage, updateStage, removeStage, reorderStages } = usePipelineStages();
-  const { tags, leadTags } = useTags();
+  const { tags, leadTags, toggleLeadTag, getTagsForLead } = useTags();
 
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
   const allLeads = effectivePipelineId ? getPipelineLeads(effectivePipelineId) : [];
@@ -297,14 +297,54 @@ function App() {
     }
   };
 
-  const handleSubmitLead = async (leadData: Partial<Lead>) => {
+  const handleSubmitLead = async (
+    leadData: Partial<Lead>,
+    extras?: { tagIds: string[]; nextAction?: { text: string; dueDate: string } }
+  ) => {
+    // Merge the new nextAction (if any) into the lead's existing nextActions array
+    const newNextAction = extras?.nextAction
+      ? {
+          id: generateId(),
+          text: extras.nextAction.text,
+          completed: false,
+          dueDate: extras.nextAction.dueDate,
+          createdAt: new Date().toISOString(),
+        }
+      : null;
+
+    let targetLead: Lead | null = null;
+
     if (editingLead) {
-      await leadsManager.updateLead(editingLead.id, leadData);
+      const mergedNextActions = newNextAction
+        ? [...(editingLead.nextActions ?? []), newNextAction]
+        : editingLead.nextActions;
+      await leadsManager.updateLead(editingLead.id, { ...leadData, nextActions: mergedNextActions });
+      targetLead = editingLead;
       showToast('Lead modifié', 'success');
     } else {
-      await leadsManager.addLead(leadData);
+      const created = await leadsManager.addLead({
+        ...leadData,
+        nextActions: newNextAction ? [newNextAction] : [],
+      });
+      targetLead = created;
       showToast('Lead créé', 'success');
     }
+
+    // Sync tags: add new selections, remove unselected ones (for edit).
+    if (targetLead && extras?.tagIds) {
+      const currentIds = new Set(getTagsForLead(targetLead.id).map((t) => t.id));
+      const desiredIds = new Set(extras.tagIds);
+      const toAdd = extras.tagIds.filter((id) => !currentIds.has(id));
+      const toRemove = Array.from(currentIds).filter((id) => !desiredIds.has(id));
+      const allToToggle = [...toAdd, ...toRemove];
+      for (const tagId of allToToggle) {
+        const tag = tags.find((t) => t.id === tagId);
+        if (tag) {
+          try { await toggleLeadTag(targetLead.id, tag); } catch (err) { console.error(err); }
+        }
+      }
+    }
+
     setIsFormOpen(false);
     setEditingLead(undefined);
   };
