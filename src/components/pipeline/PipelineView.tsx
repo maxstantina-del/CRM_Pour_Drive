@@ -2,7 +2,7 @@
  * Pipeline Kanban view with smooth drag & drop
  */
 
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import type { Lead, StageConfig } from '../../lib/types';
 import { Card } from '../ui';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
@@ -143,46 +143,46 @@ export const PipelineView = memo(function PipelineView({
     }, {} as Record<string, Lead[]>);
   }, [leads]);
 
-  const handleDragStart = (e: React.DragEvent, leadId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, leadId: string) => {
     setDraggedLead(leadId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', leadId);
-    // Rendre l'élément semi-transparent
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '0.4';
     }
-  };
+  }, []);
 
-  const handleDragEnd = (e: React.DragEvent) => {
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
     setDraggedLead(null);
     setDragOverStage(null);
-    // Restaurer l'opacité
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '1';
     }
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent, stageId: string) => {
+  const handleDragOver = useCallback((e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDragOverStage(stageId);
-  };
+    // Guard: only set if value actually changes to avoid 60fps re-renders
+    setDragOverStage(prev => (prev === stageId ? prev : stageId));
+  }, []);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDragOverStage(null);
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, newStage: Lead['stage']) => {
+  const handleDrop = useCallback((e: React.DragEvent, newStage: Lead['stage']) => {
     e.preventDefault();
     setDragOverStage(null);
+    setDraggedLead(prev => {
+      if (prev) onUpdateStage(prev, newStage);
+      return null;
+    });
+  }, [onUpdateStage]);
 
-    if (draggedLead) {
-      // Mise à jour optimiste
-      onUpdateStage(draggedLead, newStage);
-    }
-
-    setDraggedLead(null);
-  };
+  const handleMenuToggle = useCallback((leadId: string) => {
+    setOpenMenuId(prev => (prev === leadId ? null : leadId));
+  }, []);
 
   return (
     <div className="p-6">
@@ -235,7 +235,7 @@ export const PipelineView = memo(function PipelineView({
                     onEditLead={onEditLead}
                     onDeleteLead={onDeleteLead}
                     onViewLead={onViewLead}
-                    onMenuToggle={(leadId) => setOpenMenuId(openMenuId === leadId ? null : leadId)}
+                    onMenuToggle={handleMenuToggle}
                   />
                 ))}
               </div>
