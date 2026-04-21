@@ -55,17 +55,17 @@ const LeadCard = memo(function LeadCard({
       <Card padding="sm" hover>
         <div className="space-y-2">
           <div className="flex items-start justify-between">
-            <h4 className="font-medium text-gray-900 text-sm">{lead.name}</h4>
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{lead.name}</h4>
             <div className="relative">
               <button
-                className="p-1 rounded hover:bg-gray-200 transition-colors"
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMenuToggle(lead.id);
                 }}
                 title="Actions"
               >
-                <MoreVertical size={16} className="text-gray-600" />
+                <MoreVertical size={16} className="text-gray-600 dark:text-gray-400" />
               </button>
               {isMenuOpen && (
                 <>
@@ -73,14 +73,14 @@ const LeadCard = memo(function LeadCard({
                     className="fixed inset-0 z-30"
                     onClick={() => onMenuToggle(lead.id)}
                   />
-                  <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-40 min-w-[160px]">
+                  <div className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-1 z-40 min-w-[160px]">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onEditLead(lead);
                         onMenuToggle(lead.id);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-300 flex items-center gap-2"
                     >
                       <Edit size={14} />
                       Modifier
@@ -93,7 +93,7 @@ const LeadCard = memo(function LeadCard({
                         }
                         onMenuToggle(lead.id);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center gap-2"
                     >
                       <Trash2 size={14} />
                       Supprimer
@@ -104,13 +104,13 @@ const LeadCard = memo(function LeadCard({
             </div>
           </div>
           {lead.contactName && (
-            <p className="text-xs text-gray-600">{lead.contactName}</p>
+            <p className="text-xs text-gray-700 dark:text-gray-300">{lead.contactName}</p>
           )}
           {lead.company && (
-            <p className="text-xs text-gray-500">{lead.company}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{lead.company}</p>
           )}
           {lead.value && (
-            <p className="text-xs font-semibold text-blue-600">
+            <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
               {lead.value}€
             </p>
           )}
@@ -186,7 +186,7 @@ export const PipelineView = memo(function PipelineView({
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Pipeline</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Pipeline</h1>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map(stage => (
@@ -200,8 +200,8 @@ export const PipelineView = memo(function PipelineView({
             <div
               className={`rounded-lg p-4 transition-all duration-100 ${
                 dragOverStage === stage.id
-                  ? 'bg-blue-100 border-2 border-blue-400 shadow-lg scale-105'
-                  : 'bg-gray-100 border-2 border-transparent'
+                  ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-lg scale-105'
+                  : 'bg-gray-100 dark:bg-gray-900 border-2 border-transparent dark:border-gray-800'
               }`}
             >
               <div className="flex items-center justify-between mb-4">
@@ -210,7 +210,7 @@ export const PipelineView = memo(function PipelineView({
                     const Icon = getStageIcon(stage.icon);
                     return <Icon size={16} style={{ color: getStageColorHex(stage.color) }} />;
                   })()}
-                  <h3 className="font-semibold text-gray-900 truncate">{stage.label}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{stage.label}</h3>
                 </div>
                 <span
                   className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
