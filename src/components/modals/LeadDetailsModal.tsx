@@ -15,6 +15,7 @@ function formatActionDue(raw: string): string {
 }
 import { ActivityTimeline } from '../activities/ActivityTimeline';
 import { TagPicker } from '../tags/TagPicker';
+import { FichesSection } from '../fiches/FichesSection';
 import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
 
 export interface LeadDetailsModalProps {
@@ -300,6 +301,11 @@ END:VCARD`;
         <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
           <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Tags</h4>
           <TagPicker leadId={lead.id} />
+        </div>
+
+        {/* Fiches Autoglass */}
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+          <FichesSection leadId={lead.id} leadName={lead.name} leadCompany={lead.company} />
         </div>
 
         {/* Activity Timeline */}
