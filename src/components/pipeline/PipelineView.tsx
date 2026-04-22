@@ -238,6 +238,7 @@ const Column = memo(function Column({
   const { setNodeRef } = useDroppable({ id: stage.id });
   const color = getStageColorHex(stage.color);
   const Icon = getStageIcon(stage.icon);
+  const isWonStage = WON_STAGE_IDS.has(stage.id);
 
   return (
     <div ref={setNodeRef} className="flex-shrink-0 w-80">
@@ -247,6 +248,8 @@ const Column = memo(function Column({
             ? 'bg-yellow-50 dark:bg-yellow-900/40 border-2 border-yellow-400 dark:border-yellow-500 shadow-[0_0_24px_rgba(234,179,8,0.5)] animate-pulse'
             : isActive
             ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-400 dark:border-blue-500'
+            : isWonStage
+            ? 'bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700/60'
             : 'bg-gray-100 dark:bg-gray-900 border-2 border-transparent dark:border-gray-800'
         }`}
       >
