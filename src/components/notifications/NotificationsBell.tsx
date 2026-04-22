@@ -4,7 +4,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { Bell, Trophy, Check } from 'lucide-react';
+import { Bell, Trophy, Check, Calendar } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useToast } from '../../contexts/ToastContext';
 import type { Notification } from '../../services/notificationsService';
@@ -22,6 +22,18 @@ function relativeTime(iso: string): string {
   return d.toLocaleDateString('fr-FR');
 }
 
+function prettyFirstSlot(availability: string | undefined): string {
+  if (!availability) return '';
+  const first = availability.split(';;')[0]?.trim();
+  if (!first) return '';
+  const m = first.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?/);
+  if (!m) return first;
+  const [, y, mo, d, time] = m;
+  const dt = new Date(`${y}-${mo}-${d}T${time || '00:00'}`);
+  const day = dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return time ? `${day} à ${time.replace(':', 'h')}` : day;
+}
+
 function renderNotif(n: Notification): { icon: React.ReactNode; title: string; subtitle: string } {
   if (n.kind === 'lead_won') {
     const leadName = String(n.payload.leadName ?? 'Un lead');
@@ -30,6 +42,24 @@ function renderNotif(n: Notification): { icon: React.ReactNode; title: string; s
       icon: <Trophy className="text-yellow-500" size={18} />,
       title: `🏆 ${leadName} gagné`,
       subtitle: pipelineName ? `Pipeline « ${pipelineName} »` : '',
+    };
+  }
+  if (n.kind === 'fiche_appointment') {
+    const leadName = String(n.payload.leadCompany ?? n.payload.leadName ?? 'Un lead');
+    const actorEmail = String(n.payload.actorEmail ?? 'Un collègue');
+    const isUpdate = n.payload.isUpdate === true;
+    const availability = typeof n.payload.availability === 'string' ? n.payload.availability : '';
+    const slotsCount = availability.split(';;').map((s) => s.trim()).filter(Boolean).length;
+    const firstPretty = prettyFirstSlot(availability);
+    const plate = typeof n.payload.vehiclePlate === 'string' ? n.payload.vehiclePlate : '';
+    return {
+      icon: <Calendar className="text-blue-500" size={18} />,
+      title: isUpdate
+        ? `📅 RDV modifié — ${leadName}`
+        : `📅 ${slotsCount > 1 ? `${slotsCount} RDV planifiés` : 'Nouveau RDV'} — ${leadName}`,
+      subtitle: [firstPretty, plate ? `(${plate})` : '', `par ${actorEmail}`]
+        .filter(Boolean)
+        .join(' · '),
     };
   }
   return {
@@ -52,6 +82,15 @@ export function NotificationsBell({ onOpenLead }: NotificationsBellProps) {
       if (notif.kind === 'lead_won') {
         const leadName = String(notif.payload.leadName ?? 'Un lead');
         showToast(`🏆 ${leadName} est gagné !`, 'success');
+      } else if (notif.kind === 'fiche_appointment') {
+        const leadName = String(notif.payload.leadCompany ?? notif.payload.leadName ?? 'Un lead');
+        const isUpdate = notif.payload.isUpdate === true;
+        showToast(
+          isUpdate
+            ? `📅 RDV modifié sur ${leadName}`
+            : `📅 Nouveau RDV planifié sur ${leadName}`,
+          'success'
+        );
       }
     },
     [showToast]

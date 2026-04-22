@@ -76,8 +76,9 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const record = body.record;
-  if (!record || record.kind !== 'lead_won') {
-    return new Response(JSON.stringify({ skipped: 'kind is not lead_won' }), {
+  const SUPPORTED_KINDS = new Set(['lead_won', 'fiche_appointment']);
+  if (!record || !SUPPORTED_KINDS.has(record.kind)) {
+    return new Response(JSON.stringify({ skipped: `kind not handled: ${record?.kind}` }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
@@ -90,6 +91,11 @@ export default async function handler(req: Request): Promise<Response> {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
+  }
+
+  // Branch: fiche appointment emails are much simpler than lead_won celebration
+  if (record.kind === 'fiche_appointment') {
+    return sendFicheAppointmentEmail(p, apiKey, from, recipientEmail);
   }
 
   const leadName = escapeHtml(String(p.leadName ?? 'Un lead'));
@@ -228,6 +234,111 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   return new Response(JSON.stringify({ sent: true, to: recipientEmail, resend: resText }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+/**
+ * Email notifying the lead owner (Max) that a pipeline member (the client,
+ * e.g. Nicolas / N.G PERF) has scheduled or modified a fiche appointment.
+ */
+async function sendFicheAppointmentEmail(
+  p: Record<string, unknown>,
+  apiKey: string,
+  from: string,
+  recipientEmail: string
+): Promise<Response> {
+  const leadName = escapeHtml(String(p.leadName ?? 'Un lead'));
+  const leadCompany = escapeHtml(String(p.leadCompany ?? ''));
+  const actorEmail = escapeHtml(String(p.actorEmail ?? 'Un collègue'));
+  const plate = escapeHtml(String(p.vehiclePlate ?? ''));
+  const brandModel = escapeHtml(String(p.vehicleBrandModel ?? ''));
+  const isUpdate = p.isUpdate === true;
+  const leadId = typeof p.leadId === 'string' ? p.leadId : '';
+  const appUrl = 'https://crm-pour-drive.vercel.app/';
+
+  const prettySlot = (raw: string): string => {
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
+    if (!m) return escapeHtml(raw);
+    const [, y, mo, d, time, note] = m;
+    const dt = new Date(`${y}-${mo}-${d}T${time || '00:00'}`);
+    const day = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const parts = [day];
+    if (time) parts.push(`à ${time.replace(':', 'h')}`);
+    if (note) parts.push(`— ${note}`);
+    return escapeHtml(parts.join(' ')).replace(/^./, (c) => c.toUpperCase());
+  };
+
+  const availability = typeof p.availability === 'string' ? p.availability : '';
+  const slots = availability.split(';;').map((s) => s.trim()).filter(Boolean);
+  const slotsHtml = slots.length
+    ? `<ol style="margin:8px 0 0 0;padding-left:20px;color:#1f2937;font-size:14px;">
+         ${slots.map((s) => `<li style="margin-bottom:4px;">${prettySlot(s)}</li>`).join('')}
+       </ol>`
+    : '';
+
+  const title = isUpdate
+    ? '📅 Un rendez-vous a été modifié'
+    : `📅 ${slots.length > 1 ? `${slots.length} rendez-vous planifiés` : 'Un rendez-vous a été planifié'}`;
+
+  const html = `<!doctype html>
+<html lang="fr">
+<body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f9fafb;margin:0;padding:24px;">
+  <table role="presentation" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+    <tr>
+      <td style="padding:24px;background:linear-gradient(135deg,#2563eb,#1e40af);color:#ffffff;">
+        <h1 style="margin:0;font-size:20px;">${title}</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px;color:#1f2937;">
+        <p style="margin:0 0 12px;font-size:15px;">Bonjour,</p>
+        <p style="margin:0 0 16px;font-size:15px;">
+          <strong>${actorEmail}</strong> vient de ${isUpdate ? 'modifier' : 'planifier'} un rendez-vous sur la fiche de
+          <strong>${leadCompany || leadName}</strong>.
+        </p>
+        ${plate || brandModel ? `
+          <div style="margin:12px 0;padding:10px 12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+            ${plate ? `<div style="font-family:ui-monospace,SFMono-Regular,monospace;font-weight:700;font-size:14px;">${plate}</div>` : ''}
+            ${brandModel ? `<div style="font-size:13px;color:#6b7280;margin-top:2px;">${brandModel}</div>` : ''}
+          </div>` : ''}
+        ${slotsHtml}
+        <p style="margin:20px 0 16px;font-size:14px;color:#6b7280;">
+          Connecte-toi au CRM pour voir la fiche complète.
+        </p>
+        <a href="${appUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">
+          Ouvrir le CRM
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 24px;background:#f9fafb;color:#9ca3af;font-size:12px;text-align:center;">
+        Tu reçois cet email car tu es propriétaire de ce lead.<br/>
+        Lead id : ${escapeHtml(leadId)}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const subject = isUpdate
+    ? `📅 RDV modifié — ${leadCompany || leadName}`
+    : `📅 ${slots.length > 1 ? `${slots.length} RDV planifiés` : 'Nouveau RDV'} — ${leadCompany || leadName}`;
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ from, to: [recipientEmail], subject, html }),
+  });
+  const resText = await res.text();
+  if (!res.ok) {
+    return new Response(
+      JSON.stringify({ error: 'resend failed', status: res.status, body: resText }),
+      { status: 502, headers: { 'content-type': 'application/json' } }
+    );
+  }
+  return new Response(JSON.stringify({ sent: true, to: recipientEmail, kind: 'fiche_appointment' }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   });
