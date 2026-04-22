@@ -22,8 +22,9 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Lead, StageConfig } from '../../lib/types';
 import type { Tag } from '../../services/tagsService';
 import { Card } from '../ui';
-import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, X as XIcon } from 'lucide-react';
 import { getStageIcon, getStageColorHex } from '../../lib/stageIcons';
+import { useTags } from '../../hooks/useTags';
 
 export interface PipelineViewProps {
   leads: Lead[];
@@ -114,6 +115,12 @@ function LeadCardContent({
   onDeleteLead,
   onMenuToggle,
 }: Omit<LeadCardProps, 'onViewLead'>) {
+  const { toggleLeadTag } = useTags();
+  const handleRemoveTag = (e: React.MouseEvent, tag: Tag) => {
+    e.stopPropagation();
+    e.preventDefault();
+    toggleLeadTag(lead.id, tag);
+  };
   return (
     <Card padding="sm">
       <div className="space-y-2">
@@ -186,10 +193,19 @@ function LeadCardContent({
               <span
                 key={t.id}
                 style={{ backgroundColor: `${t.color}25`, color: t.color, borderColor: `${t.color}60` }}
-                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full border leading-none"
+                className="group/chip inline-flex items-center gap-0.5 pl-1.5 pr-0.5 py-0.5 text-[10px] font-medium rounded-full border leading-none"
                 title={t.name}
               >
-                {t.name}
+                <span>{t.name}</span>
+                <button
+                  type="button"
+                  onClick={(e) => handleRemoveTag(e, t)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="p-0.5 rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10"
+                  title={`Retirer "${t.name}" de ce lead`}
+                >
+                  <XIcon size={9} />
+                </button>
               </span>
             ))}
           </div>

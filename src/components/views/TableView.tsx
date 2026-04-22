@@ -6,8 +6,9 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import type { Lead } from '../../lib/types';
 import type { Tag } from '../../services/tagsService';
 import { Button, Badge } from '../ui';
-import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
+import { Edit, Trash2, ArrowUpDown, X as XIcon } from 'lucide-react';
 import { sortLeads, formatDate, formatCurrency } from '../../lib/utils';
+import { useTags } from '../../hooks/useTags';
 
 export interface TableViewProps {
   leads: Lead[];
@@ -29,6 +30,7 @@ export function TableView({
   onSelectionChange,
   tagsByLead,
 }: TableViewProps) {
+  const { toggleLeadTag } = useTags();
   const [sortField, setSortField] = useState<keyof Lead>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
@@ -171,15 +173,23 @@ export function TableView({
                         const tags = tagsByLead?.get(lead.id) ?? [];
                         if (tags.length === 0) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>;
                         return (
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                             {tags.map((t) => (
                               <span
                                 key={t.id}
                                 style={{ backgroundColor: `${t.color}25`, color: t.color, borderColor: `${t.color}60` }}
-                                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded-full border leading-none"
+                                className="inline-flex items-center gap-0.5 pl-1.5 pr-0.5 py-0.5 text-[10px] font-medium rounded-full border leading-none"
                                 title={t.name}
                               >
-                                {t.name}
+                                <span>{t.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleLeadTag(lead.id, t); }}
+                                  className="p-0.5 rounded-full opacity-60 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10"
+                                  title={`Retirer "${t.name}" de ce lead`}
+                                >
+                                  <XIcon size={9} />
+                                </button>
                               </span>
                             ))}
                           </div>
