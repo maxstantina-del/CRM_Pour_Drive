@@ -5,6 +5,7 @@ import { useFiches } from '../../hooks/useFiches';
 import { FicheFormModal } from './FicheFormModal';
 import type { Fiche } from '../../services/fichesService';
 import { exportFicheToPDF } from '../../lib/ficheExport';
+import type { Lead } from '../../lib/types';
 
 const VEHICLE_LABELS: Record<string, string> = {
   VL: 'VL',
@@ -25,12 +26,13 @@ const DAMAGE_LOCATION_LABELS: Record<string, string> = {
 };
 
 export interface FichesSectionProps {
-  leadId: string;
-  leadName: string;
-  leadCompany?: string;
+  lead: Lead;
 }
 
-export function FichesSection({ leadId, leadName, leadCompany }: FichesSectionProps) {
+export function FichesSection({ lead }: FichesSectionProps) {
+  const leadId = lead.id;
+  const leadName = lead.name;
+  const leadCompany = lead.company;
   const { fiches, loading, addFiche, editFiche, removeFiche } = useFiches(leadId);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Fiche | null>(null);
@@ -172,6 +174,7 @@ export function FichesSection({ leadId, leadName, leadCompany }: FichesSectionPr
       <FicheFormModal
         isOpen={modalOpen}
         initial={editing}
+        lead={lead}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
       />

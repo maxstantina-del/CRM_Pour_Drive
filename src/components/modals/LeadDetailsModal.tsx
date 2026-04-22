@@ -305,7 +305,7 @@ END:VCARD`;
 
         {/* Fiches Autoglass */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
-          <FichesSection leadId={lead.id} leadName={lead.name} leadCompany={lead.company} />
+          <FichesSection lead={lead} />
         </div>
 
         {/* Activity Timeline */}

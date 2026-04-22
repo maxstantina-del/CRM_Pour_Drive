@@ -1,6 +1,6 @@
 import React, { useState, type FormEvent, useEffect } from 'react';
 import { Modal, ModalFooter, Button } from '../ui';
-import { Save, Loader2, User, Truck, AlertTriangle, MapPin, Calendar, Shield, MessageCircle, Zap } from 'lucide-react';
+import { Save, Loader2, User, Truck, AlertTriangle, MapPin, Calendar, Shield, MessageCircle, Zap, Sparkles } from 'lucide-react';
 import type {
   Fiche,
   FicheInput,
@@ -10,10 +10,12 @@ import type {
   InterventionPlace,
   InsuranceGlassCovered,
 } from '../../services/fichesService';
+import type { Lead } from '../../lib/types';
 
 export interface FicheFormModalProps {
   isOpen: boolean;
   initial?: Fiche | null;
+  lead?: Lead;
   onClose: () => void;
   onSubmit: (input: FicheInput) => Promise<void>;
 }
@@ -58,8 +60,27 @@ const emptyForm: FormState = {
   comment: '',
 };
 
-function ficheToForm(f: Fiche | null | undefined): FormState {
-  if (!f) return emptyForm;
+/**
+ * Pre-fill a blank fiche with data already known on the lead card so the
+ * commercial doesn't re-type contact name, phone, email, and intervention
+ * address during a phone call.
+ */
+function leadToDefaults(lead: Lead | undefined): FormState {
+  if (!lead) return emptyForm;
+  const addressParts = [lead.address, lead.zipCode && lead.city ? `${lead.zipCode} ${lead.city}` : lead.zipCode || lead.city]
+    .filter(Boolean)
+    .join(', ');
+  return {
+    ...emptyForm,
+    contactName: lead.contactName || lead.name || '',
+    contactPhone: lead.phone || '',
+    contactEmail: lead.email || '',
+    interventionAddress: addressParts,
+  };
+}
+
+function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
+  if (!f) return leadToDefaults(lead);
   return {
     contactName: f.contactName ?? '',
     contactRole: f.contactRole ?? '',
@@ -106,14 +127,17 @@ function formToInput(s: FormState): FicheInput {
 const PHRASE_CLE =
   "Parfait, je vous pose juste quelques questions, ça me permet de lancer l'intervention et vous n'avez rien à gérer derrière.";
 
-export function FicheFormModal({ isOpen, initial, onClose, onSubmit }: FicheFormModalProps) {
-  const [form, setForm] = useState<FormState>(() => ficheToForm(initial));
+export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: FicheFormModalProps) {
+  const [form, setForm] = useState<FormState>(() => ficheToForm(initial, lead));
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const isNew = !initial;
+  const prefilled = isNew && !!(lead && (lead.contactName || lead.phone || lead.email || lead.address));
+
   useEffect(() => {
-    if (isOpen) setForm(ficheToForm(initial));
-  }, [isOpen, initial]);
+    if (isOpen) setForm(ficheToForm(initial, lead));
+  }, [isOpen, initial, lead]);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -148,6 +172,16 @@ export function FicheFormModal({ isOpen, initial, onClose, onSubmit }: FicheForm
       size="lg"
     >
       <form onSubmit={submit} className="space-y-5">
+        {prefilled && (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-200">
+            <Sparkles size={16} className="mt-0.5 flex-shrink-0" />
+            <span>
+              Champs contact et adresse pré-remplis depuis la fiche prospect.
+              Tu peux les modifier si la personne à l'adresse d'intervention est différente.
+            </span>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={copyPhrase}
