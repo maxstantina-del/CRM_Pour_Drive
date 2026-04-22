@@ -25,14 +25,26 @@ const DAMAGE_LOCATION_LABELS: Record<string, string> = {
   lunette: 'Lunette arrière',
 };
 
-function formatAppointment(raw: string | null): string | null {
-  if (!raw) return null;
+function formatOneSlotCompact(raw: string): string | null {
   const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?/);
-  if (!m) return raw;
+  if (!m) return raw.trim() || null;
   const [, y, mo, d, time] = m;
   const dt = new Date(`${y}-${mo}-${d}T${time || '00:00'}`);
   const day = dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
   return time ? `${day} à ${time.replace(':', 'h')}` : day;
+}
+
+/**
+ * Returns the first appointment + optional badge if more slots exist.
+ * Example: { label: 'Ven. 25 avr. à 14h', more: 2 } when there are 3 total.
+ */
+function formatAppointments(raw: string | null): { label: string; more: number } | null {
+  if (!raw) return null;
+  const entries = raw.split(';;').map((s) => s.trim()).filter(Boolean);
+  if (entries.length === 0) return null;
+  const first = formatOneSlotCompact(entries[0]);
+  if (!first) return null;
+  return { label: first, more: entries.length - 1 };
 }
 
 export interface FichesSectionProps {
@@ -150,12 +162,21 @@ export function FichesSection({ lead }: FichesSectionProps) {
                 )}
                 {f.insuranceGlassCovered === 'oui' && <span>· Bris de glace ✓</span>}
               </div>
-              {formatAppointment(f.availability) && (
-                <div className="mt-1 flex items-center gap-1 text-xs text-blue-700 dark:text-blue-300">
-                  <Calendar size={11} />
-                  <span className="font-medium">{formatAppointment(f.availability)}</span>
-                </div>
-              )}
+              {(() => {
+                const appt = formatAppointments(f.availability);
+                if (!appt) return null;
+                return (
+                  <div className="mt-1 flex items-center gap-1 text-xs text-blue-700 dark:text-blue-300">
+                    <Calendar size={11} />
+                    <span className="font-medium">{appt.label}</span>
+                    {appt.more > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-[10px]">
+                        +{appt.more} autre{appt.more > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button

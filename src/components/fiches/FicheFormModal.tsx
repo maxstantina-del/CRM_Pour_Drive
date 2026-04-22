@@ -1,6 +1,6 @@
 import React, { useState, type FormEvent, useEffect } from 'react';
 import { Modal, ModalFooter, Button } from '../ui';
-import { Save, Loader2, User, Truck, AlertTriangle, MapPin, Calendar, Shield, MessageCircle, Zap, Sparkles } from 'lucide-react';
+import { Save, Loader2, User, Truck, AlertTriangle, MapPin, Calendar, Shield, MessageCircle, Zap, Sparkles, Plus, Trash2 } from 'lucide-react';
 import type {
   Fiche,
   FicheInput,
@@ -20,6 +20,12 @@ export interface FicheFormModalProps {
   onSubmit: (input: FicheInput) => Promise<void>;
 }
 
+interface AppointmentSlot {
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM 24h
+  note: string; // optional (ex: 'Inspection', 'Remplacement')
+}
+
 type FormState = {
   contactName: string;
   contactRole: string;
@@ -33,14 +39,14 @@ type FormState = {
   immobilized: 'oui' | 'non' | '';
   interventionAddress: string;
   interventionPlace: InterventionPlace | '';
-  availabilityDate: string; // YYYY-MM-DD
-  availabilityTime: string; // HH:MM 24h
-  availabilityNote: string; // optional alternative slots
+  appointments: AppointmentSlot[];
   insuranceName: string;
   insuranceGlassCovered: InsuranceGlassCovered | '';
   insuranceContract: string;
   comment: string;
 };
+
+const emptySlot: AppointmentSlot = { date: '', time: '', note: '' };
 
 /**
  * French license plate (SIV format since 2009): 2 letters - 3 digits - 2 letters.
@@ -67,9 +73,7 @@ const emptyForm: FormState = {
   immobilized: '',
   interventionAddress: '',
   interventionPlace: '',
-  availabilityDate: '',
-  availabilityTime: '',
-  availabilityNote: '',
+  appointments: [{ ...emptySlot }],
   insuranceName: '',
   insuranceGlassCovered: '',
   insuranceContract: '',
@@ -77,27 +81,36 @@ const emptyForm: FormState = {
 };
 
 /**
- * Availability is stored as a single TEXT column. We serialize structured
- * inputs (date YYYY-MM-DD + time HH:MM + optional note) into a compact
- * pipe-separated blob and parse it back for edits. If the stored value
- * doesn't match the expected shape (legacy free-text), we put it entirely
- * in the note field so nothing is lost.
+ * Availability is stored as a single TEXT column. Multiple appointments are
+ * serialized as ';;'-separated entries, each entry being
+ * 'YYYY-MM-DD HH:MM | note'. Parsing is lenient so legacy free-text or
+ * single-slot storage still loads without losing data.
  */
-function parseAvailability(raw: string | null): { date: string; time: string; note: string } {
-  if (!raw) return { date: '', time: '', note: '' };
-  const match = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
-  if (match) {
-    return { date: match[1] ?? '', time: match[2] ?? '', note: (match[3] ?? '').trim() };
+function parseSlot(raw: string): AppointmentSlot {
+  const m = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
+  if (m) {
+    return { date: m[1] ?? '', time: m[2] ?? '', note: (m[3] ?? '').trim() };
   }
   return { date: '', time: '', note: raw };
 }
 
-function formatAvailability(date: string, time: string, note: string): string | null {
+function parseAppointments(raw: string | null): AppointmentSlot[] {
+  if (!raw) return [{ ...emptySlot }];
+  const entries = raw.split(';;').map((s) => s.trim()).filter(Boolean);
+  if (entries.length === 0) return [{ ...emptySlot }];
+  return entries.map(parseSlot);
+}
+
+function formatSlot(s: AppointmentSlot): string {
   const parts: string[] = [];
-  if (date) parts.push(time ? `${date} ${time}` : date);
-  if (note.trim()) parts.push(note.trim());
-  if (parts.length === 0) return null;
+  if (s.date) parts.push(s.time ? `${s.date} ${s.time}` : s.date);
+  if (s.note.trim()) parts.push(s.note.trim());
   return parts.join(' | ');
+}
+
+function formatAppointments(slots: AppointmentSlot[]): string | null {
+  const serialized = slots.map(formatSlot).filter(Boolean);
+  return serialized.length ? serialized.join(';;') : null;
 }
 
 /**
@@ -121,7 +134,6 @@ function leadToDefaults(lead: Lead | undefined): FormState {
 
 function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
   if (!f) return leadToDefaults(lead);
-  const av = parseAvailability(f.availability);
   return {
     contactName: f.contactName ?? '',
     contactRole: f.contactRole ?? '',
@@ -135,9 +147,7 @@ function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
     immobilized: f.immobilized === true ? 'oui' : f.immobilized === false ? 'non' : '',
     interventionAddress: f.interventionAddress ?? '',
     interventionPlace: f.interventionPlace ?? '',
-    availabilityDate: av.date,
-    availabilityTime: av.time,
-    availabilityNote: av.note,
+    appointments: parseAppointments(f.availability),
     insuranceName: f.insuranceName ?? '',
     insuranceGlassCovered: f.insuranceGlassCovered ?? '',
     insuranceContract: f.insuranceContract ?? '',
@@ -159,7 +169,7 @@ function formToInput(s: FormState): FicheInput {
     immobilized: s.immobilized === 'oui' ? true : s.immobilized === 'non' ? false : null,
     interventionAddress: s.interventionAddress || null,
     interventionPlace: (s.interventionPlace || null) as InterventionPlace | null,
-    availability: formatAvailability(s.availabilityDate, s.availabilityTime, s.availabilityNote),
+    availability: formatAppointments(s.appointments),
     insuranceName: s.insuranceName || null,
     insuranceGlassCovered: (s.insuranceGlassCovered || null) as InsuranceGlassCovered | null,
     insuranceContract: s.insuranceContract || null,
@@ -184,6 +194,23 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
+
+  const updateSlot = (index: number, patch: Partial<AppointmentSlot>) =>
+    setForm((prev) => ({
+      ...prev,
+      appointments: prev.appointments.map((s, i) => (i === index ? { ...s, ...patch } : s)),
+    }));
+
+  const addSlot = () =>
+    setForm((prev) => ({ ...prev, appointments: [...prev.appointments, { ...emptySlot }] }));
+
+  const removeSlot = (index: number) =>
+    setForm((prev) => ({
+      ...prev,
+      appointments: prev.appointments.length > 1
+        ? prev.appointments.filter((_, i) => i !== index)
+        : [{ ...emptySlot }],
+    }));
 
   const copyPhrase = async () => {
     try {
@@ -387,36 +414,72 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
           </Field>
         </Section>
 
-        <Section icon={<Calendar size={14} />} title="Disponibilité">
-          <Row>
-            <Field label="Date du rendez-vous">
-              <input
-                type="date"
-                value={form.availabilityDate}
-                onChange={(e) => update('availabilityDate', e.target.value)}
-                className={inputCls}
-                min={new Date().toISOString().slice(0, 10)}
-              />
-            </Field>
-            <Field label="Heure (24h)">
-              <input
-                type="time"
-                value={form.availabilityTime}
-                onChange={(e) => update('availabilityTime', e.target.value)}
-                className={inputCls}
-                step={900}
-              />
-            </Field>
-          </Row>
-          <Field label="Autres créneaux éventuels (si indispo)">
-            <input
-              type="text"
-              value={form.availabilityNote}
-              onChange={(e) => update('availabilityNote', e.target.value)}
-              className={inputCls}
-              placeholder="ex: sinon mardi après-midi ou mercredi matin"
-            />
-          </Field>
+        <Section icon={<Calendar size={14} />} title="Rendez-vous">
+          <div className="space-y-3">
+            {form.appointments.map((slot, i) => {
+              const today = new Date().toISOString().slice(0, 10);
+              const minDate = slot.date && slot.date < today ? slot.date : today;
+              return (
+                <div
+                  key={i}
+                  className="rounded-md border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-950/40"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      Rendez-vous {i + 1}
+                    </span>
+                    {form.appointments.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSlot(i)}
+                        className="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+                        title="Supprimer ce créneau"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <Row>
+                    <Field label="Date">
+                      <input
+                        type="date"
+                        value={slot.date}
+                        onChange={(e) => updateSlot(i, { date: e.target.value })}
+                        className={inputCls}
+                        min={minDate}
+                      />
+                    </Field>
+                    <Field label="Heure (24h)">
+                      <input
+                        type="time"
+                        value={slot.time}
+                        onChange={(e) => updateSlot(i, { time: e.target.value })}
+                        className={inputCls}
+                        step={900}
+                      />
+                    </Field>
+                  </Row>
+                  <Field label="Objet (optionnel)">
+                    <input
+                      type="text"
+                      value={slot.note}
+                      onChange={(e) => updateSlot(i, { note: e.target.value })}
+                      className={inputCls}
+                      placeholder="ex: Inspection, Remplacement, Vitre latérale droite…"
+                    />
+                  </Field>
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              onClick={addSlot}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md border border-dashed border-gray-300 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400"
+            >
+              <Plus size={14} />
+              Ajouter un autre rendez-vous
+            </button>
+          </div>
         </Section>
 
         <Section icon={<Shield size={14} />} title="Assurance">

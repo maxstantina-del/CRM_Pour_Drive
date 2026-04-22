@@ -115,8 +115,7 @@ export default async function handler(req: Request): Promise<Response> {
     sur_site: 'Sur site', en_centre: 'En centre Autoglass',
   };
 
-  const prettyAppt = (raw: unknown): string => {
-    if (typeof raw !== 'string' || !raw) return '';
+  const prettyOneSlot = (raw: string): string => {
     const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
     if (!m) return escapeHtml(raw);
     const [, y, mo, d, time, note] = m;
@@ -126,6 +125,14 @@ export default async function handler(req: Request): Promise<Response> {
     if (time) parts.push(`à ${time.replace(':', 'h')}`);
     if (note) parts.push(`— ${note}`);
     return escapeHtml(parts.join(' ')).replace(/^./, (c) => c.toUpperCase());
+  };
+
+  const prettyAppt = (raw: unknown): string => {
+    if (typeof raw !== 'string' || !raw) return '';
+    const slots = raw.split(';;').map((s) => s.trim()).filter(Boolean);
+    if (slots.length === 0) return '';
+    if (slots.length === 1) return prettyOneSlot(slots[0]);
+    return slots.map((s, i) => `<div>${i + 1}. ${prettyOneSlot(s)}</div>`).join('');
   };
 
   const fichesHtml = fiches.length

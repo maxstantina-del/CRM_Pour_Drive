@@ -43,8 +43,7 @@ function esc(v: unknown): string {
  * Parse 'YYYY-MM-DD HH:MM | note' (or 'YYYY-MM-DD | note', or legacy free text)
  * and render a human-readable French string for the PDF and card display.
  */
-function prettyAvailability(raw: string | null): string {
-  if (!raw) return '—';
+function prettyOneSlot(raw: string): string {
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
   if (!match) return esc(raw);
   const [, y, mo, d, time, note] = match;
@@ -54,6 +53,14 @@ function prettyAvailability(raw: string | null): string {
   if (time) parts.push(`à ${time.replace(':', 'h')}`);
   if (note) parts.push(`— ${note}`);
   return esc(parts.join(' ')).replace(/^./, (c) => c.toUpperCase());
+}
+
+function prettyAvailability(raw: string | null): string {
+  if (!raw) return '—';
+  const slots = raw.split(';;').map((s) => s.trim()).filter(Boolean);
+  if (slots.length === 0) return '—';
+  if (slots.length === 1) return prettyOneSlot(slots[0]);
+  return `<ol style="margin:0;padding-left:18px;">${slots.map((s) => `<li>${prettyOneSlot(s)}</li>`).join('')}</ol>`;
 }
 
 function row(label: string, value: string): string {
@@ -150,7 +157,12 @@ export function exportFicheToPDF(fiche: Fiche, ctx: ExportContext): void {
     'Intervention',
     row('Adresse', esc(fiche.interventionAddress)) +
       row('Lieu', fiche.interventionPlace ? esc(PLACE[fiche.interventionPlace]) : '—') +
-      row('Rendez-vous souhaité', prettyAvailability(fiche.availability))
+      row(
+        (fiche.availability ?? '').split(';;').filter(Boolean).length > 1
+          ? 'Rendez-vous prévus'
+          : 'Rendez-vous souhaité',
+        prettyAvailability(fiche.availability)
+      )
   )}
 
   ${section(
