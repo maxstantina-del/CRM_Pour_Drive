@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit3, Trash2, FileText, Download, Truck, AlertTriangle } from 'lucide-react';
+import { Plus, Edit3, Trash2, FileText, Download, Truck, AlertTriangle, Calendar } from 'lucide-react';
 import { Button } from '../ui';
 import { useFiches } from '../../hooks/useFiches';
 import { FicheFormModal } from './FicheFormModal';
@@ -24,6 +24,16 @@ const DAMAGE_LOCATION_LABELS: Record<string, string> = {
   laterale: 'Latérale',
   lunette: 'Lunette arrière',
 };
+
+function formatAppointment(raw: string | null): string | null {
+  if (!raw) return null;
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?/);
+  if (!m) return raw;
+  const [, y, mo, d, time] = m;
+  const dt = new Date(`${y}-${mo}-${d}T${time || '00:00'}`);
+  const day = dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return time ? `${day} à ${time.replace(':', 'h')}` : day;
+}
 
 export interface FichesSectionProps {
   lead: Lead;
@@ -140,6 +150,12 @@ export function FichesSection({ lead }: FichesSectionProps) {
                 )}
                 {f.insuranceGlassCovered === 'oui' && <span>· Bris de glace ✓</span>}
               </div>
+              {formatAppointment(f.availability) && (
+                <div className="mt-1 flex items-center gap-1 text-xs text-blue-700 dark:text-blue-300">
+                  <Calendar size={11} />
+                  <span className="font-medium">{formatAppointment(f.availability)}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button

@@ -33,7 +33,9 @@ type FormState = {
   immobilized: 'oui' | 'non' | '';
   interventionAddress: string;
   interventionPlace: InterventionPlace | '';
-  availability: string;
+  availabilityDate: string; // YYYY-MM-DD
+  availabilityTime: string; // HH:MM 24h
+  availabilityNote: string; // optional alternative slots
   insuranceName: string;
   insuranceGlassCovered: InsuranceGlassCovered | '';
   insuranceContract: string;
@@ -65,12 +67,38 @@ const emptyForm: FormState = {
   immobilized: '',
   interventionAddress: '',
   interventionPlace: '',
-  availability: '',
+  availabilityDate: '',
+  availabilityTime: '',
+  availabilityNote: '',
   insuranceName: '',
   insuranceGlassCovered: '',
   insuranceContract: '',
   comment: '',
 };
+
+/**
+ * Availability is stored as a single TEXT column. We serialize structured
+ * inputs (date YYYY-MM-DD + time HH:MM + optional note) into a compact
+ * pipe-separated blob and parse it back for edits. If the stored value
+ * doesn't match the expected shape (legacy free-text), we put it entirely
+ * in the note field so nothing is lost.
+ */
+function parseAvailability(raw: string | null): { date: string; time: string; note: string } {
+  if (!raw) return { date: '', time: '', note: '' };
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
+  if (match) {
+    return { date: match[1] ?? '', time: match[2] ?? '', note: (match[3] ?? '').trim() };
+  }
+  return { date: '', time: '', note: raw };
+}
+
+function formatAvailability(date: string, time: string, note: string): string | null {
+  const parts: string[] = [];
+  if (date) parts.push(time ? `${date} ${time}` : date);
+  if (note.trim()) parts.push(note.trim());
+  if (parts.length === 0) return null;
+  return parts.join(' | ');
+}
 
 /**
  * Pre-fill a blank fiche with data already known on the lead card so the
@@ -93,6 +121,7 @@ function leadToDefaults(lead: Lead | undefined): FormState {
 
 function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
   if (!f) return leadToDefaults(lead);
+  const av = parseAvailability(f.availability);
   return {
     contactName: f.contactName ?? '',
     contactRole: f.contactRole ?? '',
@@ -106,7 +135,9 @@ function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
     immobilized: f.immobilized === true ? 'oui' : f.immobilized === false ? 'non' : '',
     interventionAddress: f.interventionAddress ?? '',
     interventionPlace: f.interventionPlace ?? '',
-    availability: f.availability ?? '',
+    availabilityDate: av.date,
+    availabilityTime: av.time,
+    availabilityNote: av.note,
     insuranceName: f.insuranceName ?? '',
     insuranceGlassCovered: f.insuranceGlassCovered ?? '',
     insuranceContract: f.insuranceContract ?? '',
@@ -128,7 +159,7 @@ function formToInput(s: FormState): FicheInput {
     immobilized: s.immobilized === 'oui' ? true : s.immobilized === 'non' ? false : null,
     interventionAddress: s.interventionAddress || null,
     interventionPlace: (s.interventionPlace || null) as InterventionPlace | null,
-    availability: s.availability || null,
+    availability: formatAvailability(s.availabilityDate, s.availabilityTime, s.availabilityNote),
     insuranceName: s.insuranceName || null,
     insuranceGlassCovered: (s.insuranceGlassCovered || null) as InsuranceGlassCovered | null,
     insuranceContract: s.insuranceContract || null,
@@ -357,12 +388,33 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
         </Section>
 
         <Section icon={<Calendar size={14} />} title="Disponibilité">
-          <Field label="Créneaux disponibles">
-            <textarea
-              value={form.availability}
-              onChange={(e) => update('availability', e.target.value)}
-              className={`${inputCls} min-h-[60px]`}
-              placeholder="Lundi 8h-12h, mardi après-midi…"
+          <Row>
+            <Field label="Date du rendez-vous">
+              <input
+                type="date"
+                value={form.availabilityDate}
+                onChange={(e) => update('availabilityDate', e.target.value)}
+                className={inputCls}
+                min={new Date().toISOString().slice(0, 10)}
+              />
+            </Field>
+            <Field label="Heure (24h)">
+              <input
+                type="time"
+                value={form.availabilityTime}
+                onChange={(e) => update('availabilityTime', e.target.value)}
+                className={inputCls}
+                step={900}
+              />
+            </Field>
+          </Row>
+          <Field label="Autres créneaux éventuels (si indispo)">
+            <input
+              type="text"
+              value={form.availabilityNote}
+              onChange={(e) => update('availabilityNote', e.target.value)}
+              className={inputCls}
+              placeholder="ex: sinon mardi après-midi ou mercredi matin"
             />
           </Field>
         </Section>

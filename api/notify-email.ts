@@ -115,6 +115,19 @@ export default async function handler(req: Request): Promise<Response> {
     sur_site: 'Sur site', en_centre: 'En centre Autoglass',
   };
 
+  const prettyAppt = (raw: unknown): string => {
+    if (typeof raw !== 'string' || !raw) return '';
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
+    if (!m) return escapeHtml(raw);
+    const [, y, mo, d, time, note] = m;
+    const dt = new Date(`${y}-${mo}-${d}T${time || '00:00'}`);
+    const day = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const parts = [day];
+    if (time) parts.push(`à ${time.replace(':', 'h')}`);
+    if (note) parts.push(`— ${note}`);
+    return escapeHtml(parts.join(' ')).replace(/^./, (c) => c.toUpperCase());
+  };
+
   const fichesHtml = fiches.length
     ? `<tr><td style="padding:0 24px 20px;">
         <div style="border-top:1px solid #e5e7eb;padding-top:16px;">
@@ -129,6 +142,7 @@ export default async function handler(req: Request): Promise<Response> {
             const dl = f.damageLocation ? escapeHtml(DAMAGE_LOC[String(f.damageLocation)] ?? '') : '';
             const addr = escapeHtml(String(f.interventionAddress ?? ''));
             const place = f.interventionPlace ? escapeHtml(PLACE[String(f.interventionPlace)] ?? '') : '';
+            const appt = prettyAppt(f.availability);
             const immob = f.immobilized === true
               ? '<span style="color:#dc2626;font-weight:600;">· Immobilisé</span>'
               : '';
@@ -140,6 +154,7 @@ export default async function handler(req: Request): Promise<Response> {
                 ${bm ? `<div style="font-size:12px;color:#6b7280;margin-top:2px;">${bm}</div>` : ''}
                 ${dt ? `<div style="font-size:12px;color:#dc2626;margin-top:4px;">⚠ ${dt}${dl ? ` – ${dl}` : ''} ${immob}</div>` : ''}
                 ${addr ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;">📍 ${addr}${place ? ` · ${place}` : ''}</div>` : ''}
+                ${appt ? `<div style="font-size:12px;color:#2563eb;margin-top:4px;font-weight:500;">📅 ${appt}</div>` : ''}
               </div>`;
           }).join('')}
         </div>

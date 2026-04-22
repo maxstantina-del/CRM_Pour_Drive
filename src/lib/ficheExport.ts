@@ -39,6 +39,23 @@ function esc(v: unknown): string {
     .replace(/>/g, '&gt;');
 }
 
+/**
+ * Parse 'YYYY-MM-DD HH:MM | note' (or 'YYYY-MM-DD | note', or legacy free text)
+ * and render a human-readable French string for the PDF and card display.
+ */
+function prettyAvailability(raw: string | null): string {
+  if (!raw) return '—';
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?(?:\s*\|\s*(.*))?$/);
+  if (!match) return esc(raw);
+  const [, y, mo, d, time, note] = match;
+  const dt = new Date(`${y}-${mo}-${d}T${time || '00:00'}`);
+  const dateStr = dt.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const parts: string[] = [dateStr];
+  if (time) parts.push(`à ${time.replace(':', 'h')}`);
+  if (note) parts.push(`— ${note}`);
+  return esc(parts.join(' ')).replace(/^./, (c) => c.toUpperCase());
+}
+
 function row(label: string, value: string): string {
   return `<tr><th>${label}</th><td>${value}</td></tr>`;
 }
@@ -133,7 +150,7 @@ export function exportFicheToPDF(fiche: Fiche, ctx: ExportContext): void {
     'Intervention',
     row('Adresse', esc(fiche.interventionAddress)) +
       row('Lieu', fiche.interventionPlace ? esc(PLACE[fiche.interventionPlace]) : '—') +
-      row('Créneaux disponibles', esc(fiche.availability))
+      row('Rendez-vous souhaité', prettyAvailability(fiche.availability))
   )}
 
   ${section(
