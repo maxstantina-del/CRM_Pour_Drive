@@ -1,17 +1,19 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Sidebar, Header, Container } from './components/layout';
-import { DashboardView } from './components/dashboard';
 import { PipelineView } from './components/pipeline';
-import { TableView, TodayView } from './components/views';
-import { SettingsView } from './components/views/SettingsView';
 import { LeadForm } from './components/forms';
-import { ImportWizard } from './components/modals/ImportWizard';
 import { InputModal } from './components/modals/InputModal';
 import { WinCelebration } from './components/celebration';
 import { ConfirmModal } from './components/modals/ConfirmModal';
 import { LeadDetailsModal } from './components/modals/LeadDetailsModal';
 import { OnboardingTour, useOnboarding } from './components/onboarding/OnboardingTour';
-import { ChatAgent } from './components/ai/ChatAgent';
+
+const DashboardView = lazy(() => import('./components/dashboard').then(m => ({ default: m.DashboardView })));
+const TableView = lazy(() => import('./components/views').then(m => ({ default: m.TableView })));
+const TodayView = lazy(() => import('./components/views').then(m => ({ default: m.TodayView })));
+const SettingsView = lazy(() => import('./components/views/SettingsView').then(m => ({ default: m.SettingsView })));
+const ImportWizard = lazy(() => import('./components/modals/ImportWizard').then(m => ({ default: m.ImportWizard })));
+const ChatAgent = lazy(() => import('./components/ai/ChatAgent').then(m => ({ default: m.ChatAgent })));
 import { BulkActionBar } from './components/bulk';
 import { FilterButton, ActiveFilterChips } from './components/filters';
 import { useLeadFilters } from './hooks/useLeadFilters';
@@ -542,6 +544,13 @@ function App() {
         )}
 
         <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 text-sm">
+                Chargement…
+              </div>
+            }
+          >
           {currentView === 'dashboard' && (
             <ViewErrorBoundary feature="dashboard" viewName="Dashboard">
               <DashboardView leads={leads} stages={stages} />
@@ -628,6 +637,7 @@ function App() {
               />
             </ViewErrorBoundary>
           )}
+          </Suspense>
         </main>
       </div>
 
@@ -673,13 +683,17 @@ function App() {
         </div>
       )}
 
-      <ImportWizard
-        isOpen={isImportWizardOpen}
-        onClose={() => setIsImportWizardOpen(false)}
-        onImport={handleImport}
-        currentPipelineId={effectivePipelineId}
-        pipelines={pipelines}
-      />
+      {isImportWizardOpen && (
+        <Suspense fallback={null}>
+          <ImportWizard
+            isOpen={isImportWizardOpen}
+            onClose={() => setIsImportWizardOpen(false)}
+            onImport={handleImport}
+            currentPipelineId={effectivePipelineId}
+            pipelines={pipelines}
+          />
+        </Suspense>
+      )}
 
       {inputModal.isOpen && inputModal.onSubmit && (
         <InputModal
@@ -719,11 +733,13 @@ function App() {
 
       <OnboardingTour isOpen={shouldShowTour} onComplete={completeTour} />
 
-      <ChatAgent
-        leads={leads}
-        onCreateLead={leadsManager.addLead}
-        onUpdateLead={leadsManager.updateLead}
-      />
+      <Suspense fallback={null}>
+        <ChatAgent
+          leads={leads}
+          onCreateLead={leadsManager.addLead}
+          onUpdateLead={leadsManager.updateLead}
+        />
+      </Suspense>
     </Container>
   );
 }

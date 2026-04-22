@@ -24,12 +24,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'framer-motion'],
           'supabase-vendor': ['@supabase/supabase-js'],
-          'ui-vendor': ['lucide-react', 'qrcode.react', 'canvas-confetti']
+          'ui-vendor': ['lucide-react', 'qrcode.react', 'canvas-confetti'],
+          'recharts-vendor': ['recharts'],
+          'xlsx-vendor': ['xlsx'],
+          'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'sentry-vendor': ['@sentry/react'],
+          'ai-vendor': ['ai', '@ai-sdk/openai', '@picahq/ai', '@picahq/toolkit'],
         }
       }
     }
