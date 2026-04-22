@@ -40,6 +40,18 @@ type FormState = {
   comment: string;
 };
 
+/**
+ * French license plate (SIV format since 2009): 2 letters - 3 digits - 2 letters.
+ * Strips separators, uppercases, then inserts dashes at positions 2 and 5 as
+ * the user types. Handles partial input (e.g., "AB", "AB-1", "AB-12", "AB-123-C").
+ */
+function formatLicensePlate(raw: string): string {
+  const clean = raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 7);
+  if (clean.length <= 2) return clean;
+  if (clean.length <= 5) return `${clean.slice(0, 2)}-${clean.slice(2)}`;
+  return `${clean.slice(0, 2)}-${clean.slice(2, 5)}-${clean.slice(5)}`;
+}
+
 const emptyForm: FormState = {
   contactName: '',
   contactRole: '',
@@ -253,9 +265,12 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
               <input
                 type="text"
                 value={form.vehiclePlate}
-                onChange={(e) => update('vehiclePlate', e.target.value.toUpperCase())}
-                className={inputCls}
+                onChange={(e) => update('vehiclePlate', formatLicensePlate(e.target.value))}
+                className={`${inputCls} font-mono uppercase tracking-wider`}
                 placeholder="AB-123-CD"
+                maxLength={9}
+                autoComplete="off"
+                inputMode="text"
               />
             </Field>
           </Row>
