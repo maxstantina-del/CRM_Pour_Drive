@@ -1,11 +1,16 @@
 import { useState, type FormEvent } from 'react';
-import { Tag as TagIcon, Plus, X, Check } from 'lucide-react';
+import { Tag as TagIcon, Plus, X, Check, Trash2 } from 'lucide-react';
 import { useTags } from '../../hooks/useTags';
 
 const COLORS = ['#6366f1', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 export function TagPicker({ leadId }: { leadId: string }) {
-  const { tags, getTagsForLead, createTag, toggleLeadTag } = useTags();
+  const { tags, getTagsForLead, createTag, toggleLeadTag, deleteTag } = useTags();
+
+  const handleDeleteTag = async (tagId: string, tagName: string) => {
+    if (!confirm(`Supprimer définitivement le tag "${tagName}" ? Il sera retiré de tous les leads qui l'utilisent.`)) return;
+    try { await deleteTag(tagId); } catch (err) { console.error(err); }
+  };
   const assigned = getTagsForLead(leadId);
   const [open, setOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
@@ -55,19 +60,34 @@ export function TagPicker({ leadId }: { leadId: string }) {
               {tags.map(t => {
                 const active = assigned.some(a => a.id === t.id);
                 return (
-                  <button
+                  <span
                     key={t.id}
-                    onClick={() => toggleLeadTag(leadId, t)}
+                    className="group/tag inline-flex items-center rounded-full border"
                     style={{
                       backgroundColor: active ? t.color + '33' : 'transparent',
-                      color: t.color,
                       borderColor: t.color,
                     }}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    {active && <Check className="w-3 h-3" />}
-                    {t.name}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLeadTag(leadId, t)}
+                      style={{ color: t.color }}
+                      className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 text-xs font-medium"
+                      title={active ? 'Retirer de ce lead' : 'Ajouter à ce lead'}
+                    >
+                      {active && <Check className="w-3 h-3" />}
+                      {t.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTag(t.id, t.name)}
+                      style={{ color: t.color }}
+                      className="p-0.5 mr-0.5 rounded-full opacity-40 group-hover/tag:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/40 hover:!text-red-600 dark:hover:!text-red-400 transition-all"
+                      title="Supprimer définitivement ce tag"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </span>
                 );
               })}
             </div>
