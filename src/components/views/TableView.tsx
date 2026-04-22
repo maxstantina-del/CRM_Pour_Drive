@@ -6,9 +6,11 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import type { Lead } from '../../lib/types';
 import type { Tag } from '../../services/tagsService';
 import { Button, Badge } from '../ui';
-import { Edit, Trash2, ArrowUpDown, X as XIcon } from 'lucide-react';
+import { Edit, Trash2, ArrowUpDown, X as XIcon, Calendar } from 'lucide-react';
 import { sortLeads, formatDate, formatCurrency } from '../../lib/utils';
 import { useTags } from '../../hooks/useTags';
+import { useAllFiches } from '../../contexts/FichesContext';
+import { getNextAppointmentForLead, formatSlotCompact, countAppointmentsForLead } from '../../lib/appointments';
 
 export interface TableViewProps {
   leads: Lead[];
@@ -31,6 +33,7 @@ export function TableView({
   tagsByLead,
 }: TableViewProps) {
   const { toggleLeadTag } = useTags();
+  const { fichesByLead } = useAllFiches();
   const [sortField, setSortField] = useState<keyof Lead>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
@@ -113,6 +116,9 @@ export function TableView({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
                   Tags
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  RDV
+                </th>
                 <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('stage')}
@@ -192,6 +198,25 @@ export function TableView({
                                 </button>
                               </span>
                             ))}
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const leadFiches = fichesByLead.get(lead.id);
+                        const nextAppt = getNextAppointmentForLead(leadFiches);
+                        const total = countAppointmentsForLead(leadFiches);
+                        if (!nextAppt) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>;
+                        return (
+                          <div className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800/60" title={`${total} RDV au total`}>
+                            <Calendar size={11} />
+                            <span>{formatSlotCompact(nextAppt)}</span>
+                            {total > 1 && (
+                              <span className="ml-0.5 px-1 bg-blue-200 dark:bg-blue-800 text-[10px] rounded-full">
+                                +{total - 1}
+                              </span>
+                            )}
                           </div>
                         );
                       })()}

@@ -22,9 +22,11 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Lead, StageConfig } from '../../lib/types';
 import type { Tag } from '../../services/tagsService';
 import { Card } from '../ui';
-import { MoreVertical, Edit, Trash2, X as XIcon } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, X as XIcon, Calendar } from 'lucide-react';
 import { getStageIcon, getStageColorHex } from '../../lib/stageIcons';
 import { useTags } from '../../hooks/useTags';
+import { useAllFiches } from '../../contexts/FichesContext';
+import { getNextAppointmentForLead, formatSlotCompact, countAppointmentsForLead } from '../../lib/appointments';
 
 export interface PipelineViewProps {
   leads: Lead[];
@@ -116,6 +118,10 @@ function LeadCardContent({
   onMenuToggle,
 }: Omit<LeadCardProps, 'onViewLead'>) {
   const { toggleLeadTag } = useTags();
+  const { fichesByLead } = useAllFiches();
+  const leadFiches = fichesByLead.get(lead.id);
+  const nextAppt = getNextAppointmentForLead(leadFiches);
+  const totalAppts = countAppointmentsForLead(leadFiches);
   const handleRemoveTag = (e: React.MouseEvent, tag: Tag) => {
     e.stopPropagation();
     e.preventDefault();
@@ -204,6 +210,20 @@ function LeadCardContent({
           <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
             {lead.value}€
           </p>
+        )}
+        {nextAppt && (
+          <div
+            className="flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800/60 w-fit"
+            title={`${totalAppts} rendez-vous au total sur ce lead`}
+          >
+            <Calendar size={11} />
+            <span>{formatSlotCompact(nextAppt)}</span>
+            {totalAppts > 1 && (
+              <span className="ml-0.5 px-1 bg-blue-200 dark:bg-blue-800 text-[10px] rounded-full">
+                +{totalAppts - 1}
+              </span>
+            )}
+          </div>
         )}
         {tags && tags.length > 0 && (
           <div className="flex flex-wrap gap-1 pt-1">

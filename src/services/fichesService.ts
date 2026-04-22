@@ -125,6 +125,16 @@ export async function listFichesForLead(leadId: string): Promise<Fiche[]> {
   return (data ?? []).map((r) => rowToFiche(r as DbFicheRow));
 }
 
+export async function listAllFiches(): Promise<Fiche[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('fiches')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r) => rowToFiche(r as DbFicheRow));
+}
+
 export async function createFiche(
   leadId: string,
   ownerId: string,
