@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui';
 import { UserMenu } from '../auth/UserMenu';
+import { NotificationsBell } from '../notifications';
 
 export interface HeaderProps {
   onNewLead: () => void;
@@ -19,6 +20,7 @@ export interface HeaderProps {
   onExport: () => void;
   onBackup: () => void;
   onRestore: () => void;
+  onOpenLead?: (leadId: string) => void;
 }
 
 export function Header({
@@ -26,7 +28,8 @@ export function Header({
   onImport,
   onExport,
   onBackup,
-  onRestore
+  onRestore,
+  onOpenLead,
 }: HeaderProps) {
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4">
@@ -95,6 +98,7 @@ export function Header({
           </Button>
 
           <div className="h-8 w-px bg-gray-300 dark:bg-gray-700 mx-1" />
+          <NotificationsBell onOpenLead={onOpenLead} />
           <UserMenu />
         </div>
       </div>

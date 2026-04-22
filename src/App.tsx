@@ -506,6 +506,10 @@ function App() {
           onExport={handleExportCSV}
           onBackup={handleBackup}
           onRestore={handleRestore}
+          onOpenLead={(leadId) => {
+            const lead = allLeads.find((l) => l.id === leadId);
+            if (lead) setViewingLead(lead);
+          }}
         />
 
         {pipelines.length > 0 && (
