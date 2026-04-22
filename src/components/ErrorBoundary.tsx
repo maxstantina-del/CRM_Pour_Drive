@@ -1,9 +1,5 @@
-/**
- * Error Boundary component with Sentry integration
- */
-
 import React, { Component, ReactNode } from 'react';
-import * as Sentry from '@sentry/react';
+import { reportErrorBoundary, showReportDialog } from '../lib/sentry';
 
 interface Props {
   children: ReactNode;
@@ -23,7 +19,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-      eventId: null
+      eventId: null,
     };
   }
 
@@ -33,19 +29,14 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
-
-    // Capture error to Sentry
-    Sentry.withScope((scope) => {
-      scope.setExtras(errorInfo as any);
-      const eventId = Sentry.captureException(error);
-      this.setState({ eventId });
+    this.setState({ errorInfo });
+    reportErrorBoundary(error, { extras: errorInfo as any }).then((eventId) => {
+      if (eventId) this.setState({ eventId });
     });
   }
 
   handleReportFeedback = () => {
-    if (this.state.eventId) {
-      Sentry.showReportDialog({ eventId: this.state.eventId });
-    }
+    if (this.state.eventId) showReportDialog(this.state.eventId);
   };
 
   render() {
@@ -61,9 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
             {this.state.errorInfo && (
               <details className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-                <summary className="cursor-pointer font-medium">
-                  Détails techniques
-                </summary>
+                <summary className="cursor-pointer font-medium">Détails techniques</summary>
                 <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-x-auto">
                   {this.state.errorInfo.componentStack}
                 </pre>

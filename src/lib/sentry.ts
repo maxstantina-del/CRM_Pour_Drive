@@ -1,72 +1,68 @@
 /**
- * Sentry configuration for error monitoring
+ * Sentry wrappers with lazy loading — the @sentry/react bundle (≈263 KB) is
+ * only downloaded when one of these helpers is actually called. initSentry()
+ * is meant to be deferred until after first paint (see main.tsx).
  */
 
-import * as Sentry from '@sentry/react';
+type SentryModule = typeof import('@sentry/react');
 
-/**
- * Initialize Sentry
- */
-export function initSentry() {
+let sentryPromise: Promise<SentryModule> | null = null;
+let initialized = false;
+
+function loadSentry(): Promise<SentryModule> {
+  if (!sentryPromise) {
+    sentryPromise = import('@sentry/react');
+  }
+  return sentryPromise;
+}
+
+export async function initSentry(): Promise<void> {
+  if (initialized) return;
   const dsn = import.meta.env.VITE_SENTRY_DSN;
-
-  // Only initialize if DSN is provided
   if (!dsn || dsn.trim() === '') {
     console.log('Sentry DSN not configured, skipping initialization');
     return;
   }
-
+  const Sentry = await loadSentry();
   Sentry.init({
     dsn,
     environment: import.meta.env.MODE,
-
-    // Set sample rate for performance monitoring
     tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
-
-    // Set sample rate for session replay
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
-
     integrations: [
-      // browserTracingIntegration auto-captures Web Vitals: LCP, FID, CLS,
-      // INP, FCP, TTFB — visible under Performance → Vitals in Sentry.
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),
     ],
-    // Capture 100% of Web Vitals (cheap — one event per page load).
-    tracePropagationTargets: ['localhost', /^\//, /^https:\/\/gudmtivemddhnhhfilvc\.supabase\.co/],
-
-    // Filter out certain errors
+    tracePropagationTargets: [
+      'localhost',
+      /^\//,
+      /^https:\/\/gudmtivemddhnhhfilvc\.supabase\.co/,
+    ],
     beforeSend(event, hint) {
-      // Don't send localStorage quota errors in development
       const error = hint.originalException;
       if (error instanceof Error) {
         if (error.message?.includes('QuotaExceededError')) {
           console.warn('LocalStorage quota exceeded');
           return null;
         }
-
-        // Don't send network errors in development
         if (!import.meta.env.PROD && error.message?.includes('NetworkError')) {
           return null;
         }
       }
-
       return event;
     },
-
-    // Add custom tags
     initialScope: {
       tags: {
         app_version: '2.0.0',
       },
     },
   });
+  initialized = true;
 
-  // Set user context (if available)
   const userProfile = localStorage.getItem('crm_user_profile');
   if (userProfile) {
     try {
@@ -81,10 +77,6 @@ export function initSentry() {
   }
 }
 
-/**
- * Known feature areas — use as the `feature` tag on errors so we can filter by
- * business domain in the Sentry dashboard (import failures, bulk actions, etc.)
- */
 export type SentryFeature =
   | 'import'
   | 'bulk-action'
@@ -97,76 +89,94 @@ export type SentryFeature =
   | 'dashboard'
   | 'settings';
 
-/**
- * Capture an exception manually
- */
-export function captureException(error: Error, context?: Record<string, any>) {
-  Sentry.captureException(error, {
-    extra: context,
+export function captureException(error: Error, context?: Record<string, any>): void {
+  loadSentry().then((Sentry) => {
+    Sentry.captureException(error, { extra: context });
   });
 }
 
-/**
- * Capture an exception with a `feature` tag for easier filtering in Sentry.
- * Usage: captureFeatureException('import', err, { file: file.name })
- */
 export function captureFeatureException(
   feature: SentryFeature,
   error: unknown,
   context?: Record<string, any>
-) {
-  Sentry.withScope((scope) => {
-    scope.setTag('feature', feature);
-    if (context) scope.setExtras(context);
-    Sentry.captureException(error);
+): void {
+  loadSentry().then((Sentry) => {
+    Sentry.withScope((scope) => {
+      scope.setTag('feature', feature);
+      if (context) scope.setExtras(context);
+      Sentry.captureException(error);
+    });
+  });
+}
+
+export function captureMessage(
+  message: string,
+  level: 'info' | 'warning' | 'error' = 'info'
+): void {
+  loadSentry().then((Sentry) => {
+    Sentry.captureMessage(message, level);
+  });
+}
+
+export function addBreadcrumb(
+  message: string,
+  category: string,
+  data?: Record<string, any>
+): void {
+  loadSentry().then((Sentry) => {
+    Sentry.addBreadcrumb({
+      message,
+      category,
+      data,
+      level: 'info',
+    });
+  });
+}
+
+export function setUser(userId: string, email?: string): void {
+  loadSentry().then((Sentry) => {
+    Sentry.setUser({ id: userId, email });
+  });
+}
+
+export function clearUser(): void {
+  loadSentry().then((Sentry) => {
+    Sentry.setUser(null);
   });
 }
 
 /**
- * Capture a message manually
+ * Report a captured React error with context tags (used by error boundaries).
+ * Returns the Sentry event ID once available, or null if Sentry isn't loaded
+ * yet (fire-and-forget).
  */
-export function captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'info') {
-  Sentry.captureMessage(message, level);
-}
-
-/**
- * Add breadcrumb
- */
-export function addBreadcrumb(message: string, category: string, data?: Record<string, any>) {
-  Sentry.addBreadcrumb({
-    message,
-    category,
-    data,
-    level: 'info',
+export function reportErrorBoundary(
+  error: Error,
+  context: {
+    feature?: SentryFeature;
+    view?: string;
+    extras?: Record<string, any>;
+  }
+): Promise<string | null> {
+  return loadSentry().then((Sentry) => {
+    let eventId: string | null = null;
+    Sentry.withScope((scope) => {
+      if (context.feature) scope.setTag('feature', context.feature);
+      if (context.view) scope.setTag('view', context.view);
+      if (context.extras) scope.setExtras(context.extras);
+      eventId = Sentry.captureException(error) as string;
+    });
+    return eventId;
   });
 }
 
 /**
- * Set user context
+ * Open Sentry's user feedback dialog for a given event. Does nothing if the
+ * Sentry module hasn't loaded yet (shouldn't happen since we only show the
+ * button after we already have an eventId).
  */
-export function setUser(userId: string, email?: string) {
-  Sentry.setUser({
-    id: userId,
-    email,
+export function showReportDialog(eventId: string): void {
+  loadSentry().then((Sentry) => {
+    Sentry.showReportDialog({ eventId });
   });
-}
-
-/**
- * Clear user context
- */
-export function clearUser() {
-  Sentry.setUser(null);
-}
-
-/**
- * Start a new span for performance monitoring
- */
-export function startSpan<T>(name: string, op: string, callback: () => T): T {
-  return Sentry.startSpan(
-    {
-      name,
-      op,
-    },
-    callback
-  );
 }

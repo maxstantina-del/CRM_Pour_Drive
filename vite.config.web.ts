@@ -28,14 +28,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'framer-motion'],
+          'react-vendor': ['react', 'react-dom'],
+          'framer-motion-vendor': ['framer-motion'],
           'supabase-vendor': ['@supabase/supabase-js'],
           'ui-vendor': ['lucide-react', 'qrcode.react', 'canvas-confetti'],
           'recharts-vendor': ['recharts'],
           'xlsx-vendor': ['xlsx'],
           'dnd-vendor': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
           'sentry-vendor': ['@sentry/react'],
-          'ai-vendor': ['ai', '@ai-sdk/openai', '@picahq/ai', '@picahq/toolkit'],
         }
       }
     }
