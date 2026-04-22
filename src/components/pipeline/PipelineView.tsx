@@ -290,9 +290,9 @@ const Column = memo(function Column({
   const isWonStage = WON_STAGE_IDS.has(stage.id);
 
   return (
-    <div ref={setNodeRef} className="flex-shrink-0 w-80">
+    <div ref={setNodeRef} className="flex-shrink-0 w-80 h-full flex flex-col">
       <div
-        className={`rounded-lg p-4 ${
+        className={`rounded-lg p-4 flex-1 flex flex-col min-h-0 ${
           winGlow
             ? 'bg-yellow-50 dark:bg-yellow-900/40 border-2 border-yellow-400 dark:border-yellow-500 shadow-[0_0_24px_rgba(234,179,8,0.5)] animate-pulse'
             : isActive
@@ -302,7 +302,7 @@ const Column = memo(function Column({
             : 'bg-gray-100 dark:bg-gray-900 border-2 border-transparent dark:border-gray-800'
         }`}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <Icon size={16} style={{ color }} />
             <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -317,7 +317,7 @@ const Column = memo(function Column({
           </span>
         </div>
 
-        <div className="space-y-3 min-h-[100px]">
+        <div className="space-y-3 flex-1 overflow-y-auto min-h-[100px] pr-1 -mr-1">
           {leads.map((lead) => (
             <DraggableLeadCard
               key={lead.id}
@@ -392,8 +392,8 @@ export const PipelineView = memo(function PipelineView({
   const activeLead = active ? leads.find((l) => l.id === active.id) ?? null : null;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Pipeline</h1>
+    <div className="p-6 h-full flex flex-col min-h-0">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex-shrink-0">Pipeline</h1>
 
       <DndContext
         sensors={sensors}
@@ -402,7 +402,7 @@ export const PipelineView = memo(function PipelineView({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-4 overflow-x-auto flex-1 min-h-0 pb-4 items-stretch">
           {stages.map((stage) => (
             <Column
               key={stage.id}
