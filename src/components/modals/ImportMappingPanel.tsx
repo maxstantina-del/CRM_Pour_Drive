@@ -41,6 +41,11 @@ export function ImportMappingPanel({
     [headers, rows, mapping]
   );
 
+  const unmappedCount = useMemo(
+    () => headers.filter((h, i) => !mapping[i] && String(h ?? '').trim().length > 0).length,
+    [headers, mapping]
+  );
+
   const valid = isMappingValid(mapping);
 
   // Track which fields are already mapped to prevent duplicates (except Ignore).
@@ -116,6 +121,17 @@ export function ImportMappingPanel({
           <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <p className="text-sm text-red-700">
             Au moins une colonne doit être mappée à <strong>Nom</strong> ou <strong>Entreprise</strong>.
+          </p>
+        </div>
+      )}
+
+      {unmappedCount > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-2">
+          <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>{unmappedCount} colonne{unmappedCount > 1 ? 's' : ''} non mappée{unmappedCount > 1 ? 's' : ''}</strong> —
+            conservée{unmappedCount > 1 ? 's' : ''} automatiquement dans la section « Données supplémentaires » du lead.
+            Aucune info perdue.
           </p>
         </div>
       )}

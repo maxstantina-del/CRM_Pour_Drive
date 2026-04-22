@@ -175,8 +175,10 @@ export type Database = {
           country: string | null
           created_at: string
           created_by: string | null
+          department: string | null
           email: string | null
           id: string
+          metadata: Json
           name: string
           next_actions: Json
           notes: string | null
@@ -184,6 +186,7 @@ export type Database = {
           phone: string | null
           pipeline_id: string | null
           probability: number | null
+          region: string | null
           siret: string | null
           stage: string
           updated_at: string
@@ -200,8 +203,10 @@ export type Database = {
           country?: string | null
           created_at?: string
           created_by?: string | null
+          department?: string | null
           email?: string | null
           id: string
+          metadata?: Json
           name: string
           next_actions?: Json
           notes?: string | null
@@ -209,6 +214,7 @@ export type Database = {
           phone?: string | null
           pipeline_id?: string | null
           probability?: number | null
+          region?: string | null
           siret?: string | null
           stage?: string
           updated_at?: string
@@ -225,8 +231,10 @@ export type Database = {
           country?: string | null
           created_at?: string
           created_by?: string | null
+          department?: string | null
           email?: string | null
           id?: string
+          metadata?: Json
           name?: string
           next_actions?: Json
           notes?: string | null
@@ -234,6 +242,7 @@ export type Database = {
           phone?: string | null
           pipeline_id?: string | null
           probability?: number | null
+          region?: string | null
           siret?: string | null
           stage?: string
           updated_at?: string

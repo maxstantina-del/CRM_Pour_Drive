@@ -44,12 +44,20 @@ export interface Lead {
   city?: string;
   zipCode?: string;
   country?: string;
+  department?: string;
+  region?: string;
   stage: LeadStage;
   value?: number;
   probability?: number;
   closedDate?: string;
   notes?: string;
   nextActions?: NextAction[];
+  /**
+   * Extra key/value pairs kept from the source import (or any caller) so the
+   * UI can surface all columns the user saw in their Excel/CSV. Keys are
+   * the original header strings; values are the cell text.
+   */
+  metadata?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
   pipelineId?: string;

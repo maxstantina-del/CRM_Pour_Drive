@@ -140,7 +140,17 @@ END:VCARD`;
                   {lead.address}
                   {lead.city && `, ${lead.city}`}
                   {lead.zipCode && ` ${lead.zipCode}`}
+                  {lead.department && ` (${lead.department})`}
+                  {lead.region && ` · ${lead.region}`}
                   {lead.country && `, ${lead.country}`}
+                </span>
+              </div>
+            )}
+            {!lead.address && (lead.department || lead.region) && (
+              <div className="flex items-start gap-2 text-sm">
+                <MapPin size={16} className="text-gray-500 mt-0.5" />
+                <span className="text-gray-900 dark:text-gray-100">
+                  {[lead.city, lead.department, lead.region].filter(Boolean).join(' · ')}
                 </span>
               </div>
             )}
@@ -170,6 +180,23 @@ END:VCARD`;
           <div>
             <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Notes</h4>
             <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{lead.notes}</p>
+          </div>
+        )}
+
+        {/* Metadata (extra columns kept from the source import) */}
+        {lead.metadata && Object.keys(lead.metadata).length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Données supplémentaires
+            </h4>
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-sm">
+              {Object.entries(lead.metadata).map(([key, value]) => (
+                <React.Fragment key={key}>
+                  <dt className="text-gray-600 dark:text-gray-400">{key}</dt>
+                  <dd className="text-gray-900 dark:text-gray-100 break-words">{value}</dd>
+                </React.Fragment>
+              ))}
+            </dl>
           </div>
         )}
 

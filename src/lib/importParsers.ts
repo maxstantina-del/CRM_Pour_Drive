@@ -18,6 +18,8 @@ export type LeadField =
   | 'city'
   | 'zipCode'
   | 'country'
+  | 'department'
+  | 'region'
   | 'stage'
   | 'value'
   | 'probability'
@@ -34,6 +36,8 @@ export const LEAD_FIELD_LABELS: Record<LeadField, string> = {
   city: 'Ville',
   zipCode: 'Code postal',
   country: 'Pays',
+  department: 'Département',
+  region: 'Région',
   stage: 'Étape',
   value: 'Valeur (€)',
   probability: 'Probabilité (%)',
@@ -42,7 +46,7 @@ export const LEAD_FIELD_LABELS: Record<LeadField, string> = {
 
 export const LEAD_FIELDS_ORDER: LeadField[] = [
   'name', 'company', 'contactName', 'email', 'phone',
-  'address', 'city', 'zipCode', 'country', 'siret',
+  'address', 'city', 'zipCode', 'department', 'region', 'country', 'siret',
   'stage', 'value', 'probability', 'notes',
 ];
 
@@ -82,6 +86,9 @@ export function autoDetectField(header: string): LeadField | null {
   if (n.includes('ville') || n.includes('city') || n.includes('commune')) return 'city';
   if (n.includes('code postal') || n.includes('zip') || n.includes('postal code') || n === 'cp') return 'zipCode';
   if (n.includes('pays') || n.includes('country')) return 'country';
+  // Region must be checked BEFORE department so "région" doesn't fall through to generic matching
+  if (n === 'region' || n.includes('region ') || n.includes('regions') || n.startsWith('region')) return 'region';
+  if (n === 'dept' || n === 'departement' || n === 'département' || n.includes('departement') || n.includes('département') || n.includes('num dept')) return 'department';
   if (n.includes('valeur') || n.includes('value') || n.includes('montant') || n.includes('amount') || n.includes('ca ') || n === 'ca') return 'value';
   if (n.includes('probabilite') || n.includes('probability') || n.includes('prob')) return 'probability';
   if (n.includes('notes') || n.includes('note') || n.includes('commentaire') || n.includes('comment') || n.includes('remarque')) return 'notes';
@@ -141,6 +148,17 @@ export function applyMapping(
   const entries = Object.entries(mapping)
     .map(([idx, field]) => [Number(idx), field] as [number, LeadField])
     .filter(([idx]) => idx < headers.length);
+  const mappedIndexes = new Set(entries.map(([idx]) => idx));
+
+  // Columns not mapped to a known field → kept verbatim in metadata so the
+  // CRM never silently drops user data. Skip empty header strings.
+  const extraIndexes: Array<{ idx: number; header: string }> = [];
+  for (let i = 0; i < headers.length; i++) {
+    if (mappedIndexes.has(i)) continue;
+    const header = String(headers[i] ?? '').trim();
+    if (!header) continue;
+    extraIndexes.push({ idx: i, header });
+  }
 
   const out: Partial<Lead>[] = [];
   for (const row of rows) {
@@ -159,6 +177,19 @@ export function applyMapping(
         (lead as Record<string, unknown>)[field] = str;
       }
     }
+
+    if (extraIndexes.length > 0) {
+      const extras: Record<string, string> = {};
+      for (const { idx, header } of extraIndexes) {
+        const value = row[idx];
+        if (value === undefined || value === null || value === '') continue;
+        const str = String(value).trim();
+        if (!str) continue;
+        extras[header] = str;
+      }
+      if (Object.keys(extras).length > 0) lead.metadata = extras;
+    }
+
     if (!lead.name && !lead.company) continue; // one of them is required
     out.push(lead);
   }

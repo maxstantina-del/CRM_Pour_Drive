@@ -24,6 +24,9 @@ interface DbLeadRow {
   city: string | null;
   zip_code: string | null;
   country: string | null;
+  department: string | null;
+  region: string | null;
+  metadata: Record<string, string> | null;
   stage: string;
   value: number | null;
   probability: number | null;
@@ -35,6 +38,7 @@ interface DbLeadRow {
 }
 
 function rowToLead(r: DbLeadRow): Lead {
+  const metadata = r.metadata && Object.keys(r.metadata).length > 0 ? r.metadata : undefined;
   return {
     id: r.id,
     name: r.name,
@@ -47,6 +51,9 @@ function rowToLead(r: DbLeadRow): Lead {
     city: r.city ?? undefined,
     zipCode: r.zip_code ?? undefined,
     country: r.country ?? undefined,
+    department: r.department ?? undefined,
+    region: r.region ?? undefined,
+    metadata,
     stage: r.stage as LeadStage,
     value: r.value ?? undefined,
     probability: r.probability ?? undefined,
@@ -74,6 +81,9 @@ function leadToRow(lead: Lead, ownerId: string | null): Omit<DbLeadRow, 'created
     city: lead.city ?? null,
     zip_code: lead.zipCode ?? null,
     country: lead.country ?? null,
+    department: lead.department ?? null,
+    region: lead.region ?? null,
+    metadata: lead.metadata ?? null,
     stage: lead.stage,
     value: lead.value ?? null,
     probability: lead.probability ?? null,
@@ -97,6 +107,9 @@ function partialLeadToRow(updates: Partial<Lead>): Record<string, unknown> {
   if (updates.city !== undefined)         row.city = updates.city;
   if (updates.zipCode !== undefined)      row.zip_code = updates.zipCode;
   if (updates.country !== undefined)      row.country = updates.country;
+  if (updates.department !== undefined)   row.department = updates.department;
+  if (updates.region !== undefined)       row.region = updates.region;
+  if (updates.metadata !== undefined)     row.metadata = updates.metadata;
   if (updates.stage !== undefined)        row.stage = updates.stage;
   if (updates.value !== undefined)        row.value = updates.value;
   if (updates.probability !== undefined)  row.probability = updates.probability;
