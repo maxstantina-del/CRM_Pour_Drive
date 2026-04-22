@@ -26,6 +26,7 @@ import { useBackup } from './hooks/useBackup';
 import type { Lead, ViewType } from './lib/types';
 import { generateId } from './lib/utils';
 import { createActivity } from './services/activitiesService';
+import { fireWinConfetti } from './lib/confetti';
 import { useAuth } from './contexts/AuthContext';
 import { SearchBar } from './components/layout/SearchBar';
 
@@ -218,9 +219,10 @@ function App() {
     if (lead && isWon && !wasWon) {
       setCelebration({ isVisible: true, leadName: lead.name });
       showToast(`🏆 ${lead.name} est gagné !`, 'success');
+      fireWinConfetti();
       setTimeout(() => {
         setCelebration({ isVisible: false, leadName: '' });
-      }, 3000);
+      }, 1800);
     }
 
     try {

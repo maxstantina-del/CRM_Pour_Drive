@@ -223,6 +223,7 @@ interface ColumnProps {
   stage: StageConfig;
   leads: Lead[];
   isActive: boolean;
+  winGlow?: boolean;
   openMenuId: string | null;
   tagsByLead?: Map<string, Tag[]>;
   onEditLead: (lead: Lead) => void;
@@ -232,7 +233,7 @@ interface ColumnProps {
 }
 
 const Column = memo(function Column({
-  stage, leads, isActive, openMenuId, tagsByLead, onEditLead, onDeleteLead, onViewLead, onMenuToggle,
+  stage, leads, isActive, winGlow, openMenuId, tagsByLead, onEditLead, onDeleteLead, onViewLead, onMenuToggle,
 }: ColumnProps) {
   const { setNodeRef } = useDroppable({ id: stage.id });
   const color = getStageColorHex(stage.color);
@@ -242,7 +243,9 @@ const Column = memo(function Column({
     <div ref={setNodeRef} className="flex-shrink-0 w-80">
       <div
         className={`rounded-lg p-4 ${
-          isActive
+          winGlow
+            ? 'bg-yellow-50 dark:bg-yellow-900/40 border-2 border-yellow-400 dark:border-yellow-500 shadow-[0_0_24px_rgba(234,179,8,0.5)] animate-pulse'
+            : isActive
             ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-400 dark:border-blue-500'
             : 'bg-gray-100 dark:bg-gray-900 border-2 border-transparent dark:border-gray-800'
         }`}
@@ -285,11 +288,14 @@ const Column = memo(function Column({
 // Main
 // ---------------------------------------------------------------------------
 
+const WON_STAGE_IDS = new Set<string>(['won', 'closed_won']);
+
 export const PipelineView = memo(function PipelineView({
   leads, stages, onUpdateStage, onEditLead, onDeleteLead, onViewLead, tagsByLead,
 }: PipelineViewProps) {
   const [active, setActive] = useState<Active | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [winGlowStageId, setWinGlowStageId] = useState<string | null>(null);
 
   const leadsByStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
@@ -319,6 +325,10 @@ export const PipelineView = memo(function PipelineView({
     const lead = leads.find((l) => l.id === leadId);
     if (!lead || lead.stage === newStage) return;
     onUpdateStage(leadId, newStage);
+    if (WON_STAGE_IDS.has(newStage) && !WON_STAGE_IDS.has(lead.stage)) {
+      setWinGlowStageId(newStage);
+      setTimeout(() => setWinGlowStageId(null), 1500);
+    }
   }, [leads, onUpdateStage]);
 
   const handleDragCancel = useCallback(() => setActive(null), []);
@@ -347,6 +357,7 @@ export const PipelineView = memo(function PipelineView({
               stage={stage}
               leads={leadsByStage[stage.id] ?? []}
               isActive={false}
+              winGlow={winGlowStageId === stage.id}
               openMenuId={openMenuId}
               tagsByLead={tagsByLead}
               onEditLead={onEditLead}
