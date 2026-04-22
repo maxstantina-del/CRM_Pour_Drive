@@ -26,7 +26,7 @@ interface DbLeadRow {
   country: string | null;
   department: string | null;
   region: string | null;
-  metadata: Record<string, string> | null;
+  metadata: Record<string, string>;
   stage: string;
   value: number | null;
   probability: number | null;
@@ -83,7 +83,7 @@ function leadToRow(lead: Lead, ownerId: string | null): Omit<DbLeadRow, 'created
     country: lead.country ?? null,
     department: lead.department ?? null,
     region: lead.region ?? null,
-    metadata: lead.metadata ?? null,
+    metadata: lead.metadata ?? {},
     stage: lead.stage,
     value: lead.value ?? null,
     probability: lead.probability ?? null,
