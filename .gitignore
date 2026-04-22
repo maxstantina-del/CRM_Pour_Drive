@@ -48,3 +48,7 @@ fix_imports.js
 Thumbs.db
 .vercel
 .env*.local
+
+# Supabase CLI local artifacts
+supabase/.temp/
+supabase/.branches/
