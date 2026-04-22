@@ -5,7 +5,7 @@
 
 import { getSupabaseClient } from '../lib/supabaseClient';
 import type { Lead, LeadStage, NextAction } from '../lib/types';
-import { captureException } from '../lib/sentry';
+import { captureException, captureFeatureException } from '../lib/sentry';
 
 const BATCH_SIZE = 500;
 const MAX_RETRIES = 3;
@@ -232,7 +232,11 @@ export async function bulkInsertLeads(
         inserted.push(...((data ?? []) as DbLeadRow[]).map(rowToLead));
         ok = true;
       } else if (attempt >= MAX_RETRIES) {
-        captureException(error as Error, { batchStart: start, batchSize: batch.length });
+        captureFeatureException('import', error as Error, {
+          batchStart: start,
+          batchSize: batch.length,
+          totalRows: total,
+        });
         batch.forEach((_, i) =>
           errors.push({ index: start + i, message: error.message })
         );

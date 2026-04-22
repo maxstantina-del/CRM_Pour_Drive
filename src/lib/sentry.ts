@@ -28,12 +28,16 @@ export function initSentry() {
     replaysOnErrorSampleRate: 1.0,
 
     integrations: [
+      // browserTracingIntegration auto-captures Web Vitals: LCP, FID, CLS,
+      // INP, FCP, TTFB — visible under Performance → Vitals in Sentry.
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),
     ],
+    // Capture 100% of Web Vitals (cheap — one event per page load).
+    tracePropagationTargets: ['localhost', /^\//, /^https:\/\/gudmtivemddhnhhfilvc\.supabase\.co/],
 
     // Filter out certain errors
     beforeSend(event, hint) {
@@ -78,11 +82,43 @@ export function initSentry() {
 }
 
 /**
+ * Known feature areas — use as the `feature` tag on errors so we can filter by
+ * business domain in the Sentry dashboard (import failures, bulk actions, etc.)
+ */
+export type SentryFeature =
+  | 'import'
+  | 'bulk-action'
+  | 'pipeline-drag'
+  | 'lead-crud'
+  | 'tag-management'
+  | 'ai-chat'
+  | 'auth'
+  | 'activity'
+  | 'dashboard'
+  | 'settings';
+
+/**
  * Capture an exception manually
  */
 export function captureException(error: Error, context?: Record<string, any>) {
   Sentry.captureException(error, {
     extra: context,
+  });
+}
+
+/**
+ * Capture an exception with a `feature` tag for easier filtering in Sentry.
+ * Usage: captureFeatureException('import', err, { file: file.name })
+ */
+export function captureFeatureException(
+  feature: SentryFeature,
+  error: unknown,
+  context?: Record<string, any>
+) {
+  Sentry.withScope((scope) => {
+    scope.setTag('feature', feature);
+    if (context) scope.setExtras(context);
+    Sentry.captureException(error);
   });
 }
 

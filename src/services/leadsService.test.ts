@@ -21,6 +21,7 @@ vi.mock('../lib/supabaseClient', () => ({
 
 vi.mock('../lib/sentry', () => ({
   captureException: vi.fn(),
+  captureFeatureException: vi.fn(),
 }));
 
 import { bulkInsertLeads } from './leadsService';

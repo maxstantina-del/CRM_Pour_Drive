@@ -27,6 +27,8 @@ import type { Lead, ViewType } from './lib/types';
 import { generateId } from './lib/utils';
 import { createActivity } from './services/activitiesService';
 import { fireWinConfetti } from './lib/confetti';
+import { captureFeatureException } from './lib/sentry';
+import { ViewErrorBoundary } from './components/ViewErrorBoundary';
 import { useAuth } from './contexts/AuthContext';
 import { SearchBar } from './components/layout/SearchBar';
 
@@ -235,6 +237,7 @@ function App() {
       }
     } catch (error) {
       console.error('Erreur mise à jour stage:', error);
+      captureFeatureException('pipeline-drag', error, { leadId, newStage, previousStage });
       if (previousStage) {
         await updateSingleLead(effectivePipelineId, leadId, { stage: previousStage });
       }
@@ -280,6 +283,7 @@ function App() {
           showToast(`${ids.length} lead${ids.length > 1 ? 's supprimés' : ' supprimé'}`, 'success');
           setSelectedLeadIds(new Set());
         } catch (err) {
+          captureFeatureException('bulk-action', err, { op: 'delete', count: ids.length });
           showToast('Erreur lors de la suppression', 'error');
         }
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -295,6 +299,7 @@ function App() {
       showToast(`${ids.length} lead${ids.length > 1 ? 's déplacés' : ' déplacé'}`, 'success');
       setSelectedLeadIds(new Set());
     } catch (err) {
+      captureFeatureException('bulk-action', err, { op: 'change-stage', count: ids.length, stageId });
       showToast('Erreur lors du changement d\'étape', 'error');
     }
   };
@@ -533,7 +538,11 @@ function App() {
         )}
 
         <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
-          {currentView === 'dashboard' && <DashboardView leads={leads} stages={stages} />}
+          {currentView === 'dashboard' && (
+            <ViewErrorBoundary feature="dashboard" viewName="Dashboard">
+              <DashboardView leads={leads} stages={stages} />
+            </ViewErrorBoundary>
+          )}
 
           {currentView === 'pipeline' && (
             pipelines.length === 0 ? (
@@ -558,54 +567,62 @@ function App() {
                 </div>
               </div>
             ) : (
-              <PipelineView
-                leads={leads}
-                stages={stages}
-                onUpdateStage={handleUpdateStage}
-                onEditLead={handleEditLead}
-                onDeleteLead={handleDeleteLead}
-                onViewLead={handleViewLead}
-                tagsByLead={leadTags}
-              />
+              <ViewErrorBoundary feature="pipeline-drag" viewName="Pipeline">
+                <PipelineView
+                  leads={leads}
+                  stages={stages}
+                  onUpdateStage={handleUpdateStage}
+                  onEditLead={handleEditLead}
+                  onDeleteLead={handleDeleteLead}
+                  onViewLead={handleViewLead}
+                  tagsByLead={leadTags}
+                />
+              </ViewErrorBoundary>
             )
           )}
 
           {currentView === 'table' && (
-            <TableView
-              leads={leads}
-              onEditLead={handleEditLead}
-              onDeleteLead={handleDeleteLead}
-              onUpdateStage={handleUpdateStage}
-              onViewLead={handleViewLead}
-              selectedIds={selectedLeadIds}
-              onSelectionChange={setSelectedLeadIds}
-              tagsByLead={leadTags}
-            />
+            <ViewErrorBoundary feature="lead-crud" viewName="Tableau">
+              <TableView
+                leads={leads}
+                onEditLead={handleEditLead}
+                onDeleteLead={handleDeleteLead}
+                onUpdateStage={handleUpdateStage}
+                onViewLead={handleViewLead}
+                selectedIds={selectedLeadIds}
+                onSelectionChange={setSelectedLeadIds}
+                tagsByLead={leadTags}
+              />
+            </ViewErrorBoundary>
           )}
 
           {currentView === 'today' && (
-            <TodayView
-              leads={leads}
-              onEditLead={handleEditLead}
-              onDeleteLead={handleDeleteLead}
-              onUpdateStage={handleUpdateStage}
-              onViewLead={handleViewLead}
-            />
+            <ViewErrorBoundary feature="activity" viewName="Aujourd'hui">
+              <TodayView
+                leads={leads}
+                onEditLead={handleEditLead}
+                onDeleteLead={handleDeleteLead}
+                onUpdateStage={handleUpdateStage}
+                onViewLead={handleViewLead}
+              />
+            </ViewErrorBoundary>
           )}
 
           {currentView === 'settings' && (
-            <SettingsView
-              pipelines={pipelines}
-              currentPipelineId={effectivePipelineId}
-              onAddPipeline={handleNewPipeline}
-              onRenamePipeline={renamePipeline}
-              onDeletePipeline={handleDeletePipeline}
-              stages={stages}
-              onAddStage={addStage}
-              onUpdateStage={updateStage}
-              onRemoveStage={removeStage}
-              onReorderStages={reorderStages}
-            />
+            <ViewErrorBoundary feature="settings" viewName="Paramètres">
+              <SettingsView
+                pipelines={pipelines}
+                currentPipelineId={effectivePipelineId}
+                onAddPipeline={handleNewPipeline}
+                onRenamePipeline={renamePipeline}
+                onDeletePipeline={handleDeletePipeline}
+                stages={stages}
+                onAddStage={addStage}
+                onUpdateStage={updateStage}
+                onRemoveStage={removeStage}
+                onReorderStages={reorderStages}
+              />
+            </ViewErrorBoundary>
           )}
         </main>
       </div>
