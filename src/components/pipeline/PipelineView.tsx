@@ -121,11 +121,29 @@ function LeadCardContent({
     e.preventDefault();
     toggleLeadTag(lead.id, tag);
   };
+  const isWon = WON_STAGE_IDS.has(lead.stage);
+  const goldJewelClass = isWon
+    ? [
+        'relative overflow-hidden',
+        'bg-gradient-to-br !from-amber-50 !via-yellow-50 !to-amber-100',
+        'dark:!from-amber-900/40 dark:!via-yellow-900/30 dark:!to-amber-800/40',
+        '!border-2 !border-amber-400 dark:!border-amber-500/70',
+        'shadow-[0_4px_14px_-2px_rgba(251,191,36,0.45)] dark:shadow-[0_4px_14px_-2px_rgba(251,191,36,0.25)]',
+      ].join(' ')
+    : '';
   return (
-    <Card padding="sm">
-      <div className="space-y-2">
+    <Card padding="sm" className={goldJewelClass}>
+      {isWon && (
+        <>
+          <div className="pointer-events-none absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-yellow-300/50 to-transparent dark:from-yellow-400/30 rounded-bl-full" />
+          <div className="absolute top-1 right-1 text-base leading-none" title="Lead gagné">🏆</div>
+        </>
+      )}
+      <div className="space-y-2 relative">
         <div className="flex items-start justify-between">
-          <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{lead.name}</h4>
+          <h4 className={`font-medium text-sm ${isWon ? 'text-amber-900 dark:text-amber-100' : 'text-gray-900 dark:text-gray-100'}`}>
+            {lead.name}
+          </h4>
           <div className="relative">
             <button
               className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
