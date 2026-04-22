@@ -3,6 +3,7 @@
  */
 
 import { getSupabaseClient } from '../lib/supabaseClient';
+import type { Database } from '../types/database';
 
 export interface Tag {
   id: string;
@@ -12,12 +13,12 @@ export interface Tag {
   createdAt: string;
 }
 
-interface DbTagRow {
-  id: string;
-  name: string;
-  color: string;
-  owner_id: string | null;
-  created_at: string;
+type DbTagRow = Database['public']['Tables']['tags']['Row'];
+
+interface LeadTagWithTag {
+  lead_id: string;
+  tag_id?: string;
+  tags: DbTagRow | null;
 }
 
 function rowToTag(r: DbTagRow): Tag {
@@ -61,9 +62,9 @@ export async function listTagsForLead(leadId: string): Promise<Tag[]> {
     .select('tag_id, tags(*)')
     .eq('lead_id', leadId);
   if (error) throw error;
-  return (data ?? [])
-    .map((row: any) => row.tags as DbTagRow)
-    .filter(Boolean)
+  return (data as unknown as LeadTagWithTag[] ?? [])
+    .map(row => row.tags)
+    .filter((t): t is DbTagRow => t !== null)
     .map(rowToTag);
 }
 
@@ -72,12 +73,11 @@ export async function listLeadTagsMap(): Promise<Map<string, Tag[]>> {
   const { data, error } = await supabase.from('lead_tags').select('lead_id, tags(*)');
   if (error) throw error;
   const map = new Map<string, Tag[]>();
-  for (const row of data ?? []) {
-    const tag = (row as any).tags as DbTagRow | null;
-    if (!tag) continue;
-    const arr = map.get((row as any).lead_id) ?? [];
-    arr.push(rowToTag(tag));
-    map.set((row as any).lead_id, arr);
+  for (const row of (data as unknown as LeadTagWithTag[]) ?? []) {
+    if (!row.tags) continue;
+    const arr = map.get(row.lead_id) ?? [];
+    arr.push(rowToTag(row.tags));
+    map.set(row.lead_id, arr);
   }
   return map;
 }

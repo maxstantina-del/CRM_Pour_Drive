@@ -4,8 +4,11 @@
  */
 
 import { getSupabaseClient } from '../lib/supabaseClient';
+import type { Database } from '../types/database';
 
 export type PipelineRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+type PipelineMemberRow = Database['public']['Tables']['pipeline_members']['Row'];
 
 export interface PipelineMember {
   pipelineId: string;
@@ -23,10 +26,11 @@ export async function listMembers(pipelineId: string): Promise<PipelineMember[]>
     .eq('pipeline_id', pipelineId);
   if (error) throw error;
 
-  const userIds = (data ?? []).map((r: any) => r.user_id);
+  const rows = (data ?? []) as PipelineMemberRow[];
+  const userIds = rows.map(r => r.user_id);
   const emails = await fetchEmails(userIds);
 
-  return (data ?? []).map((r: any) => ({
+  return rows.map(r => ({
     pipelineId: r.pipeline_id,
     userId: r.user_id,
     role: r.role as PipelineRole,
