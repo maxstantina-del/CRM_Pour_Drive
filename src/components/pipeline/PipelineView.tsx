@@ -26,7 +26,7 @@ import { MoreVertical, Edit, Trash2, X as XIcon, Calendar } from 'lucide-react';
 import { getStageIcon, getStageColorHex } from '../../lib/stageIcons';
 import { useTags } from '../../hooks/useTags';
 import { useAllFiches } from '../../contexts/FichesContext';
-import { getNextAppointmentForLead, formatSlotCompact, countAppointmentsForLead } from '../../lib/appointments';
+import { getAllAppointmentsForLead, formatSlotCompact, isSlotPast } from '../../lib/appointments';
 
 export interface PipelineViewProps {
   leads: Lead[];
@@ -120,8 +120,7 @@ function LeadCardContent({
   const { toggleLeadTag } = useTags();
   const { fichesByLead } = useAllFiches();
   const leadFiches = fichesByLead.get(lead.id);
-  const nextAppt = getNextAppointmentForLead(leadFiches);
-  const totalAppts = countAppointmentsForLead(leadFiches);
+  const allAppts = getAllAppointmentsForLead(leadFiches);
   const handleRemoveTag = (e: React.MouseEvent, tag: Tag) => {
     e.stopPropagation();
     e.preventDefault();
@@ -211,18 +210,30 @@ function LeadCardContent({
             {lead.value}€
           </p>
         )}
-        {nextAppt && (
-          <div
-            className="flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800/60 w-fit"
-            title={`${totalAppts} rendez-vous au total sur ce lead`}
-          >
-            <Calendar size={11} />
-            <span>{formatSlotCompact(nextAppt)}</span>
-            {totalAppts > 1 && (
-              <span className="ml-0.5 px-1 bg-blue-200 dark:bg-blue-800 text-[10px] rounded-full">
-                +{totalAppts - 1}
-              </span>
-            )}
+        {allAppts.length > 0 && (
+          <div className="flex flex-col gap-1">
+            {allAppts.map((s, i) => {
+              const past = isSlotPast(s);
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border w-fit max-w-full ${
+                    past
+                      ? 'text-gray-500 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700 line-through decoration-gray-400'
+                      : 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/60'
+                  }`}
+                  title={s.note || undefined}
+                >
+                  <Calendar size={11} className="flex-shrink-0" />
+                  <span className="truncate">{formatSlotCompact(s)}</span>
+                  {s.vehiclePlate && (
+                    <span className="font-mono text-[9px] px-1 bg-white/70 dark:bg-black/30 rounded">
+                      {s.vehiclePlate}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         {tags && tags.length > 0 && (

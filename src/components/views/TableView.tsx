@@ -10,7 +10,7 @@ import { Edit, Trash2, ArrowUpDown, X as XIcon, Calendar } from 'lucide-react';
 import { sortLeads, formatDate, formatCurrency } from '../../lib/utils';
 import { useTags } from '../../hooks/useTags';
 import { useAllFiches } from '../../contexts/FichesContext';
-import { getNextAppointmentForLead, formatSlotCompact, countAppointmentsForLead } from '../../lib/appointments';
+import { getAllAppointmentsForLead, formatSlotCompact, isSlotPast } from '../../lib/appointments';
 
 export interface TableViewProps {
   leads: Lead[];
@@ -205,18 +205,32 @@ export function TableView({
                     <td className="px-4 py-3">
                       {(() => {
                         const leadFiches = fichesByLead.get(lead.id);
-                        const nextAppt = getNextAppointmentForLead(leadFiches);
-                        const total = countAppointmentsForLead(leadFiches);
-                        if (!nextAppt) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>;
+                        const appts = getAllAppointmentsForLead(leadFiches);
+                        if (appts.length === 0) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>;
                         return (
-                          <div className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800/60" title={`${total} RDV au total`}>
-                            <Calendar size={11} />
-                            <span>{formatSlotCompact(nextAppt)}</span>
-                            {total > 1 && (
-                              <span className="ml-0.5 px-1 bg-blue-200 dark:bg-blue-800 text-[10px] rounded-full">
-                                +{total - 1}
-                              </span>
-                            )}
+                          <div className="flex flex-col gap-1">
+                            {appts.map((s, i) => {
+                              const past = isSlotPast(s);
+                              return (
+                                <div
+                                  key={i}
+                                  className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded border w-fit ${
+                                    past
+                                      ? 'text-gray-500 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700 line-through decoration-gray-400'
+                                      : 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/60'
+                                  }`}
+                                  title={s.note || undefined}
+                                >
+                                  <Calendar size={11} />
+                                  <span>{formatSlotCompact(s)}</span>
+                                  {s.vehiclePlate && (
+                                    <span className="font-mono text-[10px] px-1 bg-white/70 dark:bg-black/30 rounded">
+                                      {s.vehiclePlate}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         );
                       })()}

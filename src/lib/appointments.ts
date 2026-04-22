@@ -71,6 +71,31 @@ export function countAppointmentsForLead(fiches: Fiche[] | undefined): number {
 }
 
 /**
+ * All slots across every fiche on a lead, sorted chronologically with future
+ * appointments first (soonest upcoming → latest), then past ones (most recent
+ * first). Use this when you want to display EVERY appointment on a card.
+ */
+export function getAllAppointmentsForLead(fiches: Fiche[] | undefined): ParsedSlot[] {
+  if (!fiches || fiches.length === 0) return [];
+  const all: ParsedSlot[] = [];
+  for (const f of fiches) all.push(...parseFicheSlots(f));
+  if (all.length === 0) return [];
+  const now = Date.now();
+  const grace = 24 * 3600 * 1000;
+  const upcoming = all
+    .filter((s) => s.when.getTime() >= now - grace)
+    .sort((a, b) => a.when.getTime() - b.when.getTime());
+  const past = all
+    .filter((s) => s.when.getTime() < now - grace)
+    .sort((a, b) => b.when.getTime() - a.when.getTime());
+  return [...upcoming, ...past];
+}
+
+export function isSlotPast(slot: ParsedSlot): boolean {
+  return slot.when.getTime() < Date.now() - 24 * 3600 * 1000;
+}
+
+/**
  * Compact French label: 'Ven. 25 avr. à 14h' or 'Ven. 25 avr.' without time.
  */
 export function formatSlotCompact(slot: ParsedSlot): string {
