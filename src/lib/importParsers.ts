@@ -122,7 +122,7 @@ export function normalizeStage(raw: unknown): LeadStage {
 
 function parseNumberLoose(str: string): number | null {
   // "12 000 €" → 12000, "12,50" → 12.5, "1.234,56" stays best-effort
-  const cleaned = str.replace(/[^\d.,\-]/g, '').replace(/\s/g, '');
+  const cleaned = str.replace(/[^\d.,-]/g, '').replace(/\s/g, '');
   if (!cleaned) return null;
   const normalized =
     cleaned.includes(',') && !cleaned.includes('.')
