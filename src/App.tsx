@@ -41,6 +41,11 @@ function App() {
     return (savedView as ViewType) || 'pipeline';
   });
 
+  /** Incremented each time the header Activity badge is clicked. TodayView
+   * listens to this and re-opens the Aujourd'hui bucket + scrolls to top so
+   * the user always gets visible feedback, even when already on that view. */
+  const [activityFocusKey, setActivityFocusKey] = useState(0);
+
   // Sauvegarder la vue actuelle dans localStorage à chaque changement
   useEffect(() => {
     localStorage.setItem('crm_current_view', currentView);
@@ -513,7 +518,10 @@ function App() {
             const lead = allLeads.find((l) => l.id === leadId);
             if (lead) setViewingLead(lead);
           }}
-          onGoToActivity={() => setCurrentView('today')}
+          onGoToActivity={() => {
+            setCurrentView('today');
+            setActivityFocusKey((k) => k + 1);
+          }}
         />
 
         {pipelines.length > 0 && (
@@ -619,6 +627,7 @@ function App() {
                 onDeleteLead={handleDeleteLead}
                 onUpdateStage={handleUpdateStage}
                 onViewLead={handleViewLead}
+                focusKey={activityFocusKey}
               />
             </ViewErrorBoundary>
           )}

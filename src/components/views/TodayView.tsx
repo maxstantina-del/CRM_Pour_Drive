@@ -20,6 +20,8 @@ export interface TodayViewProps {
   onDeleteLead: (leadId: string) => void;
   onUpdateStage: (leadId: string, newStage: Lead['stage']) => void;
   onViewLead?: (lead: Lead) => void;
+  /** Incremented by the header badge click; forces expand + scroll-to-top. */
+  focusKey?: number;
 }
 
 type ActivityItem =
@@ -111,7 +113,7 @@ function formatTime(d: Date): string {
   return mm === '00' ? `${hh}h` : `${hh}h${mm}`;
 }
 
-export function TodayView({ leads, onEditLead, onViewLead }: TodayViewProps) {
+export function TodayView({ leads, onEditLead, onViewLead, focusKey }: TodayViewProps) {
   const openLead = onViewLead ?? onEditLead;
   const { fichesByLead } = useAllFiches();
 
@@ -183,6 +185,17 @@ export function TodayView({ leads, onEditLead, onViewLead }: TodayViewProps) {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(openState)); } catch { /* ignore */ }
   }, [openState]);
+
+  // When the header Activity badge is clicked, force-open the two most urgent
+  // buckets and scroll to the top so the user gets visible feedback even when
+  // already on this view.
+  useEffect(() => {
+    if (focusKey === undefined || focusKey === 0) return;
+    setOpenState((prev) => ({ ...prev, overdue: true, today: true }));
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [focusKey]);
 
   const toggleBucket = useCallback((bucket: Bucket) => {
     setOpenState((prev) => ({ ...prev, [bucket]: !prev[bucket] }));
