@@ -280,7 +280,12 @@ function LeadCardContent({
         <>
           <div
             className="fixed inset-0 z-30"
-            onClick={() => onMenuToggle(lead.id)}
+            onClick={(e) => {
+              // Stop propagation so the outer card onClick (opens the drawer)
+              // n'est pas déclenchée quand on clique dehors pour fermer le menu.
+              e.stopPropagation();
+              onMenuToggle(lead.id);
+            }}
             onPointerDown={(e) => e.stopPropagation()}
           />
           <div className="absolute right-2 top-9 z-40 w-40 bg-surface border border-border rounded-md shadow-md overflow-hidden animate-fade-in">
