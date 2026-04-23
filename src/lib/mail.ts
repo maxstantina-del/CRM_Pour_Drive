@@ -1,13 +1,13 @@
 /**
- * Generates a Gmail compose URL that forces a specific account (via the
- * `/u/<email>/` path). Falls back to mailto: if the target user doesn't have
- * a configured Gmail account.
+ * Generates a Gmail compose URL that forces a specific Google Workspace
+ * account using the /a/<domain>/ pattern — seul URL fiable quand plusieurs
+ * comptes Gmail sont connectés dans le même navigateur.
  *
  * Comportement attendu :
- *   - Clic sur l'email d'un lead → onglet Gmail avec le bon expéditeur
- *     (stantina-max@chosen-mx.com) pré-rempli pour envoyer au destinataire.
- *   - Si Gmail n'est pas connecté à ce compte dans le navigateur, Google
- *     demande de s'y connecter avant d'afficher la fenêtre de composition.
+ *   - Clic sur l'email d'un lead → onglet Gmail avec l'expéditeur
+ *     stantina-max@chosen-mx.com pré-rempli pour envoyer au destinataire.
+ *   - Google route automatiquement vers le compte du domaine chosen-mx.com
+ *     même si un compte @gmail.com perso est par défaut dans Chrome.
  */
 
 const DEFAULT_SENDER = 'stantina-max@chosen-mx.com';
@@ -22,6 +22,22 @@ export interface GmailComposeOptions {
   as?: string;
 }
 
+/**
+ * Extrait le domaine de l'email : stantina-max@chosen-mx.com → chosen-mx.com
+ * Pour les adresses @gmail.com on utilise /u/<email>/ car il n'y a pas de
+ * workspace dédié.
+ */
+function accountPath(email: string): string {
+  const at = email.indexOf('@');
+  if (at < 0) return `u/${encodeURIComponent(email)}`;
+  const domain = email.slice(at + 1).toLowerCase();
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    return `u/${encodeURIComponent(email)}`;
+  }
+  // Workspace domain → /a/<domain>/ est la route fiable
+  return `a/${encodeURIComponent(domain)}`;
+}
+
 export function gmailComposeUrl({
   to,
   subject,
@@ -34,11 +50,12 @@ export function gmailComposeUrl({
   params.set('view', 'cm');
   params.set('fs', '1');
   params.set('to', to);
+  // Indique aussi l'expéditeur via authuser — redondant mais Google utilise
+  // l'un ou l'autre selon l'état de session.
+  params.set('authuser', as);
   if (subject) params.set('su', subject);
   if (body) params.set('body', body);
   if (cc) params.set('cc', cc);
   if (bcc) params.set('bcc', bcc);
-  // /u/<email>/ force l'utilisation de ce compte Gmail. Si pas connecté,
-  // Google propose de se connecter avant d'ouvrir le compose.
-  return `https://mail.google.com/mail/u/${encodeURIComponent(as)}/?${params.toString()}`;
+  return `https://mail.google.com/mail/${accountPath(as)}/?${params.toString()}`;
 }
