@@ -76,6 +76,7 @@ export type Database = {
           vehicle_brand_model: string | null
           vehicle_plate: string | null
           vehicle_type: string | null
+          vehicles: Json
         }
         Insert: {
           availability?: string | null
@@ -100,6 +101,7 @@ export type Database = {
           vehicle_brand_model?: string | null
           vehicle_plate?: string | null
           vehicle_type?: string | null
+          vehicles?: Json
         }
         Update: {
           availability?: string | null
@@ -124,6 +126,7 @@ export type Database = {
           vehicle_brand_model?: string | null
           vehicle_plate?: string | null
           vehicle_type?: string | null
+          vehicles?: Json
         }
         Relationships: [
           {

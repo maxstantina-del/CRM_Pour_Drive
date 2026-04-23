@@ -88,7 +88,7 @@ export function exportFicheToPDF(fiche: Fiche, ctx: ExportContext): void {
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<title>Fiche Autoglass – ${esc(fiche.vehiclePlate || entreprise)}</title>
+<title>Fiche Autoglass – ${esc((fiche.vehicles[0]?.plate ?? fiche.vehiclePlate) || entreprise)}</title>
 <style>
   @page { size: A4; margin: 15mm; }
   * { box-sizing: border-box; }
@@ -132,12 +132,29 @@ export function exportFicheToPDF(fiche: Fiche, ctx: ExportContext): void {
       row('Email', esc(fiche.contactEmail))
   )}
 
-  ${section(
-    'Véhicule',
-    row('Type', fiche.vehicleType ? esc(VEHICLE[fiche.vehicleType]) : '—') +
-      row('Marque + modèle', esc(fiche.vehicleBrandModel)) +
-      row('Immatriculation', `<strong>${esc(fiche.vehiclePlate)}</strong>`)
-  )}
+  ${(() => {
+    const list = fiche.vehicles.length
+      ? fiche.vehicles
+      : [{ type: fiche.vehicleType, brandModel: fiche.vehicleBrandModel, plate: fiche.vehiclePlate }];
+    if (list.length === 1) {
+      const v = list[0];
+      return section(
+        'Véhicule',
+        row('Type', v.type ? esc(VEHICLE[v.type]) : '—') +
+          row('Marque + modèle', esc(v.brandModel)) +
+          row('Immatriculation', `<strong>${esc(v.plate)}</strong>`)
+      );
+    }
+    const rows = list.map((v, i) =>
+      row(
+        `Véhicule ${i + 1}`,
+        `<strong>${esc(v.plate || '(sans immat)')}</strong>` +
+          (v.type ? ` · ${esc(VEHICLE[v.type])}` : '') +
+          (v.brandModel ? ` · ${esc(v.brandModel)}` : '')
+      )
+    ).join('');
+    return section(`Véhicules (${list.length})`, rows);
+  })()}
 
   ${section(
     'Sinistre',

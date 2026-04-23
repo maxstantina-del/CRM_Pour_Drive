@@ -11,6 +11,12 @@ export type DamageLocation = 'pare_brise' | 'laterale' | 'lunette';
 export type InterventionPlace = 'sur_site' | 'en_centre';
 export type InsuranceGlassCovered = 'oui' | 'non' | 'inconnu';
 
+export interface Vehicle {
+  type: VehicleType | null;
+  brandModel: string | null;
+  plate: string | null;
+}
+
 export interface Fiche {
   id: string;
   leadId: string;
@@ -19,6 +25,14 @@ export interface Fiche {
   contactRole: string | null;
   contactPhone: string | null;
   contactEmail: string | null;
+  /** Liste de tous les véhicules concernés par cette fiche (1..N). */
+  vehicles: Vehicle[];
+  /**
+   * Legacy shorthands pointing at `vehicles[0]`. Kept in sync server-side by
+   * the service so existing consumers (email notifications, Kanban card,
+   * exports) keep rendering a useful first-vehicle summary while the rest of
+   * the UI iterates `vehicles`.
+   */
   vehicleType: VehicleType | null;
   vehicleBrandModel: string | null;
   vehiclePlate: string | null;
@@ -48,6 +62,7 @@ interface DbFicheRow {
   contact_role: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  vehicles: unknown;
   vehicle_type: VehicleType | null;
   vehicle_brand_model: string | null;
   vehicle_plate: string | null;
@@ -65,7 +80,31 @@ interface DbFicheRow {
   updated_at: string;
 }
 
+function sanitizeVehicle(raw: unknown): Vehicle | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const v = raw as Record<string, unknown>;
+  const type = v.type === 'VL' || v.type === 'utilitaire' || v.type === 'poids_lourd' ? v.type : null;
+  const brandModel = typeof v.brandModel === 'string' && v.brandModel ? v.brandModel : null;
+  const plate = typeof v.plate === 'string' && v.plate ? v.plate : null;
+  if (!type && !brandModel && !plate) return null;
+  return { type, brandModel, plate };
+}
+
+function normalizeVehicles(r: DbFicheRow): Vehicle[] {
+  const raw = r.vehicles;
+  if (Array.isArray(raw)) {
+    const list = raw.map(sanitizeVehicle).filter((v): v is Vehicle => v !== null);
+    if (list.length > 0) return list;
+  }
+  if (r.vehicle_type || r.vehicle_brand_model || r.vehicle_plate) {
+    return [{ type: r.vehicle_type, brandModel: r.vehicle_brand_model, plate: r.vehicle_plate }];
+  }
+  return [];
+}
+
 function rowToFiche(r: DbFicheRow): Fiche {
+  const vehicles = normalizeVehicles(r);
+  const first = vehicles[0] ?? { type: null, brandModel: null, plate: null };
   return {
     id: r.id,
     leadId: r.lead_id,
@@ -74,9 +113,10 @@ function rowToFiche(r: DbFicheRow): Fiche {
     contactRole: r.contact_role,
     contactPhone: r.contact_phone,
     contactEmail: r.contact_email,
-    vehicleType: r.vehicle_type,
-    vehicleBrandModel: r.vehicle_brand_model,
-    vehiclePlate: r.vehicle_plate,
+    vehicles,
+    vehicleType: first.type,
+    vehicleBrandModel: first.brandModel,
+    vehiclePlate: first.plate,
     damageType: r.damage_type,
     damageLocation: r.damage_location,
     immobilized: r.immobilized,
@@ -98,9 +138,22 @@ function ficheInputToRow(input: FicheInput): Record<string, unknown> {
   if (input.contactRole !== undefined) row.contact_role = input.contactRole;
   if (input.contactPhone !== undefined) row.contact_phone = input.contactPhone;
   if (input.contactEmail !== undefined) row.contact_email = input.contactEmail;
-  if (input.vehicleType !== undefined) row.vehicle_type = input.vehicleType;
-  if (input.vehicleBrandModel !== undefined) row.vehicle_brand_model = input.vehicleBrandModel;
-  if (input.vehiclePlate !== undefined) row.vehicle_plate = input.vehiclePlate;
+  if (input.vehicles !== undefined) {
+    const clean = (input.vehicles ?? [])
+      .map(sanitizeVehicle)
+      .filter((v): v is Vehicle => v !== null);
+    row.vehicles = clean;
+    // Mirror first vehicle onto legacy scalar columns so e-mail + Kanban cards
+    // that still read vehicle_plate/brand_model/type get a sensible value.
+    const first = clean[0] ?? { type: null, brandModel: null, plate: null };
+    row.vehicle_type = first.type;
+    row.vehicle_brand_model = first.brandModel;
+    row.vehicle_plate = first.plate;
+  } else {
+    if (input.vehicleType !== undefined) row.vehicle_type = input.vehicleType;
+    if (input.vehicleBrandModel !== undefined) row.vehicle_brand_model = input.vehicleBrandModel;
+    if (input.vehiclePlate !== undefined) row.vehicle_plate = input.vehiclePlate;
+  }
   if (input.damageType !== undefined) row.damage_type = input.damageType;
   if (input.damageLocation !== undefined) row.damage_location = input.damageLocation;
   if (input.immobilized !== undefined) row.immobilized = input.immobilized;

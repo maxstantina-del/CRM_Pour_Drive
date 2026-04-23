@@ -4,6 +4,7 @@ import { Save, Loader2, User, Truck, AlertTriangle, MapPin, Calendar, Shield, Me
 import type {
   Fiche,
   FicheInput,
+  Vehicle,
   VehicleType,
   DamageType,
   DamageLocation,
@@ -26,14 +27,18 @@ interface AppointmentSlot {
   note: string; // optional (ex: 'Inspection', 'Remplacement')
 }
 
+interface VehicleRow {
+  type: VehicleType | '';
+  brandModel: string;
+  plate: string;
+}
+
 type FormState = {
   contactName: string;
   contactRole: string;
   contactPhone: string;
   contactEmail: string;
-  vehicleType: VehicleType | '';
-  vehicleBrandModel: string;
-  vehiclePlate: string;
+  vehicles: VehicleRow[];
   damageType: DamageType | '';
   damageLocation: DamageLocation | '';
   immobilized: 'oui' | 'non' | '';
@@ -47,6 +52,7 @@ type FormState = {
 };
 
 const emptySlot: AppointmentSlot = { date: '', time: '', note: '' };
+const emptyVehicle: VehicleRow = { type: '', brandModel: '', plate: '' };
 
 /**
  * French license plate (SIV format since 2009): 2 letters - 3 digits - 2 letters.
@@ -65,9 +71,7 @@ const emptyForm: FormState = {
   contactRole: '',
   contactPhone: '',
   contactEmail: '',
-  vehicleType: '',
-  vehicleBrandModel: '',
-  vehiclePlate: '',
+  vehicles: [{ ...emptyVehicle }],
   damageType: '',
   damageLocation: '',
   immobilized: '',
@@ -132,6 +136,15 @@ function leadToDefaults(lead: Lead | undefined): FormState {
   };
 }
 
+function vehiclesToForm(list: Vehicle[] | undefined): VehicleRow[] {
+  if (!list || list.length === 0) return [{ ...emptyVehicle }];
+  return list.map((v) => ({
+    type: (v.type ?? '') as VehicleType | '',
+    brandModel: v.brandModel ?? '',
+    plate: v.plate ?? '',
+  }));
+}
+
 function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
   if (!f) return leadToDefaults(lead);
   return {
@@ -139,9 +152,7 @@ function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
     contactRole: f.contactRole ?? '',
     contactPhone: f.contactPhone ?? '',
     contactEmail: f.contactEmail ?? '',
-    vehicleType: f.vehicleType ?? '',
-    vehicleBrandModel: f.vehicleBrandModel ?? '',
-    vehiclePlate: f.vehiclePlate ?? '',
+    vehicles: vehiclesToForm(f.vehicles),
     damageType: f.damageType ?? '',
     damageLocation: f.damageLocation ?? '',
     immobilized: f.immobilized === true ? 'oui' : f.immobilized === false ? 'non' : '',
@@ -156,14 +167,19 @@ function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
 }
 
 function formToInput(s: FormState): FicheInput {
+  const vehicles: Vehicle[] = s.vehicles
+    .map((v) => ({
+      type: (v.type || null) as VehicleType | null,
+      brandModel: v.brandModel.trim() || null,
+      plate: v.plate.trim() || null,
+    }))
+    .filter((v) => v.type || v.brandModel || v.plate);
   return {
     contactName: s.contactName || null,
     contactRole: s.contactRole || null,
     contactPhone: s.contactPhone || null,
     contactEmail: s.contactEmail || null,
-    vehicleType: (s.vehicleType || null) as VehicleType | null,
-    vehicleBrandModel: s.vehicleBrandModel || null,
-    vehiclePlate: s.vehiclePlate || null,
+    vehicles,
     damageType: (s.damageType || null) as DamageType | null,
     damageLocation: (s.damageLocation || null) as DamageLocation | null,
     immobilized: s.immobilized === 'oui' ? true : s.immobilized === 'non' ? false : null,
@@ -210,6 +226,23 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
       appointments: prev.appointments.length > 1
         ? prev.appointments.filter((_, i) => i !== index)
         : [{ ...emptySlot }],
+    }));
+
+  const updateVehicle = (index: number, patch: Partial<VehicleRow>) =>
+    setForm((prev) => ({
+      ...prev,
+      vehicles: prev.vehicles.map((v, i) => (i === index ? { ...v, ...patch } : v)),
+    }));
+
+  const addVehicle = () =>
+    setForm((prev) => ({ ...prev, vehicles: [...prev.vehicles, { ...emptyVehicle }] }));
+
+  const removeVehicle = (index: number) =>
+    setForm((prev) => ({
+      ...prev,
+      vehicles: prev.vehicles.length > 1
+        ? prev.vehicles.filter((_, i) => i !== index)
+        : [{ ...emptyVehicle }],
     }));
 
   const copyPhrase = async () => {
@@ -305,42 +338,74 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
           </Row>
         </Section>
 
-        <Section icon={<Truck size={14} />} title="Véhicule">
-          <Row>
-            <Field label="Type">
-              <select
-                value={form.vehicleType}
-                onChange={(e) => update('vehicleType', e.target.value as VehicleType | '')}
-                className={inputCls}
+        <Section icon={<Truck size={14} />} title={form.vehicles.length > 1 ? `Véhicules (${form.vehicles.length})` : 'Véhicule'}>
+          <div className="space-y-3">
+            {form.vehicles.map((v, i) => (
+              <div
+                key={i}
+                className="rounded-md border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-950/40"
               >
-                <option value="">—</option>
-                <option value="VL">VL (voiture légère)</option>
-                <option value="utilitaire">Utilitaire</option>
-                <option value="poids_lourd">Poids lourd</option>
-              </select>
-            </Field>
-            <Field label="Immatriculation">
-              <input
-                type="text"
-                value={form.vehiclePlate}
-                onChange={(e) => update('vehiclePlate', formatLicensePlate(e.target.value))}
-                className={`${inputCls} font-mono uppercase tracking-wider`}
-                placeholder="AB-123-CD"
-                maxLength={9}
-                autoComplete="off"
-                inputMode="text"
-              />
-            </Field>
-          </Row>
-          <Field label="Marque + modèle">
-            <input
-              type="text"
-              value={form.vehicleBrandModel}
-              onChange={(e) => update('vehicleBrandModel', e.target.value)}
-              className={inputCls}
-              placeholder="Renault Master, Peugeot 208…"
-            />
-          </Field>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    Véhicule {i + 1}
+                  </span>
+                  {form.vehicles.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeVehicle(i)}
+                      className="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+                      title="Supprimer ce véhicule"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+                <Row>
+                  <Field label="Type">
+                    <select
+                      value={v.type}
+                      onChange={(e) => updateVehicle(i, { type: e.target.value as VehicleType | '' })}
+                      className={inputCls}
+                    >
+                      <option value="">—</option>
+                      <option value="VL">VL (voiture légère)</option>
+                      <option value="utilitaire">Utilitaire</option>
+                      <option value="poids_lourd">Poids lourd</option>
+                    </select>
+                  </Field>
+                  <Field label="Immatriculation">
+                    <input
+                      type="text"
+                      value={v.plate}
+                      onChange={(e) => updateVehicle(i, { plate: formatLicensePlate(e.target.value) })}
+                      className={`${inputCls} font-mono uppercase tracking-wider`}
+                      placeholder="AB-123-CD"
+                      maxLength={9}
+                      autoComplete="off"
+                      inputMode="text"
+                    />
+                  </Field>
+                </Row>
+                <Field label="Marque + modèle">
+                  <input
+                    type="text"
+                    value={v.brandModel}
+                    onChange={(e) => updateVehicle(i, { brandModel: e.target.value })}
+                    className={inputCls}
+                    placeholder="Renault Master, Peugeot 208…"
+                  />
+                </Field>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addVehicle}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md border border-dashed border-gray-300 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400"
+            >
+              <Plus size={14} />
+              Ajouter un autre véhicule
+            </button>
+          </div>
         </Section>
 
         <Section icon={<AlertTriangle size={14} />} title="Sinistre & urgence">

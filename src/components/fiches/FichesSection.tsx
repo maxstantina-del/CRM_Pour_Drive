@@ -141,6 +141,17 @@ export function FichesSection({ lead }: FichesSectionProps) {
                     {f.vehicleBrandModel}
                   </span>
                 )}
+                {f.vehicles.length > 1 && (
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-medium"
+                    title={f.vehicles
+                      .slice(1)
+                      .map((v) => v.plate || '(sans immat)')
+                      .join(', ')}
+                  >
+                    +{f.vehicles.length - 1} véhicule{f.vehicles.length > 2 ? 's' : ''}
+                  </span>
+                )}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
                 {f.damageType && (
