@@ -42,6 +42,7 @@ export interface Fiche {
   interventionAddress: string | null;
   interventionPlace: InterventionPlace | null;
   availability: string | null;
+  noInsurance: boolean;
   insuranceName: string | null;
   insuranceGlassCovered: InsuranceGlassCovered | null;
   insuranceContract: string | null;
@@ -72,6 +73,7 @@ interface DbFicheRow {
   intervention_address: string | null;
   intervention_place: InterventionPlace | null;
   availability: string | null;
+  no_insurance: boolean | null;
   insurance_name: string | null;
   insurance_glass_covered: InsuranceGlassCovered | null;
   insurance_contract: string | null;
@@ -123,6 +125,7 @@ function rowToFiche(r: DbFicheRow): Fiche {
     interventionAddress: r.intervention_address,
     interventionPlace: r.intervention_place,
     availability: r.availability,
+    noInsurance: r.no_insurance === true,
     insuranceName: r.insurance_name,
     insuranceGlassCovered: r.insurance_glass_covered,
     insuranceContract: r.insurance_contract,
@@ -160,6 +163,16 @@ function ficheInputToRow(input: FicheInput): Record<string, unknown> {
   if (input.interventionAddress !== undefined) row.intervention_address = input.interventionAddress;
   if (input.interventionPlace !== undefined) row.intervention_place = input.interventionPlace;
   if (input.availability !== undefined) row.availability = input.availability;
+  if (input.noInsurance !== undefined) {
+    row.no_insurance = input.noInsurance;
+    // Coherence: « pas d'assurance » vide les 3 champs liés pour éviter des
+    // données contradictoires en base.
+    if (input.noInsurance) {
+      row.insurance_name = null;
+      row.insurance_glass_covered = null;
+      row.insurance_contract = null;
+    }
+  }
   if (input.insuranceName !== undefined) row.insurance_name = input.insuranceName;
   if (input.insuranceGlassCovered !== undefined) row.insurance_glass_covered = input.insuranceGlassCovered;
   if (input.insuranceContract !== undefined) row.insurance_contract = input.insuranceContract;

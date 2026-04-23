@@ -71,6 +71,7 @@ export type Database = {
           intervention_address: string | null
           intervention_place: string | null
           lead_id: string
+          no_insurance: boolean
           owner_id: string
           updated_at: string
           vehicle_brand_model: string | null
@@ -96,6 +97,7 @@ export type Database = {
           intervention_address?: string | null
           intervention_place?: string | null
           lead_id: string
+          no_insurance?: boolean
           owner_id: string
           updated_at?: string
           vehicle_brand_model?: string | null
@@ -121,6 +123,7 @@ export type Database = {
           intervention_address?: string | null
           intervention_place?: string | null
           lead_id?: string
+          no_insurance?: boolean
           owner_id?: string
           updated_at?: string
           vehicle_brand_model?: string | null

@@ -182,12 +182,14 @@ export function exportFicheToPDF(fiche: Fiche, ctx: ExportContext): void {
       )
   )}
 
-  ${section(
-    'Assurance',
-    row('Nom de l\'assurance', esc(fiche.insuranceName)) +
-      row('Bris de glace inclus', fiche.insuranceGlassCovered ? esc(COVERED[fiche.insuranceGlassCovered]) : '—') +
-      row('Numéro de contrat', esc(fiche.insuranceContract))
-  )}
+  ${fiche.noInsurance
+    ? section('Assurance', row('Statut', '<strong>Pas d\'assurance</strong>'))
+    : section(
+        'Assurance',
+        row('Nom de l\'assurance', esc(fiche.insuranceName)) +
+          row('Bris de glace inclus', fiche.insuranceGlassCovered ? esc(COVERED[fiche.insuranceGlassCovered]) : '—') +
+          row('Numéro de contrat', esc(fiche.insuranceContract))
+      )}
 
   ${
     fiche.comment

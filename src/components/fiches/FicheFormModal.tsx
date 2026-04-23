@@ -45,6 +45,7 @@ type FormState = {
   interventionAddress: string;
   interventionPlace: InterventionPlace | '';
   appointments: AppointmentSlot[];
+  noInsurance: boolean;
   insuranceName: string;
   insuranceGlassCovered: InsuranceGlassCovered | '';
   insuranceContract: string;
@@ -78,6 +79,7 @@ const emptyForm: FormState = {
   interventionAddress: '',
   interventionPlace: '',
   appointments: [{ ...emptySlot }],
+  noInsurance: false,
   insuranceName: '',
   insuranceGlassCovered: '',
   insuranceContract: '',
@@ -159,6 +161,7 @@ function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
     interventionAddress: f.interventionAddress ?? '',
     interventionPlace: f.interventionPlace ?? '',
     appointments: parseAppointments(f.availability),
+    noInsurance: f.noInsurance === true,
     insuranceName: f.insuranceName ?? '',
     insuranceGlassCovered: f.insuranceGlassCovered ?? '',
     insuranceContract: f.insuranceContract ?? '',
@@ -186,9 +189,12 @@ function formToInput(s: FormState): FicheInput {
     interventionAddress: s.interventionAddress || null,
     interventionPlace: (s.interventionPlace || null) as InterventionPlace | null,
     availability: formatAppointments(s.appointments),
-    insuranceName: s.insuranceName || null,
-    insuranceGlassCovered: (s.insuranceGlassCovered || null) as InsuranceGlassCovered | null,
-    insuranceContract: s.insuranceContract || null,
+    noInsurance: s.noInsurance,
+    insuranceName: s.noInsurance ? null : (s.insuranceName || null),
+    insuranceGlassCovered: s.noInsurance
+      ? null
+      : ((s.insuranceGlassCovered || null) as InsuranceGlassCovered | null),
+    insuranceContract: s.noInsurance ? null : (s.insuranceContract || null),
     comment: s.comment || null,
   };
 }
@@ -548,38 +554,56 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
         </Section>
 
         <Section icon={<Shield size={14} />} title="Assurance">
-          <Row>
-            <Field label="Nom de l'assurance">
+          <label className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.noInsurance}
+              onChange={(e) => update('noInsurance', e.target.checked)}
+              className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+            />
+            <span>Le prospect n'a pas d'assurance</span>
+          </label>
+
+          <div
+            className={form.noInsurance ? 'opacity-50 pointer-events-none select-none' : ''}
+            aria-disabled={form.noInsurance}
+          >
+            <Row>
+              <Field label="Nom de l'assurance">
+                <input
+                  type="text"
+                  value={form.insuranceName}
+                  onChange={(e) => update('insuranceName', e.target.value)}
+                  disabled={form.noInsurance}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Bris de glace inclus ?">
+                <select
+                  value={form.insuranceGlassCovered}
+                  onChange={(e) =>
+                    update('insuranceGlassCovered', e.target.value as InsuranceGlassCovered | '')
+                  }
+                  disabled={form.noInsurance}
+                  className={inputCls}
+                >
+                  <option value="">—</option>
+                  <option value="oui">Oui</option>
+                  <option value="non">Non</option>
+                  <option value="inconnu">Ne sait pas</option>
+                </select>
+              </Field>
+            </Row>
+            <Field label="Numéro de contrat (si dispo)">
               <input
                 type="text"
-                value={form.insuranceName}
-                onChange={(e) => update('insuranceName', e.target.value)}
+                value={form.insuranceContract}
+                onChange={(e) => update('insuranceContract', e.target.value)}
+                disabled={form.noInsurance}
                 className={inputCls}
               />
             </Field>
-            <Field label="Bris de glace inclus ?">
-              <select
-                value={form.insuranceGlassCovered}
-                onChange={(e) =>
-                  update('insuranceGlassCovered', e.target.value as InsuranceGlassCovered | '')
-                }
-                className={inputCls}
-              >
-                <option value="">—</option>
-                <option value="oui">Oui</option>
-                <option value="non">Non</option>
-                <option value="inconnu">Ne sait pas</option>
-              </select>
-            </Field>
-          </Row>
-          <Field label="Numéro de contrat (si dispo)">
-            <input
-              type="text"
-              value={form.insuranceContract}
-              onChange={(e) => update('insuranceContract', e.target.value)}
-              className={inputCls}
-            />
-          </Field>
+          </div>
         </Section>
 
         <Section icon={<MessageCircle size={14} />} title="Commentaire">
