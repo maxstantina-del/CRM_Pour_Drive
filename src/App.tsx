@@ -23,6 +23,8 @@ import { usePipelines } from './hooks/usePipelines';
 import { useLeads } from './hooks/useLeads';
 import { useActivityReminders } from './hooks/useActivityReminders';
 import { useAllFiches } from './contexts/FichesContext';
+import { updateFiche as updateFicheService } from './services/fichesService';
+import { diffFicheFromLead, hasAnyFicheSync } from './lib/leadFicheSync';
 import { Layers, Plus } from 'lucide-react';
 import { useToast } from './contexts/ToastContext';
 import { usePipelineStages } from './hooks/usePipelineStages';
@@ -170,7 +172,26 @@ function App() {
         return newLead;
       },
       updateLead: async (leadId: string, updates: Partial<Lead>) => {
+        const prev = leads.find((l) => l.id === leadId);
         await updateSingleLead(effectivePipelineId, leadId, updates);
+        // Propagate contact/address changes to every fiche on this lead so
+        // the fiche keeps matching the lead. Only fiches whose value still
+        // matches the OLD lead value get updated — manually customized fiches
+        // keep their tailored value.
+        if (prev) {
+          const next = { ...prev, ...updates } as Lead;
+          const fiches = fichesByLead.get(leadId) ?? [];
+          for (const fiche of fiches) {
+            const ficheDiff = diffFicheFromLead(fiche, prev, next);
+            if (hasAnyFicheSync(ficheDiff)) {
+              try {
+                await updateFicheService(fiche.id, ficheDiff);
+              } catch (err) {
+                console.error('Fiche sync from lead failed', err);
+              }
+            }
+          }
+        }
       },
       deleteLead: async (leadId: string) => {
         await deleteSingleLead(effectivePipelineId, leadId);
@@ -204,7 +225,7 @@ function App() {
         await updateSingleLead(effectivePipelineId, leadId, { nextActions: updatedActions });
       }
     };
-  }, [effectivePipelineId, addSingleLead, updateSingleLead, deleteSingleLead, leads]);
+  }, [effectivePipelineId, addSingleLead, updateSingleLead, deleteSingleLead, leads, fichesByLead]);
 
   // Backup/restore setup
   const leadsByPipeline = useMemo(() => {
@@ -740,6 +761,7 @@ function App() {
         onAddNextAction={(leadId, text, dueDate) => leadsManager.addNextAction(leadId, text, dueDate)}
         onToggleNextAction={(leadId, actionId) => leadsManager.toggleNextAction(leadId, actionId)}
         onDeleteNextAction={(leadId, actionId) => leadsManager.deleteNextAction(leadId, actionId)}
+        onUpdateLead={leadsManager.updateLead}
       />
 
       <WinCelebration

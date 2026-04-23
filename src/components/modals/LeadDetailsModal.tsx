@@ -27,6 +27,7 @@ export interface LeadDetailsModalProps {
   onAddNextAction?: (leadId: string, text: string, dueDate: string) => Promise<void> | void;
   onToggleNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
   onDeleteNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
+  onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void> | void;
 }
 
 export function LeadDetailsModal({
@@ -38,6 +39,7 @@ export function LeadDetailsModal({
   onAddNextAction,
   onToggleNextAction,
   onDeleteNextAction,
+  onUpdateLead,
 }: LeadDetailsModalProps) {
   const { labels: recentLabels, addLabel, removeLabel, defaultLabel } = useRecentActionLabels();
   const [newActionText, setNewActionText] = useState(defaultLabel);
@@ -388,7 +390,7 @@ END:VCARD`;
 
         {/* Fiches Autoglass */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
-          <FichesSection lead={lead} />
+          <FichesSection lead={lead} onSyncLead={onUpdateLead} />
         </div>
 
         {/* Activity Timeline */}

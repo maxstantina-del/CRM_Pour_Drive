@@ -6,6 +6,7 @@ import { FicheFormModal } from './FicheFormModal';
 import type { Fiche } from '../../services/fichesService';
 import { exportFicheToPDF } from '../../lib/ficheExport';
 import type { Lead } from '../../lib/types';
+import { diffLeadFromFicheInput } from '../../lib/leadFicheSync';
 
 const VEHICLE_LABELS: Record<string, string> = {
   VL: 'VL',
@@ -37,9 +38,14 @@ function formatAppointments(raw: string | null): { label: string; more: number }
 
 export interface FichesSectionProps {
   lead: Lead;
+  /**
+   * Called after a fiche is saved when the contact/address fields diverge
+   * from the lead. Passes the Partial<Lead> update to propagate.
+   */
+  onSyncLead?: (leadId: string, updates: Partial<Lead>) => Promise<void> | void;
 }
 
-export function FichesSection({ lead }: FichesSectionProps) {
+export function FichesSection({ lead, onSyncLead }: FichesSectionProps) {
   const leadId = lead.id;
   const leadName = lead.name;
   const leadCompany = lead.company;
@@ -60,6 +66,16 @@ export function FichesSection({ lead }: FichesSectionProps) {
   const handleSubmit = async (input: Parameters<typeof addFiche>[0]) => {
     if (editing) await editFiche(editing.id, input);
     else await addFiche(input);
+    if (onSyncLead) {
+      const leadUpdates = diffLeadFromFicheInput(lead, input);
+      if (Object.keys(leadUpdates).length > 0) {
+        try {
+          await onSyncLead(lead.id, leadUpdates);
+        } catch (err) {
+          console.error('Lead sync from fiche failed', err);
+        }
+      }
+    }
   };
 
   const handleDelete = async (fiche: Fiche) => {
