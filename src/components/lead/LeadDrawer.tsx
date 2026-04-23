@@ -177,8 +177,10 @@ export function LeadDrawer({
           variant="primary"
           icon={<Edit size={14} />}
           onClick={() => {
+            // On laisse le drawer ouvert : le formulaire d'édition s'ouvre
+            // par-dessus et, à la fermeture, on retombe naturellement sur la
+            // fiche du lead.
             onEdit(lead);
-            onClose();
           }}
         >
           Modifier
