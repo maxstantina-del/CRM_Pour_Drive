@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit3, Trash2, FileText, Download, Truck, AlertTriangle, Calendar } from 'lucide-react';
+import { Plus, Edit3, Trash2, FileText, Download, Truck, Calendar } from 'lucide-react';
 import { Button } from '../ui';
 import { useFiches } from '../../hooks/useFiches';
 import { FicheFormModal } from './FicheFormModal';
@@ -11,18 +11,6 @@ const VEHICLE_LABELS: Record<string, string> = {
   VL: 'VL',
   utilitaire: 'Utilitaire',
   poids_lourd: 'Poids lourd',
-};
-
-const DAMAGE_LABELS: Record<string, string> = {
-  impact: 'Impact',
-  fissure: 'Fissure',
-  bris_complet: 'Bris complet',
-};
-
-const DAMAGE_LOCATION_LABELS: Record<string, string> = {
-  pare_brise: 'Pare-brise',
-  laterale: 'Latérale',
-  lunette: 'Lunette arrière',
 };
 
 function formatOneSlotCompact(raw: string): string | null {
@@ -181,26 +169,6 @@ export function FichesSection({ lead }: FichesSectionProps) {
                   </div>
                 );
               })()}
-              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-                {f.damageType && (
-                  <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-300">
-                    <AlertTriangle size={11} />
-                    {DAMAGE_LABELS[f.damageType]}
-                    {f.damageLocation && ` – ${DAMAGE_LOCATION_LABELS[f.damageLocation]}`}
-                  </span>
-                )}
-                {f.immobilized === true && (
-                  <span className="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-[10px] font-medium">
-                    Immobilisé
-                  </span>
-                )}
-                {f.interventionPlace && (
-                  <span>
-                    · {f.interventionPlace === 'sur_site' ? 'Sur site' : 'En centre'}
-                  </span>
-                )}
-                {f.insuranceGlassCovered === 'oui' && <span>· Bris de glace ✓</span>}
-              </div>
               {(() => {
                 const appt = formatAppointments(f.availability);
                 if (!appt) return null;
