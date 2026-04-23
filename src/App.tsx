@@ -218,7 +218,7 @@ function App() {
       deleteLead: async (leadId: string) => {
         await deleteSingleLead(effectivePipelineId, leadId);
       },
-      addNextAction: async (leadId: string, actionText: string, dueDate?: string) => {
+      addNextAction: async (leadId: string, actionText: string, dueDate?: string, note?: string) => {
         const lead = leads.find(l => l.id === leadId);
         if (!lead) return;
         const newAction = {
@@ -226,6 +226,7 @@ function App() {
           text: actionText,
           completed: false,
           dueDate,
+          note: note?.trim() ? note.trim() : undefined,
           createdAt: new Date().toISOString()
         };
         await updateSingleLead(effectivePipelineId, leadId, {
@@ -237,6 +238,15 @@ function App() {
         if (!lead || !lead.nextActions) return;
         const updatedActions = lead.nextActions.map(action =>
           action.id === actionId ? { ...action, completed: !action.completed } : action
+        );
+        await updateSingleLead(effectivePipelineId, leadId, { nextActions: updatedActions });
+      },
+      updateNextActionNote: async (leadId: string, actionId: string, note: string) => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead || !lead.nextActions) return;
+        const clean = note.trim();
+        const updatedActions = lead.nextActions.map(action =>
+          action.id === actionId ? { ...action, note: clean || undefined } : action
         );
         await updateSingleLead(effectivePipelineId, leadId, { nextActions: updatedActions });
       },
@@ -782,9 +792,10 @@ function App() {
         onClose={() => setViewingLead(null)}
         onEdit={handleEditLead}
         onDelete={handleDeleteLead}
-        onAddNextAction={(leadId, text, dueDate) => leadsManager.addNextAction(leadId, text, dueDate)}
+        onAddNextAction={(leadId, text, dueDate, note) => leadsManager.addNextAction(leadId, text, dueDate, note)}
         onToggleNextAction={(leadId, actionId) => leadsManager.toggleNextAction(leadId, actionId)}
         onDeleteNextAction={(leadId, actionId) => leadsManager.deleteNextAction(leadId, actionId)}
+        onUpdateNextActionNote={(leadId, actionId, note) => leadsManager.updateNextActionNote(leadId, actionId, note)}
         onUpdateLead={leadsManager.updateLead}
       />
 

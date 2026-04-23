@@ -27,6 +27,12 @@ export interface NextAction {
   completed: boolean;
   dueDate?: string;
   createdAt: string;
+  /**
+   * Commentaire libre attaché à l'action (détail du rappel, contexte d'un
+   * email, etc.). Stocké directement dans le JSONB lead.nextActions — pas
+   * de migration DB nécessaire.
+   */
+  note?: string;
 }
 
 /**

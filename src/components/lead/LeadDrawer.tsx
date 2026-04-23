@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useMemo, useState, type FormEvent } from 'react';
-import type { Lead } from '../../lib/types';
+import type { Lead, NextAction } from '../../lib/types';
 import {
   Drawer,
   DrawerHeader,
@@ -39,6 +39,8 @@ import {
   Activity,
   LayoutGrid,
   Hash,
+  StickyNote,
+  Check,
 } from 'lucide-react';
 import { formatDate, formatDateTime, formatCurrency } from '../../lib/utils';
 import { ActivityTimeline } from '../activities/ActivityTimeline';
@@ -58,9 +60,10 @@ export interface LeadDrawerProps {
   onClose: () => void;
   onEdit: (lead: Lead) => void;
   onDelete: (leadId: string) => void;
-  onAddNextAction?: (leadId: string, text: string, dueDate: string) => Promise<void> | void;
+  onAddNextAction?: (leadId: string, text: string, dueDate: string, note?: string) => Promise<void> | void;
   onToggleNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
   onDeleteNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
+  onUpdateNextActionNote?: (leadId: string, actionId: string, note: string) => Promise<void> | void;
   onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void> | void;
 }
 
@@ -82,6 +85,7 @@ export function LeadDrawer({
   onAddNextAction,
   onToggleNextAction,
   onDeleteNextAction,
+  onUpdateNextActionNote,
   onUpdateLead,
 }: LeadDrawerProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -144,6 +148,7 @@ export function LeadDrawer({
             onAddNextAction={onAddNextAction}
             onToggleNextAction={onToggleNextAction}
             onDeleteNextAction={onDeleteNextAction}
+            onUpdateNextActionNote={onUpdateNextActionNote}
           />
         )}
         {activeTab === 'fiches' && <FichesSection lead={lead} onSyncLead={onUpdateLead} />}
@@ -199,11 +204,13 @@ function OverviewTab({
   onAddNextAction,
   onToggleNextAction,
   onDeleteNextAction,
+  onUpdateNextActionNote,
 }: {
   lead: Lead;
   onAddNextAction?: LeadDrawerProps['onAddNextAction'];
   onToggleNextAction?: LeadDrawerProps['onToggleNextAction'];
   onDeleteNextAction?: LeadDrawerProps['onDeleteNextAction'];
+  onUpdateNextActionNote?: LeadDrawerProps['onUpdateNextActionNote'];
 }) {
   const addressLine = useMemo(() => {
     const parts = [
@@ -296,6 +303,7 @@ function OverviewTab({
           onAddNextAction={onAddNextAction}
           onToggleNextAction={onToggleNextAction}
           onDeleteNextAction={onDeleteNextAction}
+          onUpdateNextActionNote={onUpdateNextActionNote}
         />
       </section>
 
@@ -385,16 +393,20 @@ function NextActionsEditor({
   onAddNextAction,
   onToggleNextAction,
   onDeleteNextAction,
+  onUpdateNextActionNote,
 }: {
   lead: Lead;
   onAddNextAction?: LeadDrawerProps['onAddNextAction'];
   onToggleNextAction?: LeadDrawerProps['onToggleNextAction'];
   onDeleteNextAction?: LeadDrawerProps['onDeleteNextAction'];
+  onUpdateNextActionNote?: LeadDrawerProps['onUpdateNextActionNote'];
 }) {
   const { labels: recentLabels, addLabel, removeLabel, defaultLabel } = useRecentActionLabels();
   const [newActionText, setNewActionText] = useState(defaultLabel);
   const [newActionDate, setNewActionDate] = useState('');
   const [newActionTime, setNewActionTime] = useState('');
+  const [newActionNote, setNewActionNote] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newLabelDraft, setNewLabelDraft] = useState<string | null>(null);
 
@@ -405,11 +417,13 @@ function NextActionsEditor({
     try {
       const label = newActionText.trim() || 'Relancer';
       const dueDate = newActionTime ? `${newActionDate}T${newActionTime}:00` : newActionDate;
-      await onAddNextAction(lead.id, label, dueDate);
+      await onAddNextAction(lead.id, label, dueDate, newActionNote.trim() || undefined);
       addLabel(label);
       setNewActionText(label);
       setNewActionDate('');
       setNewActionTime('');
+      setNewActionNote('');
+      setShowNoteInput(false);
     } finally {
       setAdding(false);
     }
@@ -422,42 +436,14 @@ function NextActionsEditor({
       {hasActions && (
         <ul className="space-y-1">
           {lead.nextActions!.map((action) => (
-            <li
+            <ActionRow
               key={action.id}
-              className="group flex items-center gap-2 text-[13px] py-1 px-2 rounded-sm hover:bg-surface-2"
-            >
-              <input
-                type="checkbox"
-                checked={action.completed}
-                onChange={() => onToggleNextAction?.(lead.id, action.id)}
-                className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-              />
-              <span
-                className={cn(
-                  'flex-1 min-w-0',
-                  action.completed
-                    ? 'line-through text-[color:var(--color-text-subtle)]'
-                    : 'text-[color:var(--color-text)]'
-                )}
-              >
-                {action.text}
-                {action.dueDate && (
-                  <span className="text-[11px] text-[color:var(--color-text-muted)] ml-2">
-                    ({formatActionDue(action.dueDate)})
-                  </span>
-                )}
-              </span>
-              {onDeleteNextAction && (
-                <button
-                  type="button"
-                  onClick={() => onDeleteNextAction(lead.id, action.id)}
-                  className="opacity-0 group-hover:opacity-100 text-[color:var(--color-text-subtle)] hover:text-danger transition-opacity"
-                  title="Supprimer"
-                >
-                  <Trash2 size={13} />
-                </button>
-              )}
-            </li>
+              leadId={lead.id}
+              action={action}
+              onToggle={onToggleNextAction}
+              onDelete={onDeleteNextAction}
+              onUpdateNote={onUpdateNextActionNote}
+            />
           ))}
         </ul>
       )}
@@ -506,6 +492,26 @@ function NextActionsEditor({
               Ajouter
             </Button>
           </form>
+
+          {/* Note optionnelle — masquée par défaut, déployée au clic. */}
+          {showNoteInput ? (
+            <textarea
+              value={newActionNote}
+              onChange={(e) => setNewActionNote(e.target.value)}
+              placeholder="Note (ex: le client préfère être rappelé après 18h)…"
+              rows={2}
+              autoFocus
+              className="w-full px-3 py-2 text-[13px] rounded-md bg-surface border border-border text-[color:var(--color-text)] placeholder:text-[color:var(--color-text-subtle)] focus:outline-none focus:border-primary focus:shadow-focus resize-none"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowNoteInput(true)}
+              className="text-[11px] text-[color:var(--color-text-muted)] hover:text-primary flex items-center gap-1"
+            >
+              <Plus size={11} /> Ajouter une note
+            </button>
+          )}
 
           <div className="flex flex-wrap gap-1 items-center">
             <span className="text-[11px] text-[color:var(--color-text-muted)] mr-1">Rapides :</span>
@@ -606,5 +612,154 @@ function NextActionsEditor({
         </p>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Single action row with inline note editor
+// ---------------------------------------------------------------------------
+
+function ActionRow({
+  leadId,
+  action,
+  onToggle,
+  onDelete,
+  onUpdateNote,
+}: {
+  leadId: string;
+  action: NextAction;
+  onToggle?: LeadDrawerProps['onToggleNextAction'];
+  onDelete?: LeadDrawerProps['onDeleteNextAction'];
+  onUpdateNote?: LeadDrawerProps['onUpdateNextActionNote'];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(action.note ?? '');
+
+  useEffect(() => {
+    setDraft(action.note ?? '');
+  }, [action.note]);
+
+  const canEdit = typeof onUpdateNote === 'function';
+
+  const save = () => {
+    if (!onUpdateNote) return;
+    void onUpdateNote(leadId, action.id, draft);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(action.note ?? '');
+    setEditing(false);
+  };
+
+  return (
+    <li className="group rounded-sm hover:bg-surface-2 px-2 py-1">
+      <div className="flex items-center gap-2 text-[13px]">
+        <input
+          type="checkbox"
+          checked={action.completed}
+          onChange={() => onToggle?.(leadId, action.id)}
+          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+        />
+        <span
+          className={cn(
+            'flex-1 min-w-0',
+            action.completed
+              ? 'line-through text-[color:var(--color-text-subtle)]'
+              : 'text-[color:var(--color-text)]'
+          )}
+        >
+          {action.text}
+          {action.dueDate && (
+            <span className="text-[11px] text-[color:var(--color-text-muted)] ml-2">
+              ({formatActionDue(action.dueDate)})
+            </span>
+          )}
+        </span>
+        {canEdit && !editing && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="opacity-0 group-hover:opacity-100 text-[color:var(--color-text-subtle)] hover:text-primary transition-opacity"
+            title={action.note ? 'Modifier la note' : 'Ajouter une note'}
+          >
+            <StickyNote size={13} />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={() => onDelete(leadId, action.id)}
+            className="opacity-0 group-hover:opacity-100 text-[color:var(--color-text-subtle)] hover:text-danger transition-opacity"
+            title="Supprimer"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
+      </div>
+
+      {/* Note affichée en lecture */}
+      {!editing && action.note && (
+        <div
+          className="mt-1 ml-6 px-2 py-1 text-[12px] text-[color:var(--color-text-body)] bg-surface-2 border-l-2 border-primary/40 rounded-sm whitespace-pre-wrap cursor-pointer"
+          onClick={() => canEdit && setEditing(true)}
+          title={canEdit ? 'Cliquer pour modifier' : undefined}
+        >
+          {action.note}
+        </div>
+      )}
+
+      {/* Éditeur de note */}
+      {editing && (
+        <div className="mt-1 ml-6 space-y-1">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Note (ex: rappeler après 18h, envoyer devis v2…)"
+            rows={2}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                save();
+              } else if (e.key === 'Escape') {
+                cancel();
+              }
+            }}
+            className="w-full px-2 py-1.5 text-[12px] rounded-sm bg-surface border border-border text-[color:var(--color-text)] placeholder:text-[color:var(--color-text-subtle)] focus:outline-none focus:border-primary focus:shadow-focus resize-none"
+          />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={save}
+              className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium rounded-sm bg-primary text-white hover:bg-primary-hover"
+            >
+              <Check size={11} /> Enregistrer
+            </button>
+            <button
+              type="button"
+              onClick={cancel}
+              className="h-6 px-2 text-[11px] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-surface-2 rounded-sm"
+            >
+              Annuler
+            </button>
+            {action.note && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!onUpdateNote) return;
+                  void onUpdateNote(leadId, action.id, '');
+                  setDraft('');
+                  setEditing(false);
+                }}
+                className="ml-auto h-6 px-2 text-[11px] text-danger hover:bg-danger-soft rounded-sm"
+              >
+                Supprimer la note
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </li>
   );
 }
