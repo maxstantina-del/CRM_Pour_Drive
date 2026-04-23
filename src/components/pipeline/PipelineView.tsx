@@ -23,9 +23,9 @@ import {
   type Active,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import type { Lead, StageConfig } from '../../lib/types';
+import type { Lead, NextAction, StageConfig } from '../../lib/types';
 import type { Tag } from '../../services/tagsService';
-import { MoreVertical, Edit, Trash2, Calendar, Phone, Mail, Paperclip } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, Calendar, Phone, Mail, Paperclip, Bell } from 'lucide-react';
 import { getStageIcon, getStageColorHex } from '../../lib/stageIcons';
 import { useAllFiches } from '../../contexts/FichesContext';
 import { getAllAppointmentsForLead, formatSlotCompact, isSlotPast } from '../../lib/appointments';
@@ -47,6 +47,81 @@ function formatCurrency(n: number): string {
   return new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: 0,
   }).format(n) + ' €';
+}
+
+type ActionUrgency = 'overdue' | 'today' | 'upcoming' | 'someday';
+
+interface NextActionInfo {
+  action: NextAction;
+  urgency: ActionUrgency;
+  relativeLabel: string;
+  extra: number;
+}
+
+/**
+ * Returns the most urgent pending next action for the lead, with a
+ * relative label ("en retard", "aujourd'hui", "demain", "dans 3j", …)
+ * and an urgency tone for coloring.
+ */
+function getPendingAction(lead: Lead): NextActionInfo | null {
+  const pending = (lead.nextActions ?? []).filter((a) => !a.completed);
+  if (pending.length === 0) return null;
+
+  // Sort : entries with dueDate first (ascending), then those without.
+  const sorted = [...pending].sort((a, b) => {
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    return 0;
+  });
+  const action = sorted[0];
+
+  const now = new Date();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  let urgency: ActionUrgency = 'someday';
+  let relativeLabel = action.text;
+
+  if (action.dueDate) {
+    const when = new Date(action.dueDate);
+    if (!isNaN(when.getTime())) {
+      const whenDay = new Date(when);
+      whenDay.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((whenDay.getTime() - today.getTime()) / (24 * 3600 * 1000));
+      if (diffDays < 0) {
+        urgency = 'overdue';
+        relativeLabel = diffDays === -1 ? 'hier' : `en retard ${-diffDays}j`;
+      } else if (diffDays === 0) {
+        urgency = 'today';
+        if (action.dueDate.includes('T')) {
+          const hh = when.getHours().toString().padStart(2, '0');
+          const mm = when.getMinutes().toString().padStart(2, '0');
+          relativeLabel = `aujourd'hui ${hh}h${mm === '00' ? '' : mm}`;
+        } else {
+          relativeLabel = "aujourd'hui";
+        }
+      } else if (diffDays === 1) {
+        urgency = 'upcoming';
+        relativeLabel = 'demain';
+      } else if (diffDays <= 7) {
+        urgency = 'upcoming';
+        relativeLabel = `dans ${diffDays}j`;
+      } else {
+        urgency = 'upcoming';
+        relativeLabel = when.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      }
+    }
+  }
+
+  return {
+    action,
+    urgency,
+    relativeLabel,
+    extra: pending.length - 1,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +192,7 @@ const DraggableLeadCard = memo(
     a.lead.value === b.lead.value &&
     a.lead.phone === b.lead.phone &&
     a.lead.email === b.lead.email &&
+    a.lead.nextActions === b.lead.nextActions &&
     a.stageColor === b.stageColor &&
     a.isMenuOpen === b.isMenuOpen &&
     a.onEditLead === b.onEditLead &&
@@ -149,6 +225,7 @@ function LeadCardContent({
   const firstTag = tags?.[0];
   const extraTagCount = tags ? Math.max(0, tags.length - 1) : 0;
   const hasAttachments = false; // placeholder — future: wire to attachments context
+  const pendingAction = getPendingAction(lead);
 
   return (
     <div
@@ -228,6 +305,34 @@ function LeadCardContent({
             {allAppts.length > 2 && (
               <span className="text-[10px] text-[color:var(--color-text-subtle)] pl-1">
                 +{allAppts.length - 2} autre{allAppts.length - 2 > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Pending next action — the task to do, without opening the lead */}
+        {pendingAction && (
+          <div
+            className={cn(
+              'flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-sm border w-fit max-w-full',
+              pendingAction.urgency === 'overdue'
+                ? 'text-danger-soft-text bg-danger-soft border-transparent'
+                : pendingAction.urgency === 'today'
+                ? 'text-warning-soft-text bg-warning-soft border-transparent'
+                : pendingAction.urgency === 'upcoming'
+                ? 'text-[color:var(--color-text-body)] bg-surface-2 border-border'
+                : 'text-[color:var(--color-text-muted)] bg-surface-2 border-border'
+            )}
+            title={`${pendingAction.action.text}${pendingAction.action.dueDate ? ' — ' + pendingAction.relativeLabel : ''}`}
+          >
+            <Bell size={10} className="shrink-0" />
+            <span className="truncate">{pendingAction.action.text}</span>
+            {pendingAction.action.dueDate && (
+              <span className="shrink-0 opacity-80">· {pendingAction.relativeLabel}</span>
+            )}
+            {pendingAction.extra > 0 && (
+              <span className="shrink-0 text-[9px] px-1 bg-white/80 dark:bg-black/30 rounded text-[color:var(--color-text-body)]">
+                +{pendingAction.extra}
               </span>
             )}
           </div>
