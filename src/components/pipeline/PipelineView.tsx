@@ -153,7 +153,7 @@ function LeadCardContent({
   return (
     <div
       className={cn(
-        'group/card relative overflow-hidden rounded-md border transition-all duration-150',
+        'group/card relative rounded-md border transition-all duration-150',
         'bg-surface shadow-xs hover:shadow-sm hover:border-border-strong',
         isWon
           ? 'border-[color:#fbbf24] bg-gradient-to-br from-amber-50/60 to-yellow-50/40 dark:from-amber-900/20 dark:to-yellow-900/10'
@@ -161,7 +161,7 @@ function LeadCardContent({
       )}
     >
       {isWon && (
-        <span className="absolute top-1 right-1 text-sm pointer-events-none" title="Lead gagné">
+        <span className="absolute top-1 right-7 text-sm pointer-events-none z-10" title="Lead gagné">
           🏆
         </span>
       )}
@@ -268,10 +268,10 @@ function LeadCardContent({
         )}
       </div>
 
-      {/* Stage color accent bar */}
+      {/* Stage color accent bar — rounded-l so it sits inside the card corners */}
       <span
         aria-hidden
-        className="absolute left-0 top-0 bottom-0 w-[3px]"
+        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-md"
         style={{ backgroundColor: stageColor }}
       />
 
