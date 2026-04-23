@@ -503,6 +503,7 @@ function App() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
+          leads={allLeads}
           onNewLead={handleNewLead}
           onImport={handleImportClick}
           onExport={handleExportCSV}
@@ -512,6 +513,7 @@ function App() {
             const lead = allLeads.find((l) => l.id === leadId);
             if (lead) setViewingLead(lead);
           }}
+          onGoToActivity={() => setCurrentView('today')}
         />
 
         {pipelines.length > 0 && (
