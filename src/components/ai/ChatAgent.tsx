@@ -15,6 +15,12 @@ export interface ChatAgentProps {
   leads: Lead[];
   onCreateLead: (leadData: Partial<Lead>) => void;
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
+  /**
+   * Masque le bouton flottant (et ferme la chat si ouvert) quand un
+   * drawer/modal couvre la zone de droite — évite le chevauchement
+   * avec le footer du LeadDrawer.
+   */
+  hidden?: boolean;
 }
 
 interface Message {
@@ -28,7 +34,7 @@ interface Message {
 const GREETING =
   'Bonjour ! Parle-moi en langage naturel ou utilise les commandes (stats, top 5, cherche…). Tape "aide" pour la liste.';
 
-export function ChatAgent({ leads }: ChatAgentProps) {
+export function ChatAgent({ leads, hidden }: ChatAgentProps) {
   const { status: ai, chat: aiChat, refresh: refreshAI } = useAI();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -118,6 +124,10 @@ export function ChatAgent({ leads }: ChatAgentProps) {
     abortRef.current?.abort();
     setMessages([{ id: '1', role: 'assistant', content: GREETING, timestamp: new Date() }]);
   };
+
+  // Drawer/modal ouvert → on n'affiche rien (ni le FAB, ni le panneau ouvert).
+  // Le chat se rouvre de lui-même quand le drawer se ferme.
+  if (hidden) return null;
 
   if (!isOpen) {
     return (

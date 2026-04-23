@@ -800,6 +800,7 @@ function App() {
           leads={leads}
           onCreateLead={leadsManager.addLead}
           onUpdateLead={leadsManager.updateLead}
+          hidden={viewingLead !== null}
         />
       </Suspense>
     </Container>
