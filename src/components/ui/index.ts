@@ -25,3 +25,6 @@ export type { TooltipProps } from './Tooltip';
 
 export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
+
+export { Drawer, DrawerHeader, DrawerBody, DrawerFooter } from './Drawer';
+export type { DrawerProps, DrawerHeaderProps } from './Drawer';

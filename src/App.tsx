@@ -5,7 +5,7 @@ import { LeadForm } from './components/forms';
 import { InputModal } from './components/modals/InputModal';
 import { WinCelebration } from './components/celebration';
 import { ConfirmModal } from './components/modals/ConfirmModal';
-import { LeadDetailsModal } from './components/modals/LeadDetailsModal';
+import { LeadDrawer } from './components/lead/LeadDrawer';
 import { OnboardingTour, useOnboarding } from './components/onboarding/OnboardingTour';
 
 const DashboardView = lazy(() => import('./components/dashboard').then(m => ({ default: m.DashboardView })));
@@ -776,7 +776,7 @@ function App() {
         />
       )}
 
-      <LeadDetailsModal
+      <LeadDrawer
         isOpen={viewingLead !== null}
         lead={viewingLead ? allLeads.find((l) => l.id === viewingLead.id) ?? viewingLead : null}
         onClose={() => setViewingLead(null)}
