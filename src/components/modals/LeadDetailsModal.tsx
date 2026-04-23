@@ -16,6 +16,7 @@ function formatActionDue(raw: string): string {
 import { ActivityTimeline } from '../activities/ActivityTimeline';
 import { TagPicker } from '../tags/TagPicker';
 import { FichesSection } from '../fiches/FichesSection';
+import { AttachmentsSection } from '../attachments/AttachmentsSection';
 import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
 
 export interface LeadDetailsModalProps {
@@ -185,6 +186,11 @@ END:VCARD`;
             <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{lead.notes}</p>
           </div>
         )}
+
+        {/* Pièces jointes */}
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+          <AttachmentsSection leadId={lead.id} />
+        </div>
 
         {/* Metadata (extra columns kept from the source import) */}
         {lead.metadata && Object.keys(lead.metadata).length > 0 && (
