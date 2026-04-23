@@ -44,6 +44,7 @@ export function LeadDetailsModal({
   const [newActionDate, setNewActionDate] = useState('');
   const [newActionTime, setNewActionTime] = useState('');
   const [adding, setAdding] = useState(false);
+  const [newLabelDraft, setNewLabelDraft] = useState<string | null>(null);
 
   if (!lead) return null;
 
@@ -280,7 +281,7 @@ END:VCARD`;
             </form>
           )}
 
-          {onAddNextAction && recentLabels.length > 0 && (
+          {onAddNextAction && (
             <div className="mt-2 flex flex-wrap gap-1">
               <span className="text-xs text-gray-500 dark:text-gray-400 self-center mr-1">Rapides :</span>
               {recentLabels.map((l) => (
@@ -315,6 +316,61 @@ END:VCARD`;
                 >
                   <Plus size={10} /> épingler
                 </button>
+              )}
+
+              {newLabelDraft === null ? (
+                <button
+                  type="button"
+                  onClick={() => setNewLabelDraft('')}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs border border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-full hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  title="Créer un nouveau libellé sans relance datée"
+                >
+                  <Plus size={10} /> Nouveau libellé
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-1 pl-2 pr-0.5 py-0.5 text-xs bg-white dark:bg-gray-900 border border-blue-300 dark:border-blue-700 rounded-full">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={newLabelDraft}
+                    onChange={(e) => setNewLabelDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newLabelDraft.trim()) {
+                          addLabel(newLabelDraft);
+                          setNewLabelDraft(null);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setNewLabelDraft(null);
+                      }
+                    }}
+                    placeholder="Ex: Envoi rapport Q2"
+                    className="bg-transparent outline-none text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 w-40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newLabelDraft.trim()) {
+                        addLabel(newLabelDraft);
+                        setNewLabelDraft(null);
+                      }
+                    }}
+                    disabled={!newLabelDraft.trim()}
+                    className="p-0.5 rounded-full text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/40 disabled:opacity-30"
+                    title="Ajouter"
+                  >
+                    <Plus size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewLabelDraft(null)}
+                    className="p-0.5 rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    title="Annuler"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
               )}
             </div>
           )}
