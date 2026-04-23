@@ -41,6 +41,7 @@ import {
   Hash,
   StickyNote,
   Check,
+  Copy,
 } from 'lucide-react';
 import { formatDate, formatDateTime, formatCurrency } from '../../lib/utils';
 import { ActivityTimeline } from '../activities/ActivityTimeline';
@@ -245,15 +246,18 @@ function OverviewTab({
         )}
         {lead.email && (
           <InfoLine icon={<Mail size={14} />}>
-            <a
-              href={gmailComposeUrl({ to: lead.email })}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-              title="Envoyer un email via Gmail"
-            >
-              {lead.email}
-            </a>
+            <span className="inline-flex items-center gap-1.5 flex-wrap">
+              <a
+                href={gmailComposeUrl({ to: lead.email })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+                title="Envoyer un email via Gmail (stantina-max@chosen-mx.com)"
+              >
+                {lead.email}
+              </a>
+              <CopyEmailButton email={lead.email} />
+            </span>
           </InfoLine>
         )}
         {lead.siret && (
@@ -342,6 +346,32 @@ function OverviewTab({
         <span>Modifié le {formatDate(lead.updatedAt)}</span>
       </section>
     </div>
+  );
+}
+
+function CopyEmailButton({ email }: { email: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* ignore clipboard permission errors */
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex items-center justify-center w-5 h-5 rounded-sm text-[color:var(--color-text-subtle)] hover:bg-surface-2 hover:text-[color:var(--color-text)]"
+      title={copied ? 'Copié !' : 'Copier l\'email'}
+      aria-label="Copier l'email"
+    >
+      {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+    </button>
   );
 }
 
