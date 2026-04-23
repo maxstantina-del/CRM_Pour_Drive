@@ -9,6 +9,7 @@ import { Input, Textarea, Select, Button } from '../ui';
 import { DEFAULT_STAGES } from '../../hooks/usePipelineStages';
 import { useTags } from '../../hooks/useTags';
 import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
+import { formatFrenchPhone } from '../../lib/phone';
 import { Check, Plus, X, Bell } from 'lucide-react';
 
 export interface LeadFormExtras {
@@ -28,22 +29,26 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
   const { tags, getTagsForLead, createTag } = useTags();
   const { labels: recentLabels, addLabel, removeLabel, defaultLabel } = useRecentActionLabels();
 
-  const [formData, setFormData] = useState<Partial<Lead>>({
-    name: '',
-    contactName: '',
-    email: '',
-    phone: '',
-    company: '',
-    siret: '',
-    address: '',
-    city: '',
-    zipCode: '',
-    country: 'France',
-    stage: 'new',
-    value: 0,
-    probability: 0,
-    notes: '',
-    ...lead,
+  const [formData, setFormData] = useState<Partial<Lead>>(() => {
+    const base: Partial<Lead> = {
+      name: '',
+      contactName: '',
+      email: '',
+      phone: '',
+      company: '',
+      siret: '',
+      address: '',
+      city: '',
+      zipCode: '',
+      country: 'France',
+      stage: 'new',
+      value: 0,
+      probability: 0,
+      notes: '',
+      ...lead,
+    };
+    if (base.phone) base.phone = formatFrenchPhone(base.phone);
+    return base;
   });
 
   const initialTagIds = useMemo(
@@ -62,7 +67,7 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
 
   useEffect(() => {
     if (lead) {
-      setFormData(lead);
+      setFormData({ ...lead, phone: lead.phone ? formatFrenchPhone(lead.phone) : '' });
       setSelectedTagIds(getTagsForLead(lead.id).map((t) => t.id));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,7 +144,10 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
           label="Téléphone"
           type="tel"
           value={formData.phone || ''}
-          onChange={(e) => handleChange('phone', e.target.value)}
+          onChange={(e) => handleChange('phone', formatFrenchPhone(e.target.value))}
+          placeholder="04 50 00 00 00"
+          autoComplete="tel"
+          inputMode="tel"
           fullWidth
         />
       </div>

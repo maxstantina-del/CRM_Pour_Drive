@@ -12,6 +12,7 @@ import type {
   InsuranceGlassCovered,
 } from '../../services/fichesService';
 import type { Lead } from '../../lib/types';
+import { formatFrenchPhone } from '../../lib/phone';
 
 export interface FicheFormModalProps {
   isOpen: boolean;
@@ -132,7 +133,7 @@ function leadToDefaults(lead: Lead | undefined): FormState {
   return {
     ...emptyForm,
     contactName: lead.contactName || lead.name || '',
-    contactPhone: lead.phone || '',
+    contactPhone: lead.phone ? formatFrenchPhone(lead.phone) : '',
     contactEmail: lead.email || '',
     interventionAddress: addressParts,
   };
@@ -152,7 +153,7 @@ function ficheToForm(f: Fiche | null | undefined, lead?: Lead): FormState {
   return {
     contactName: f.contactName ?? '',
     contactRole: f.contactRole ?? '',
-    contactPhone: f.contactPhone ?? '',
+    contactPhone: f.contactPhone ? formatFrenchPhone(f.contactPhone) : '',
     contactEmail: f.contactEmail ?? '',
     vehicles: vehiclesToForm(f.vehicles),
     damageType: f.damageType ?? '',
@@ -329,8 +330,11 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
               <input
                 type="tel"
                 value={form.contactPhone}
-                onChange={(e) => update('contactPhone', e.target.value)}
+                onChange={(e) => update('contactPhone', formatFrenchPhone(e.target.value))}
                 className={inputCls}
+                placeholder="04 50 00 00 00"
+                autoComplete="tel"
+                inputMode="tel"
               />
             </Field>
             <Field label="Email">
