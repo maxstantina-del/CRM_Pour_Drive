@@ -21,6 +21,8 @@ import { useTags } from './hooks/useTags';
 import { applyLeadFilters, extractCities } from './lib/leadFilters';
 import { usePipelines } from './hooks/usePipelines';
 import { useLeads } from './hooks/useLeads';
+import { useActivityReminders } from './hooks/useActivityReminders';
+import { useAllFiches } from './contexts/FichesContext';
 import { Layers, Plus } from 'lucide-react';
 import { useToast } from './contexts/ToastContext';
 import { usePipelineStages } from './hooks/usePipelineStages';
@@ -115,6 +117,9 @@ function App() {
 
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
   const allLeads = effectivePipelineId ? getPipelineLeads(effectivePipelineId) : [];
+
+  const { fichesByLead } = useAllFiches();
+  useActivityReminders(allLeads, fichesByLead);
 
   const { filters, setFilters, updateFilter, resetFilters, activeCount } = useLeadFilters();
 

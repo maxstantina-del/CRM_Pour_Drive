@@ -10,9 +10,13 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import type { Lead, NextAction } from '../../lib/types';
 import { Card, Button } from '../ui';
-import { Calendar, AlertCircle, Truck, CalendarCheck2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Calendar, AlertCircle, Truck, CalendarCheck2, ChevronDown, ChevronRight, Bell, BellOff } from 'lucide-react';
 import { useAllFiches } from '../../contexts/FichesContext';
 import { parseFicheSlots, type ParsedSlot } from '../../lib/appointments';
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+} from '../../hooks/useActivityReminders';
 
 export interface TodayViewProps {
   leads: Lead[];
@@ -216,6 +220,7 @@ export function TodayView({ leads, onEditLead, onViewLead, focusKey }: TodayView
         </div>
         {totalCount > 0 && (
           <div className="flex items-center gap-2 text-xs">
+            <NotifToggle />
             <button
               type="button"
               onClick={() => setAll(true)}
@@ -258,6 +263,54 @@ export function TodayView({ leads, onEditLead, onViewLead, focusKey }: TodayView
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Permission toggle for the browser-level 10 minute reminder. Opt-in: we
+ * never auto-prompt (UX), the user must click to enable.
+ */
+function NotifToggle() {
+  const [perm, setPerm] = useState<NotificationPermission | 'unsupported'>(() =>
+    getNotificationPermission()
+  );
+
+  if (perm === 'unsupported') return null;
+
+  if (perm === 'granted') {
+    return (
+      <span
+        title="Notifications activées : tu recevras une alerte 10 min avant chaque RDV ou relance avec une heure précise. L'onglet du CRM doit rester ouvert."
+        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+      >
+        <Bell size={12} /> Rappels 10 min
+      </span>
+    );
+  }
+
+  if (perm === 'denied') {
+    return (
+      <span
+        title="Notifications bloquées par le navigateur. Réactive-les dans les paramètres du site (icône de cadenas à gauche de l'URL)."
+        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+      >
+        <BellOff size={12} /> Rappels bloqués
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        const next = await requestNotificationPermission();
+        setPerm(next);
+      }}
+      className="inline-flex items-center gap-1 px-2 py-1 rounded border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+      title="Active les alertes navigateur 10 min avant chaque RDV avec heure fixée"
+    >
+      <Bell size={12} /> Activer les rappels 10 min
+    </button>
   );
 }
 
