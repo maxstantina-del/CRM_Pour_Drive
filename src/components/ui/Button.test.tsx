@@ -23,37 +23,37 @@ describe('Button', () => {
   it('should apply primary variant styles', () => {
     render(<Button variant="primary">Primary</Button>);
     const button = screen.getByText('Primary');
-    expect(button).toHaveClass('bg-blue-600');
+    expect(button).toHaveClass('bg-primary');
   });
 
   it('should apply secondary variant styles', () => {
     render(<Button variant="secondary">Secondary</Button>);
     const button = screen.getByText('Secondary');
-    expect(button).toHaveClass('bg-gray-200');
+    expect(button).toHaveClass('bg-surface-2');
   });
 
   it('should apply danger variant styles', () => {
     render(<Button variant="danger">Danger</Button>);
     const button = screen.getByText('Danger');
-    expect(button).toHaveClass('bg-red-600');
+    expect(button).toHaveClass('bg-danger');
   });
 
   it('should apply small size styles', () => {
     render(<Button size="sm">Small</Button>);
     const button = screen.getByText('Small');
-    expect(button).toHaveClass('px-3', 'py-1.5', 'text-sm');
+    expect(button).toHaveClass('h-8', 'px-3');
   });
 
   it('should apply medium size styles', () => {
     render(<Button size="md">Medium</Button>);
     const button = screen.getByText('Medium');
-    expect(button).toHaveClass('px-4', 'py-2', 'text-base');
+    expect(button).toHaveClass('h-9');
   });
 
   it('should apply large size styles', () => {
     render(<Button size="lg">Large</Button>);
     const button = screen.getByText('Large');
-    expect(button).toHaveClass('px-6', 'py-3', 'text-lg');
+    expect(button).toHaveClass('h-11', 'px-5');
   });
 
   it('should be disabled when disabled prop is true', () => {

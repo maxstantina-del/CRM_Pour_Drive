@@ -1,15 +1,36 @@
 /**
- * Reusable Card component
+ * Card primitive — surfaces sémantiques alignées sur les tokens.
+ *
+ *  - `default`  : surface standard, bordure fine, ombre xs
+ *  - `raised`   : surface surélevée, ombre sm (ex. modales, drawers)
+ *  - `panel`    : surface imbriquée, fond gris subtil, pas d'ombre
+ *  - `outlined` : contour 1px plus marqué, pas d'ombre
  */
 
 import React, { HTMLAttributes } from 'react';
 import { cn } from '../../lib/utils';
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'outlined' | 'elevated';
+  variant?: 'default' | 'raised' | 'panel' | 'outlined' | 'elevated';
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
 }
+
+const variantClass: Record<NonNullable<CardProps['variant']>, string> = {
+  default: 'bg-surface border border-border shadow-xs',
+  raised: 'bg-surface border border-border shadow-sm',
+  panel: 'bg-surface-2 border border-border-subtle',
+  outlined: 'bg-surface border border-border-strong',
+  // Legacy alias kept to avoid breaking existing call sites.
+  elevated: 'bg-surface border border-border shadow-md',
+};
+
+const paddingClass: Record<NonNullable<CardProps['padding']>, string> = {
+  none: '',
+  sm: 'p-3',
+  md: 'p-4',
+  lg: 'p-6',
+};
 
 export function Card({
   variant = 'default',
@@ -19,26 +40,13 @@ export function Card({
   children,
   ...props
 }: CardProps) {
-  const variantStyles = {
-    default: 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800',
-    outlined: 'bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-700',
-    elevated: 'bg-white dark:bg-gray-900 shadow-lg border border-gray-100 dark:border-gray-800'
-  };
-
-  const paddingStyles = {
-    none: '',
-    sm: 'p-3',
-    md: 'p-4',
-    lg: 'p-6'
-  };
-
   return (
     <div
       className={cn(
-        'rounded-lg transition-all duration-200',
-        variantStyles[variant],
-        paddingStyles[padding],
-        hover && 'hover:shadow-md hover:border-gray-300 cursor-pointer',
+        'rounded-md transition-colors',
+        variantClass[variant],
+        paddingClass[padding],
+        hover && 'cursor-pointer hover:border-border-strong hover:shadow-sm',
         className
       )}
       {...props}
@@ -48,31 +56,25 @@ export function Card({
   );
 }
 
-/**
- * Card Header component
- */
 export function CardHeader({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('pb-3 border-b border-gray-200 dark:border-gray-800', className)} {...props}>
+    <div
+      className={cn('pb-3 border-b border-border flex items-center justify-between gap-3', className)}
+      {...props}
+    >
       {children}
     </div>
   );
 }
 
-/**
- * Card Title component
- */
 export function CardTitle({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={cn('text-lg font-semibold text-gray-900 dark:text-gray-100', className)} {...props}>
+    <h3 className={cn('heading-sm', className)} {...props}>
       {children}
     </h3>
   );
 }
 
-/**
- * Card Body component
- */
 export function CardBody({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn('py-3', className)} {...props}>
@@ -81,12 +83,9 @@ export function CardBody({ children, className, ...props }: HTMLAttributes<HTMLD
   );
 }
 
-/**
- * Card Footer component
- */
 export function CardFooter({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('pt-3 border-t border-gray-200 dark:border-gray-800', className)} {...props}>
+    <div className={cn('pt-3 border-t border-border', className)} {...props}>
       {children}
     </div>
   );

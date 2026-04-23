@@ -1,58 +1,92 @@
 /**
- * Reusable Badge component
+ * Badge primitive — chip sémantique aligné sur les tokens.
+ *
+ * Deux systèmes coexistent :
+ *  - `tone` (nouveau) : primary / success / warning / danger / info / neutral
+ *    — à préférer, utilise les tokens CSS.
+ *  - `variant` (legacy) : accepte n'importe quelle StageColor string (blue,
+ *    green, purple, etc.) utilisée par les pipelines custom de l'utilisateur.
+ *    Mapping interne vers les tons sémantiques les plus proches.
  */
 
 import React, { HTMLAttributes } from 'react';
 import { cn } from '../../lib/utils';
 import type { StageColor } from '../../lib/types';
 
+export type BadgeTone = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  /** Nouvelle API sémantique — préférer à `variant`. */
+  tone?: BadgeTone;
+  /** Legacy color key (StageColor). Si fourni, remplace `tone`. */
   variant?: StageColor | 'default';
   size?: 'sm' | 'md' | 'lg';
   rounded?: boolean;
   icon?: React.ReactNode;
 }
 
+const toneClass: Record<BadgeTone, string> = {
+  primary: 'bg-primary-soft text-primary-soft-text',
+  success: 'bg-success-soft text-success-soft-text',
+  warning: 'bg-warning-soft text-warning-soft-text',
+  danger: 'bg-danger-soft text-danger-soft-text',
+  info: 'bg-info-soft text-info-soft-text',
+  neutral: 'bg-surface-2 text-[color:var(--color-text-body)] border border-border',
+};
+
+function variantToTone(variant: string): BadgeTone {
+  switch (variant) {
+    case 'blue':
+    case 'indigo':
+      return 'primary';
+    case 'green':
+    case 'emerald':
+      return 'success';
+    case 'yellow':
+    case 'amber':
+    case 'orange':
+      return 'warning';
+    case 'red':
+    case 'pink':
+      return 'danger';
+    case 'purple':
+    case 'violet':
+      return 'info';
+    default:
+      return 'neutral';
+  }
+}
+
+const sizeClass = {
+  sm: 'px-1.5 py-0.5 text-[11px] gap-1 h-5',
+  md: 'px-2 py-0.5 text-[12px] gap-1.5 h-6',
+  lg: 'px-2.5 py-1 text-[13px] gap-1.5 h-7',
+};
+
 export function Badge({
-  variant = 'default',
+  tone,
+  variant,
   size = 'md',
-  rounded = false,
+  rounded = true,
   icon,
   className,
   children,
   ...props
 }: BadgeProps) {
-  const variantStyles: Record<string, string> = {
-    default: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700',
-    blue: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-800',
-    yellow: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-800',
-    green: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-300 dark:border-green-800',
-    purple: 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 border-purple-300 dark:border-purple-800',
-    orange: 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-800',
-    red: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-300 dark:border-red-800',
-    gray: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700',
-    pink: 'bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-200 border-pink-300 dark:border-pink-800',
-    indigo: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200 border-indigo-300 dark:border-indigo-800'
-  };
-
-  const sizeStyles = {
-    sm: 'px-2 py-0.5 text-xs gap-1',
-    md: 'px-2.5 py-1 text-sm gap-1.5',
-    lg: 'px-3 py-1.5 text-base gap-2'
-  };
+  const effectiveTone: BadgeTone = tone ?? (variant ? variantToTone(variant) : 'neutral');
 
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium border',
-        rounded ? 'rounded-full' : 'rounded-md',
-        variantStyles[variant] || variantStyles.default,
-        sizeStyles[size],
+        'inline-flex items-center font-medium whitespace-nowrap',
+        rounded ? 'rounded-full' : 'rounded-sm',
+        toneClass[effectiveTone],
+        sizeClass[size],
         className
       )}
       {...props}
     >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {icon && <span className="shrink-0">{icon}</span>}
       {children}
     </span>
   );
