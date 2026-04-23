@@ -94,7 +94,7 @@ export function Modal({
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                'relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full',
+                'relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-h-[calc(100vh-2rem)] overflow-y-auto',
                 sizeStyles[size]
               )}
             >
@@ -129,7 +129,7 @@ export function Modal({
  */
 export function ModalFooter({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900', className)}>
+    <div className={cn('sticky bottom-0 -mx-6 -mb-4 mt-4 flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900', className)}>
       {children}
     </div>
   );
