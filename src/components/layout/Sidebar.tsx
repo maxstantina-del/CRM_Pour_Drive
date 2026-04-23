@@ -59,7 +59,7 @@ export function Sidebar({
     { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { id: 'pipeline', icon: <Layers size={20} />, label: 'Pipeline' },
     { id: 'table', icon: <Table size={20} />, label: 'Tableau' },
-    { id: 'today', icon: <Calendar size={20} />, label: "Aujourd'hui" },
+    { id: 'today', icon: <Calendar size={20} />, label: 'Activité' },
     { id: 'settings', icon: <Settings size={20} />, label: 'Paramètres' }
   ];
 

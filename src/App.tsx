@@ -610,7 +610,7 @@ function App() {
           )}
 
           {currentView === 'today' && (
-            <ViewErrorBoundary feature="activity" viewName="Aujourd'hui">
+            <ViewErrorBoundary feature="activity" viewName="Activité">
               <TodayView
                 leads={leads}
                 onEditLead={handleEditLead}
