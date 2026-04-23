@@ -17,6 +17,7 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
 } from '../../hooks/useActivityReminders';
+import { cn } from '../../lib/utils';
 
 export interface TodayViewProps {
   leads: Lead[];
@@ -210,28 +211,28 @@ export function TodayView({ leads, onEditLead, onViewLead, focusKey }: TodayView
   }, []);
 
   return (
-    <div className="p-6 space-y-4 max-w-4xl">
+    <div className="p-4 space-y-4 max-w-4xl">
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <div className="flex items-baseline gap-3">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Activité</h1>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="heading-lg">Activité</h1>
+          <span className="text-[12px] text-[color:var(--color-text-muted)]">
             {totalCount} élément{totalCount > 1 ? 's' : ''} à traiter
           </span>
         </div>
         {totalCount > 0 && (
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-[11px]">
             <NotifToggle />
             <button
               type="button"
               onClick={() => setAll(true)}
-              className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="h-7 px-2.5 rounded-sm border border-border text-[color:var(--color-text-body)] hover:bg-surface-2"
             >
               Tout déplier
             </button>
             <button
               type="button"
               onClick={() => setAll(false)}
-              className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="h-7 px-2.5 rounded-sm border border-border text-[color:var(--color-text-body)] hover:bg-surface-2"
             >
               Tout replier
             </button>
@@ -241,9 +242,9 @@ export function TodayView({ leads, onEditLead, onViewLead, focusKey }: TodayView
 
       {totalCount === 0 && (
         <Card padding="lg">
-          <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
-            <CalendarCheck2 size={24} />
-            <p>Rien de prévu. Ajoute une relance ou un rendez-vous Autoglass sur une fiche.</p>
+          <div className="flex items-center gap-3 text-[color:var(--color-text-muted)]">
+            <CalendarCheck2 size={24} className="text-[color:var(--color-text-subtle)]" />
+            <p className="text-[13px]">Rien de prévu. Ajoute une relance ou un rendez-vous Autoglass sur une fiche.</p>
           </div>
         </Card>
       )}
@@ -281,7 +282,7 @@ function NotifToggle() {
     return (
       <span
         title="Notifications activées : tu recevras une alerte 10 min avant chaque RDV ou relance avec une heure précise. L'onglet du CRM doit rester ouvert."
-        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+        className="chip chip-success"
       >
         <Bell size={12} /> Rappels 10 min
       </span>
@@ -292,7 +293,7 @@ function NotifToggle() {
     return (
       <span
         title="Notifications bloquées par le navigateur. Réactive-les dans les paramètres du site (icône de cadenas à gauche de l'URL)."
-        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+        className="chip chip-neutral opacity-60"
       >
         <BellOff size={12} /> Rappels bloqués
       </span>
@@ -306,7 +307,7 @@ function NotifToggle() {
         const next = await requestNotificationPermission();
         setPerm(next);
       }}
-      className="inline-flex items-center gap-1 px-2 py-1 rounded border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+      className="chip chip-primary hover:opacity-90"
       title="Active les alertes navigateur 10 min avant chaque RDV avec heure fixée"
     >
       <Bell size={12} /> Activer les rappels 10 min
@@ -329,11 +330,11 @@ function BucketSection({
 }) {
   const isOverdue = bucket === 'overdue';
   const icon = isOverdue ? (
-    <AlertCircle className="text-red-500" size={18} />
+    <AlertCircle className="text-danger" size={16} />
   ) : bucket === 'today' ? (
-    <Calendar className="text-blue-500" size={18} />
+    <Calendar className="text-primary" size={16} />
   ) : (
-    <Calendar className="text-gray-400 dark:text-gray-500" size={18} />
+    <Calendar className="text-[color:var(--color-text-subtle)]" size={16} />
   );
 
   // For multi-day buckets, sub-group by day to make the day structure visible.
@@ -356,31 +357,31 @@ function BucketSection({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className={`w-full flex items-center gap-2 pb-2 border-b text-left select-none ${
-          isOverdue
-            ? 'border-red-200 dark:border-red-900/40'
-            : 'border-gray-200 dark:border-gray-800'
-        } ${open ? 'mb-3' : 'mb-1'}`}
+        className={cn(
+          'w-full flex items-center gap-2 pb-2 border-b text-left select-none transition-colors rounded-sm px-1 -mx-1 hover:bg-surface-2',
+          isOverdue ? 'border-[color:var(--color-danger-soft)]' : 'border-border',
+          open ? 'mb-3' : 'mb-1'
+        )}
       >
         {open ? (
-          <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <ChevronDown size={14} className="text-[color:var(--color-text-subtle)] flex-shrink-0" />
         ) : (
-          <ChevronRight size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <ChevronRight size={14} className="text-[color:var(--color-text-subtle)] flex-shrink-0" />
         )}
         {icon}
         <h2
-          className={`text-lg font-semibold ${
-            isOverdue ? 'text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-gray-100'
-          }`}
+          className={cn(
+            'heading-sm',
+            isOverdue && 'text-danger'
+          )}
         >
           {BUCKET_LABELS[bucket]}
         </h2>
         <span
-          className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-            isOverdue
-              ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
-          }`}
+          className={cn(
+            'chip !text-[11px] font-semibold',
+            isOverdue ? 'chip-danger' : 'chip-neutral'
+          )}
         >
           {items.length}
         </span>
@@ -390,7 +391,7 @@ function BucketSection({
         <div className="space-y-4">
           {byDay.map(([dayKey, dayItems]) => (
             <div key={dayKey}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
+              <p className="text-caption mb-2">
                 {formatDayHeader(new Date(dayKey))}
               </p>
               <div className="space-y-2">
@@ -440,46 +441,54 @@ function ActivityRow({
   const timeLabel = item.hasTime ? formatTime(item.when) : null;
 
   return (
-    <Card padding="md" hover onClick={() => onOpenLead(lead)}>
+    <Card padding="sm" hover onClick={() => onOpenLead(lead)}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0 flex-1">
           <div
-            className={`flex-shrink-0 mt-0.5 w-8 h-8 rounded-md flex items-center justify-center ${
+            className={cn(
+              'flex-shrink-0 mt-0.5 w-8 h-8 rounded-sm flex items-center justify-center',
               isAppt
-                ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300'
+                ? 'bg-primary-soft text-primary-soft-text'
                 : overdue
-                ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-            }`}
+                ? 'bg-danger-soft text-danger-soft-text'
+                : 'bg-surface-2 text-[color:var(--color-text-muted)]'
+            )}
           >
-            {isAppt ? <Truck size={16} /> : <Calendar size={16} />}
+            {isAppt ? <Truck size={14} /> : <Calendar size={14} />}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">{lead.name}</h3>
+              <h3 className="text-[13px] font-semibold text-[color:var(--color-text)] truncate">
+                {lead.name}
+              </h3>
               {lead.company && lead.company !== lead.name && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{lead.company}</span>
+                <span className="text-[11px] text-[color:var(--color-text-muted)] truncate">
+                  {lead.company}
+                </span>
               )}
             </div>
             <div
-              className={`mt-1 text-sm ${
+              className={cn(
+                'mt-0.5 text-[13px]',
                 overdue
-                  ? 'text-red-700 dark:text-red-300'
+                  ? 'text-danger'
                   : isAppt
-                  ? 'text-blue-700 dark:text-blue-300'
-                  : 'text-gray-700 dark:text-gray-300'
-              }`}
+                  ? 'text-primary-soft-text'
+                  : 'text-[color:var(--color-text-body)]'
+              )}
             >
               {isAppt ? (
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 flex-wrap">
                   <span className="font-medium">RDV Autoglass</span>
                   {item.slot.vehiclePlate && (
-                    <span className="font-mono text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
+                    <span className="font-mono text-[11px] px-1.5 py-0.5 bg-surface-2 text-[color:var(--color-text-body)] rounded-sm">
                       {item.slot.vehiclePlate}
                     </span>
                   )}
                   {item.slot.note && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">— {item.slot.note}</span>
+                    <span className="text-[11px] text-[color:var(--color-text-muted)]">
+                      — {item.slot.note}
+                    </span>
                   )}
                 </span>
               ) : (
@@ -490,22 +499,21 @@ function ActivityRow({
         </div>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           {showDayInline && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-[11px] text-[color:var(--color-text-muted)]">
               {formatDayHeader(item.when)}
             </span>
           )}
           {timeLabel && (
             <span
-              className={`text-sm font-semibold ${
-                overdue
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-900 dark:text-gray-100'
-              }`}
+              className={cn(
+                'text-[13px] font-semibold tabular-nums',
+                overdue ? 'text-danger' : 'text-[color:var(--color-text)]'
+              )}
             >
               {timeLabel}
             </span>
           )}
-          <Button size="sm" onClick={(e) => { e.stopPropagation(); onOpenLead(lead); }}>
+          <Button size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenLead(lead); }}>
             Voir
           </Button>
         </div>
