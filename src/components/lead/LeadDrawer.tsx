@@ -51,6 +51,7 @@ import { AttachmentsSection } from '../attachments/AttachmentsSection';
 import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
 import { cn } from '../../lib/utils';
 import { gmailComposeUrl } from '../../lib/mail';
+import { useUserPreferences } from '../../contexts/UserPreferencesContext';
 
 function formatActionDue(raw: string): string {
   return raw.includes('T') ? formatDateTime(raw) : formatDate(raw);
@@ -214,6 +215,19 @@ function OverviewTab({
   onDeleteNextAction?: LeadDrawerProps['onDeleteNextAction'];
   onUpdateNextActionNote?: LeadDrawerProps['onUpdateNextActionNote'];
 }) {
+  const { prefs } = useUserPreferences();
+
+  /** Construit le corps Gmail avec le preset + lien PJ en bas si configuré. */
+  const mailBody = useMemo(() => {
+    const pieces: string[] = [];
+    if (prefs?.emailBody?.trim()) pieces.push(prefs.emailBody);
+    if (prefs?.emailAttachmentUrl?.trim()) {
+      pieces.push('');
+      pieces.push(`Pièce jointe : ${prefs.emailAttachmentUrl.trim()}`);
+    }
+    return pieces.join('\n');
+  }, [prefs]);
+
   const addressLine = useMemo(() => {
     const parts = [
       lead.address,
@@ -248,11 +262,19 @@ function OverviewTab({
           <InfoLine icon={<Mail size={14} />}>
             <span className="inline-flex items-center gap-1.5 flex-wrap">
               <a
-                href={gmailComposeUrl({ to: lead.email })}
+                href={gmailComposeUrl({
+                  to: lead.email,
+                  subject: prefs?.emailSubject || undefined,
+                  body: mailBody || undefined,
+                })}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
-                title="Envoyer un email via Gmail (stantina-max@chosen-mx.com)"
+                title={
+                  prefs?.emailSubject || prefs?.emailBody
+                    ? 'Envoyer un email Gmail (preset auto-rempli)'
+                    : 'Envoyer un email via Gmail (stantina-max@chosen-mx.com)'
+                }
               >
                 {lead.email}
               </a>

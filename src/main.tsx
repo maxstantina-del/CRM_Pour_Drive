@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext.tsx';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import { TagsProvider } from './contexts/TagsContext.tsx';
 import { FichesProvider } from './contexts/FichesContext.tsx';
+import { UserPreferencesProvider } from './contexts/UserPreferencesContext.tsx';
 import { ProtectedRoute } from './components/auth/ProtectedRoute.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { initSentry } from './lib/sentry.ts';
@@ -35,11 +36,13 @@ createRoot(root).render(
         <AuthProvider>
           <TagsProvider>
             <FichesProvider>
-              <ToastProvider>
-                <ProtectedRoute>
-                  <App />
-                </ProtectedRoute>
-              </ToastProvider>
+              <UserPreferencesProvider>
+                <ToastProvider>
+                  <ProtectedRoute>
+                    <App />
+                  </ProtectedRoute>
+                </ToastProvider>
+              </UserPreferencesProvider>
             </FichesProvider>
           </TagsProvider>
         </AuthProvider>

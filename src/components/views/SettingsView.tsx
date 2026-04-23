@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardBody, Button } from '../ui';
 import { Settings as SettingsIcon, Info, Trash2, Edit, Plus, Layers } from 'lucide-react';
 import { MembersPanel } from '../members/MembersPanel';
-import { StagesManager, ThemeToggle, TagsManager } from '../settings';
+import { StagesManager, ThemeToggle, TagsManager, EmailPresetSection } from '../settings';
 import { Tag as TagIcon } from 'lucide-react';
 import type { StageConfig, LeadStage } from '../../lib/types';
 
@@ -69,6 +69,8 @@ export function SettingsView({
           <ThemeToggle />
         </CardBody>
       </Card>
+
+      <EmailPresetSection />
 
       <Card variant="elevated">
         <CardHeader>
