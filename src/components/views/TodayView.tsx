@@ -7,10 +7,10 @@
  * coup d'œil sans avoir à cliquer.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import type { Lead, NextAction } from '../../lib/types';
 import { Card, Button } from '../ui';
-import { Calendar, AlertCircle, Truck, CalendarCheck2 } from 'lucide-react';
+import { Calendar, AlertCircle, Truck, CalendarCheck2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAllFiches } from '../../contexts/FichesContext';
 import { parseFicheSlots, type ParsedSlot } from '../../lib/appointments';
 
@@ -67,6 +67,22 @@ const BUCKET_LABELS: Record<Bucket, string> = {
   nextWeek: 'Semaine prochaine',
   later: 'Plus tard',
 };
+
+/**
+ * Sections plus éloignées dans le temps sont repliées par défaut pour éviter
+ * le défilement infini quand la liste grossit. L'utilisateur peut déplier
+ * manuellement et son choix est persisté en localStorage.
+ */
+const DEFAULT_OPEN: Record<Bucket, boolean> = {
+  overdue: true,
+  today: true,
+  tomorrow: true,
+  thisWeek: true,
+  nextWeek: false,
+  later: false,
+};
+
+const STORAGE_KEY = 'activity.bucketOpen.v1';
 
 function bucketOf(itemDate: Date, now: Date): Bucket {
   const today = dayStart(now);
@@ -152,13 +168,57 @@ export function TodayView({ leads, onEditLead, onViewLead }: TodayViewProps) {
 
   const totalCount = BUCKETS.reduce((sum, k) => sum + grouped[k].length, 0);
 
+  const [openState, setOpenState] = useState<Record<Bucket, boolean>>(() => {
+    if (typeof window === 'undefined') return { ...DEFAULT_OPEN };
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Record<Bucket, boolean>>;
+        return { ...DEFAULT_OPEN, ...parsed };
+      }
+    } catch { /* ignore */ }
+    return { ...DEFAULT_OPEN };
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(openState)); } catch { /* ignore */ }
+  }, [openState]);
+
+  const toggleBucket = useCallback((bucket: Bucket) => {
+    setOpenState((prev) => ({ ...prev, [bucket]: !prev[bucket] }));
+  }, []);
+
+  const setAll = useCallback((value: boolean) => {
+    setOpenState(BUCKETS.reduce((acc, k) => ({ ...acc, [k]: value }), {} as Record<Bucket, boolean>));
+  }, []);
+
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
-      <div className="flex items-baseline gap-3">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Activité</h1>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {totalCount} élément{totalCount > 1 ? 's' : ''} à traiter
-        </span>
+    <div className="p-6 space-y-4 max-w-4xl">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Activité</h1>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {totalCount} élément{totalCount > 1 ? 's' : ''} à traiter
+          </span>
+        </div>
+        {totalCount > 0 && (
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setAll(true)}
+              className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Tout déplier
+            </button>
+            <button
+              type="button"
+              onClick={() => setAll(false)}
+              className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Tout replier
+            </button>
+          </div>
+        )}
       </div>
 
       {totalCount === 0 && (
@@ -178,6 +238,8 @@ export function TodayView({ leads, onEditLead, onViewLead }: TodayViewProps) {
             key={bucket}
             bucket={bucket}
             items={list}
+            open={openState[bucket]}
+            onToggle={() => toggleBucket(bucket)}
             onOpenLead={openLead}
           />
         );
@@ -189,10 +251,14 @@ export function TodayView({ leads, onEditLead, onViewLead }: TodayViewProps) {
 function BucketSection({
   bucket,
   items,
+  open,
+  onToggle,
   onOpenLead,
 }: {
   bucket: Bucket;
   items: ActivityItem[];
+  open: boolean;
+  onToggle: () => void;
   onOpenLead: (l: Lead) => void;
 }) {
   const isOverdue = bucket === 'overdue';
@@ -220,13 +286,21 @@ function BucketSection({
 
   return (
     <section>
-      <div
-        className={`flex items-center gap-2 mb-3 pb-2 border-b ${
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`w-full flex items-center gap-2 pb-2 border-b text-left select-none ${
           isOverdue
             ? 'border-red-200 dark:border-red-900/40'
             : 'border-gray-200 dark:border-gray-800'
-        }`}
+        } ${open ? 'mb-3' : 'mb-1'}`}
       >
+        {open ? (
+          <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+        ) : (
+          <ChevronRight size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+        )}
         {icon}
         <h2
           className={`text-lg font-semibold ${
@@ -235,10 +309,18 @@ function BucketSection({
         >
           {BUCKET_LABELS[bucket]}
         </h2>
-        <span className="text-sm text-gray-500 dark:text-gray-400">({items.length})</span>
-      </div>
+        <span
+          className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+            isOverdue
+              ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+          }`}
+        >
+          {items.length}
+        </span>
+      </button>
 
-      {byDay ? (
+      {!open ? null : byDay ? (
         <div className="space-y-4">
           {byDay.map(([dayKey, dayItems]) => (
             <div key={dayKey}>
