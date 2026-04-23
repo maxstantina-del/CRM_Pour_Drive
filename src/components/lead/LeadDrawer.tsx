@@ -49,6 +49,7 @@ import { FichesSection } from '../fiches/FichesSection';
 import { AttachmentsSection } from '../attachments/AttachmentsSection';
 import { useRecentActionLabels } from '../../hooks/useRecentActionLabels';
 import { cn } from '../../lib/utils';
+import { gmailComposeUrl } from '../../lib/mail';
 
 function formatActionDue(raw: string): string {
   return raw.includes('T') ? formatDateTime(raw) : formatDate(raw);
@@ -245,8 +246,11 @@ function OverviewTab({
         {lead.email && (
           <InfoLine icon={<Mail size={14} />}>
             <a
-              href={`mailto:${lead.email}`}
+              href={gmailComposeUrl({ to: lead.email })}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-primary hover:underline"
+              title="Envoyer un email via Gmail"
             >
               {lead.email}
             </a>
