@@ -127,32 +127,60 @@ export function FichesSection({ lead }: FichesSectionProps) {
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {f.vehiclePlate || '(sans immat)'}
-                </span>
-                {f.vehicleType && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                    {VEHICLE_LABELS[f.vehicleType]}
-                  </span>
-                )}
-                {f.vehicleBrandModel && (
-                  <span className="text-xs text-gray-600 dark:text-gray-400">
-                    {f.vehicleBrandModel}
-                  </span>
-                )}
-                {f.vehicles.length > 1 && (
-                  <span
-                    className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-medium"
-                    title={f.vehicles
-                      .slice(1)
-                      .map((v) => v.plate || '(sans immat)')
-                      .join(', ')}
-                  >
-                    +{f.vehicles.length - 1} véhicule{f.vehicles.length > 2 ? 's' : ''}
-                  </span>
-                )}
-              </div>
+              {(() => {
+                const list = f.vehicles.length > 0
+                  ? f.vehicles
+                  : [{ type: f.vehicleType, brandModel: f.vehicleBrandModel, plate: f.vehiclePlate }];
+                if (list.length <= 1) {
+                  const v = list[0] ?? { type: null, brandModel: null, plate: null };
+                  return (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {v.plate || '(sans immat)'}
+                      </span>
+                      {v.type && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                          {VEHICLE_LABELS[v.type]}
+                        </span>
+                      )}
+                      {v.brandModel && (
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          {v.brandModel}
+                        </span>
+                      )}
+                    </div>
+                  );
+                }
+                return (
+                  <div>
+                    <div className="text-[11px] font-medium uppercase tracking-wide text-indigo-700 dark:text-indigo-300 mb-1">
+                      {list.length} véhicules
+                    </div>
+                    <ul className="space-y-1">
+                      {list.map((v, i) => (
+                        <li key={i} className="flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 w-4">
+                            {i + 1}.
+                          </span>
+                          <span className="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {v.plate || '(sans immat)'}
+                          </span>
+                          {v.type && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                              {VEHICLE_LABELS[v.type]}
+                            </span>
+                          )}
+                          {v.brandModel && (
+                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                              {v.brandModel}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
               <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
                 {f.damageType && (
                   <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-300">
