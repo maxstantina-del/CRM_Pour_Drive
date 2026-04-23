@@ -1,27 +1,43 @@
 import { Search, X } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 interface SearchBarProps {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  className?: string;
 }
 
-export function SearchBar({ value, onChange, placeholder = 'Rechercher…' }: SearchBarProps) {
+/**
+ * Barre de recherche compacte (320px max) — inspirée Monday/Linear, discrète
+ * tant qu'elle n'est pas utilisée, focus ring via shadow token.
+ */
+export function SearchBar({ value, onChange, placeholder = 'Rechercher…', className }: SearchBarProps) {
   return (
-    <div className="relative flex-1 max-w-md">
-      <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
+    <div className={cn('relative w-full max-w-[320px]', className)}>
+      <Search
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[color:var(--color-text-subtle)] pointer-events-none"
+        aria-hidden
+      />
       <input
         type="text"
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-9 pr-9 py-2 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+        className={cn(
+          'w-full h-8 pl-8 pr-7 text-[13px] rounded-sm transition-colors',
+          'bg-surface-2 border border-transparent text-[color:var(--color-text)] placeholder:text-[color:var(--color-text-subtle)]',
+          'hover:bg-[color:var(--color-border-subtle)]',
+          'focus:outline-none focus:bg-surface focus:border-primary focus:shadow-focus'
+        )}
       />
       {value && (
         <button
+          type="button"
           onClick={() => onChange('')}
-          className="absolute right-2 top-2 p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-sm text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] hover:bg-surface"
           title="Effacer"
+          aria-label="Effacer la recherche"
         >
           <X className="w-3 h-3" />
         </button>

@@ -1,5 +1,6 @@
 /**
- * Sidebar navigation component
+ * Sidebar navigation — aligned on Monday/Linear density.
+ * Default width 220px, collapsed 56px. Uses design tokens for all surfaces.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -40,7 +41,7 @@ export function Sidebar({
   onPipelineChange,
   onNewPipeline,
   onRenamePipeline,
-  onDeletePipeline
+  onDeletePipeline,
 }: SidebarProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -56,15 +57,15 @@ export function Sidebar({
   };
 
   const views: { id: ViewType; icon: React.ReactNode; label: string }[] = [
-    { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { id: 'pipeline', icon: <Layers size={20} />, label: 'Pipeline' },
-    { id: 'table', icon: <Table size={20} />, label: 'Tableau' },
-    { id: 'today', icon: <Calendar size={20} />, label: 'Activité' },
-    { id: 'settings', icon: <Settings size={20} />, label: 'Paramètres' }
+    { id: 'dashboard', icon: <LayoutDashboard size={16} />, label: 'Dashboard' },
+    { id: 'pipeline', icon: <Layers size={16} />, label: 'Pipeline' },
+    { id: 'table', icon: <Table size={16} />, label: 'Tableau' },
+    { id: 'today', icon: <Calendar size={16} />, label: 'Activité' },
+    { id: 'settings', icon: <Settings size={16} />, label: 'Paramètres' },
   ];
 
   const handleRename = (pipeline: Pipeline) => {
-    const newName = prompt('Nouveau nom du pipeline:', pipeline.name);
+    const newName = prompt('Nouveau nom du pipeline :', pipeline.name);
     if (newName && newName.trim() && newName !== pipeline.name) {
       onRenamePipeline(pipeline.id, newName.trim());
     }
@@ -72,173 +73,212 @@ export function Sidebar({
   };
 
   const handleDelete = (pipeline: Pipeline) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le pipeline "${pipeline.name}" ?`)) {
+    if (confirm(`Supprimer le pipeline « ${pipeline.name} » ?`)) {
       onDeletePipeline(pipeline.id);
     }
     setOpenMenuId(null);
   };
 
-  // Fermer le menu quand on clique en dehors
   useEffect(() => {
     if (!openMenuId) return;
-
-    const handleClickOutside = () => setOpenMenuId(null);
-    document.addEventListener('click', handleClickOutside);
-
-    return () => document.removeEventListener('click', handleClickOutside);
+    const onClick = () => setOpenMenuId(null);
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
   }, [openMenuId]);
 
   return (
-    <aside className={cn(
-      'bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-200',
-      collapsed ? 'w-16' : 'w-64'
-    )}>
-      {/* Logo/Brand */}
-      <div className={cn(
-        'border-b border-gray-200 dark:border-gray-800 flex items-center',
-        collapsed ? 'p-3 justify-center' : 'p-6 justify-between'
-      )}>
+    <aside
+      className={cn(
+        'flex flex-col border-r border-border transition-[width] duration-200',
+        'bg-surface',
+        collapsed ? 'w-14' : 'w-[220px]'
+      )}
+    >
+      {/* Brand */}
+      <div
+        className={cn(
+          'flex items-center border-b border-border',
+          collapsed ? 'h-14 px-2 justify-center' : 'h-14 px-4 justify-between'
+        )}
+      >
         {!collapsed && (
-          <div>
-            <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">Simple CRM</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gestion de leads</p>
+          <div className="min-w-0">
+            <h1 className="text-[15px] font-semibold tracking-tight text-[color:var(--color-text)] whitespace-nowrap">
+              Simple CRM
+            </h1>
           </div>
         )}
         <button
+          type="button"
           onClick={toggleCollapsed}
-          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
+          className="p-1.5 rounded-sm text-[color:var(--color-text-muted)] hover:bg-surface-2 hover:text-[color:var(--color-text)]"
           title={collapsed ? 'Déplier' : 'Replier'}
         >
-          {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
+          {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className={cn('flex-1 space-y-1 overflow-y-auto overflow-x-hidden', collapsed ? 'p-2' : 'p-4')}>
-        <div className="mb-6">
-          {!collapsed && (
-            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-              Navigation
-            </h2>
-          )}
-          {views.map(view => (
-            <button
-              key={view.id}
-              onClick={() => onViewChange(view.id)}
-              title={collapsed ? view.label : undefined}
-              className={cn(
-                'w-full flex items-center rounded-lg text-sm font-medium transition-colors',
-                collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2',
-                currentView === view.id
-                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-              )}
-            >
-              {view.icon}
-              {!collapsed && view.label}
-            </button>
-          ))}
+      {/* Navigation principale */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+        <div className={cn('pt-3', collapsed ? 'px-1.5' : 'px-2')}>
+          {!collapsed && <SidebarSectionLabel>Navigation</SidebarSectionLabel>}
+          <ul className="space-y-0.5">
+            {views.map((view) => {
+              const active = currentView === view.id;
+              return (
+                <li key={view.id}>
+                  <button
+                    type="button"
+                    onClick={() => onViewChange(view.id)}
+                    title={collapsed ? view.label : undefined}
+                    className={cn(
+                      'group w-full flex items-center rounded-sm text-[13px] transition-colors',
+                      collapsed ? 'h-9 justify-center' : 'h-8 gap-2.5 px-2',
+                      active
+                        ? 'bg-primary-soft text-primary-soft-text font-medium'
+                        : 'text-[color:var(--color-text-body)] hover:bg-surface-2 hover:text-[color:var(--color-text)]'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'shrink-0',
+                        active ? 'text-primary' : 'text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text-body)]'
+                      )}
+                    >
+                      {view.icon}
+                    </span>
+                    {!collapsed && <span className="truncate">{view.label}</span>}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
 
         {/* Pipelines */}
-        <div>
+        <div className={cn('mt-5 pb-3', collapsed ? 'px-1.5' : 'px-2')}>
           {!collapsed ? (
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Pipelines
-              </h2>
+            <div className="flex items-center justify-between px-2 mb-1.5">
+              <span className="text-caption">Pipelines</span>
               <button
+                type="button"
                 onClick={onNewPipeline}
-                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors"
+                className="p-1 rounded-sm text-[color:var(--color-text-muted)] hover:bg-surface-2 hover:text-primary"
                 title="Nouveau pipeline"
               >
-                <Plus size={16} />
+                <Plus size={14} />
               </button>
             </div>
           ) : (
             <button
+              type="button"
               onClick={onNewPipeline}
-              className="w-full flex items-center justify-center p-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 mb-1"
+              className="w-full h-9 flex items-center justify-center rounded-sm text-[color:var(--color-text-muted)] hover:bg-surface-2 hover:text-primary mb-1"
               title="Nouveau pipeline"
             >
-              <Plus size={18} />
+              <Plus size={14} />
             </button>
           )}
-          <div className="space-y-1">
-            {pipelines.length === 0 ? (
-              !collapsed && (
-                <div className="text-xs text-gray-400 dark:text-gray-500 text-center py-2 px-3">
-                  Aucun pipeline
-                </div>
-              )
-            ) : (
-              pipelines.map(pipeline => (
-              <div key={pipeline.id} className="relative group">
-                <button
-                  onClick={() => onPipelineChange(pipeline.id)}
-                  className={cn(
-                    'w-full rounded-lg text-sm transition-colors',
-                    collapsed
-                      ? 'flex items-center justify-center p-2.5 font-semibold uppercase'
-                      : 'text-left px-3 py-2 flex items-center justify-between truncate',
-                    currentPipelineId === pipeline.id
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                  )}
-                  title={pipeline.name}
-                >
-                  {collapsed ? (
-                    <span>{pipeline.name.slice(0, 2).toUpperCase()}</span>
-                  ) : (
-                    <span className="truncate">{pipeline.name}</span>
-                  )}
-                  {!collapsed && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(openMenuId === pipeline.id ? null : pipeline.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-opacity"
-                      title="Actions"
-                    >
-                      <MoreVertical size={14} />
-                    </button>
-                  )}
-                </button>
 
-                {/* Dropdown Menu */}
-                {openMenuId === pipeline.id && (
-                  <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          {pipelines.length === 0 ? (
+            !collapsed && (
+              <p className="px-2 py-1.5 text-[11px] text-[color:var(--color-text-subtle)] italic">
+                Aucun pipeline
+              </p>
+            )
+          ) : (
+            <ul className="space-y-0.5">
+              {pipelines.map((pipeline) => {
+                const active = currentPipelineId === pipeline.id;
+                const menuOpen = openMenuId === pipeline.id;
+                return (
+                  <li key={pipeline.id} className="relative group/pipeline">
                     <button
-                      onClick={() => handleRename(pipeline)}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 rounded-t-lg"
+                      type="button"
+                      onClick={() => onPipelineChange(pipeline.id)}
+                      title={pipeline.name}
+                      className={cn(
+                        'w-full flex items-center rounded-sm transition-colors',
+                        collapsed
+                          ? 'h-9 justify-center text-[10px] font-semibold uppercase'
+                          : 'h-8 gap-2 px-2 text-[13px]',
+                        active
+                          ? 'bg-surface-2 text-[color:var(--color-text)] font-medium'
+                          : 'text-[color:var(--color-text-body)] hover:bg-surface-2 hover:text-[color:var(--color-text)]'
+                      )}
                     >
-                      <Edit2 size={14} />
-                      Modifier
+                      {collapsed ? (
+                        <span>{pipeline.name.slice(0, 2).toUpperCase()}</span>
+                      ) : (
+                        <>
+                          <span
+                            className={cn(
+                              'w-1.5 h-1.5 rounded-full shrink-0',
+                              active ? 'bg-primary' : 'bg-[color:var(--color-border-strong)]'
+                            )}
+                          />
+                          <span className="flex-1 text-left truncate">{pipeline.name}</span>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(menuOpen ? null : pipeline.id);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setOpenMenuId(menuOpen ? null : pipeline.id);
+                              }
+                            }}
+                            className="opacity-0 group-hover/pipeline:opacity-100 p-0.5 rounded-sm text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-border)] hover:text-[color:var(--color-text)] transition-opacity"
+                            aria-label="Actions pipeline"
+                          >
+                            <MoreVertical size={13} />
+                          </span>
+                        </>
+                      )}
                     </button>
-                    <button
-                      onClick={() => handleDelete(pipeline)}
-                      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
-                    >
-                      <Trash2 size={14} />
-                      Supprimer
-                    </button>
-                  </div>
-                )}
-              </div>
-              ))
-            )}
-          </div>
+
+                    {menuOpen && (
+                      <div className="absolute right-1 top-full mt-1 w-40 bg-surface border border-border rounded-md shadow-md z-dropdown overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => handleRename(pipeline)}
+                          className="w-full text-left px-3 py-2 text-[13px] text-[color:var(--color-text-body)] hover:bg-surface-2 flex items-center gap-2"
+                        >
+                          <Edit2 size={13} />
+                          Renommer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(pipeline)}
+                          className="w-full text-left px-3 py-2 text-[13px] text-danger hover:bg-danger-soft flex items-center gap-2"
+                        >
+                          <Trash2 size={13} />
+                          Supprimer
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </nav>
 
       {/* Footer */}
       {!collapsed && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
-          <p>© 2025 Simple CRM</p>
-          <p className="mt-1">Version 2.0.0</p>
+        <div className="px-4 py-3 border-t border-border text-[11px] text-[color:var(--color-text-subtle)]">
+          v2.0.0
         </div>
       )}
     </aside>
   );
+}
+
+function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-caption px-2 mb-1.5">{children}</p>;
 }

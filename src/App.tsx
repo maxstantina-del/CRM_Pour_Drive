@@ -138,6 +138,28 @@ function App() {
     [allLeads, filters, tagIdsByLead]
   );
 
+  const currentPipelineName = useMemo(
+    () => pipelines.find((p) => p.id === effectivePipelineId)?.name,
+    [pipelines, effectivePipelineId]
+  );
+
+  const pageMeta = useMemo((): { title: string; context?: string } => {
+    switch (currentView) {
+      case 'dashboard':
+        return { title: 'Dashboard' };
+      case 'pipeline':
+        return { title: 'Pipeline', context: currentPipelineName };
+      case 'table':
+        return { title: 'Tableau', context: currentPipelineName };
+      case 'today':
+        return { title: 'Activité' };
+      case 'settings':
+        return { title: 'Paramètres' };
+      default:
+        return { title: 'Simple CRM' };
+    }
+  }, [currentView, currentPipelineName]);
+
   const searchQuery = filters.search;
   const setSearchQuery = (v: string) => updateFilter('search', v);
 
@@ -535,6 +557,8 @@ function App() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
           leads={allLeads}
+          pageTitle={pageMeta.title}
+          pageContext={pageMeta.context}
           onNewLead={handleNewLead}
           onImport={handleImportClick}
           onExport={handleExportCSV}
@@ -551,8 +575,8 @@ function App() {
         />
 
         {pipelines.length > 0 && (
-          <div className="px-6 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-2">
-            <div className="flex items-center gap-3">
+          <div className="px-4 py-2 border-b border-border bg-surface space-y-2">
+            <div className="flex items-center gap-2">
               <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Rechercher nom, company, ville, email…" />
               <FilterButton
                 activeCount={activeCount}
@@ -564,7 +588,7 @@ function App() {
                 tags={tags}
               />
               {(activeCount > 0 || searchQuery) && (
-                <span className="text-xs text-gray-500 ml-auto">
+                <span className="text-[12px] text-[color:var(--color-text-muted)] ml-auto">
                   {leads.length} / {allLeads.length} leads
                 </span>
               )}
@@ -579,7 +603,7 @@ function App() {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
+        <main className="flex-1 overflow-y-auto" style={{ background: 'var(--color-bg)' }}>
           <Suspense
             fallback={
               <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 text-sm">
