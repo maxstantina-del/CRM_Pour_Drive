@@ -110,10 +110,16 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Nom du projet"
+        label="Nom de l'entreprise"
         required
-        value={formData.name || ''}
-        onChange={(e) => handleChange('name', e.target.value)}
+        value={formData.company || formData.name || ''}
+        onChange={(e) => {
+          // On garde `name` et `company` synchronisés : la carte affiche
+          // company en priorité, et name sert d'identifiant obligatoire.
+          const v = e.target.value;
+          setFormData((prev) => ({ ...prev, company: v, name: v }));
+        }}
+        placeholder="Ex : Transports Chatel"
         fullWidth
       />
 
@@ -122,12 +128,14 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
           label="Nom du contact"
           value={formData.contactName || ''}
           onChange={(e) => handleChange('contactName', e.target.value)}
+          placeholder="Ex : Jean Dupont"
           fullWidth
         />
         <Input
-          label="Entreprise"
-          value={formData.company || ''}
-          onChange={(e) => handleChange('company', e.target.value)}
+          label="SIRET"
+          value={formData.siret || ''}
+          onChange={(e) => handleChange('siret', e.target.value)}
+          helperText="14 chiffres"
           fullWidth
         />
       </div>
@@ -151,14 +159,6 @@ export function LeadForm({ lead, onSubmit, onCancel }: LeadFormProps) {
           fullWidth
         />
       </div>
-
-      <Input
-        label="SIRET"
-        value={formData.siret || ''}
-        onChange={(e) => handleChange('siret', e.target.value)}
-        helperText="14 chiffres"
-        fullWidth
-      />
 
       <Input
         label="Adresse"
