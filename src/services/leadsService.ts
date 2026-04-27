@@ -4,7 +4,7 @@
  */
 
 import { getSupabaseClient } from '../lib/supabaseClient';
-import type { Lead, LeadStage, NextAction } from '../lib/types';
+import type { Lead, LeadNote, LeadStage, NextAction } from '../lib/types';
 import { captureException, captureFeatureException } from '../lib/sentry';
 
 const BATCH_SIZE = 500;
@@ -33,6 +33,7 @@ interface DbLeadRow {
   closed_date: string | null;
   notes: string | null;
   next_actions: NextAction[] | null;
+  comment_notes: LeadNote[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +61,7 @@ function rowToLead(r: DbLeadRow): Lead {
     closedDate: r.closed_date ?? undefined,
     notes: r.notes ?? undefined,
     nextActions: r.next_actions ?? [],
+    commentNotes: r.comment_notes ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     pipelineId: r.pipeline_id ?? undefined,
@@ -90,6 +92,7 @@ function leadToRow(lead: Lead, ownerId: string | null): Omit<DbLeadRow, 'created
     closed_date: lead.closedDate ?? null,
     notes: lead.notes ?? null,
     next_actions: lead.nextActions ?? [],
+    comment_notes: lead.commentNotes ?? [],
     created_at: lead.createdAt,
     updated_at: lead.updatedAt,
   };
@@ -116,6 +119,7 @@ function partialLeadToRow(updates: Partial<Lead>): Record<string, unknown> {
   if (updates.closedDate !== undefined)   row.closed_date = updates.closedDate;
   if (updates.notes !== undefined)        row.notes = updates.notes;
   if (updates.nextActions !== undefined)  row.next_actions = updates.nextActions;
+  if (updates.commentNotes !== undefined) row.comment_notes = updates.commentNotes;
   if (updates.pipelineId !== undefined)   row.pipeline_id = updates.pipelineId;
   return row;
 }

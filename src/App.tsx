@@ -255,6 +255,34 @@ function App() {
         if (!lead || !lead.nextActions) return;
         const updatedActions = lead.nextActions.filter(action => action.id !== actionId);
         await updateSingleLead(effectivePipelineId, leadId, { nextActions: updatedActions });
+      },
+      addCommentNote: async (leadId: string, text: string) => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead) return;
+        const clean = text.trim();
+        if (!clean) return;
+        const now = new Date().toISOString();
+        const newNote = { id: generateId(), text: clean, createdAt: now, updatedAt: now };
+        await updateSingleLead(effectivePipelineId, leadId, {
+          commentNotes: [newNote, ...(lead.commentNotes ?? [])]
+        });
+      },
+      updateCommentNote: async (leadId: string, noteId: string, text: string) => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead || !lead.commentNotes) return;
+        const clean = text.trim();
+        if (!clean) return;
+        const now = new Date().toISOString();
+        const updated = lead.commentNotes.map(n =>
+          n.id === noteId ? { ...n, text: clean, updatedAt: now } : n
+        );
+        await updateSingleLead(effectivePipelineId, leadId, { commentNotes: updated });
+      },
+      deleteCommentNote: async (leadId: string, noteId: string) => {
+        const lead = leads.find(l => l.id === leadId);
+        if (!lead || !lead.commentNotes) return;
+        const updated = lead.commentNotes.filter(n => n.id !== noteId);
+        await updateSingleLead(effectivePipelineId, leadId, { commentNotes: updated });
       }
     };
   }, [effectivePipelineId, addSingleLead, updateSingleLead, deleteSingleLead, leads, fichesByLead]);
@@ -796,6 +824,9 @@ function App() {
         onToggleNextAction={(leadId, actionId) => leadsManager.toggleNextAction(leadId, actionId)}
         onDeleteNextAction={(leadId, actionId) => leadsManager.deleteNextAction(leadId, actionId)}
         onUpdateNextActionNote={(leadId, actionId, note) => leadsManager.updateNextActionNote(leadId, actionId, note)}
+        onAddCommentNote={(leadId, text) => leadsManager.addCommentNote(leadId, text)}
+        onUpdateCommentNote={(leadId, noteId, text) => leadsManager.updateCommentNote(leadId, noteId, text)}
+        onDeleteCommentNote={(leadId, noteId) => leadsManager.deleteCommentNote(leadId, noteId)}
         onUpdateLead={leadsManager.updateLead}
       />
 

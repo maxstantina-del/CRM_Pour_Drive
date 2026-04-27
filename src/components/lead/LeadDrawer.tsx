@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useMemo, useState, type FormEvent } from 'react';
-import type { Lead, NextAction } from '../../lib/types';
+import type { Lead, LeadNote, NextAction } from '../../lib/types';
 import {
   Drawer,
   DrawerHeader,
@@ -67,6 +67,9 @@ export interface LeadDrawerProps {
   onToggleNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
   onDeleteNextAction?: (leadId: string, actionId: string) => Promise<void> | void;
   onUpdateNextActionNote?: (leadId: string, actionId: string, note: string) => Promise<void> | void;
+  onAddCommentNote?: (leadId: string, text: string) => Promise<void> | void;
+  onUpdateCommentNote?: (leadId: string, noteId: string, text: string) => Promise<void> | void;
+  onDeleteCommentNote?: (leadId: string, noteId: string) => Promise<void> | void;
   onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void> | void;
 }
 
@@ -89,6 +92,9 @@ export function LeadDrawer({
   onToggleNextAction,
   onDeleteNextAction,
   onUpdateNextActionNote,
+  onAddCommentNote,
+  onUpdateCommentNote,
+  onDeleteCommentNote,
   onUpdateLead,
 }: LeadDrawerProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -152,6 +158,9 @@ export function LeadDrawer({
             onToggleNextAction={onToggleNextAction}
             onDeleteNextAction={onDeleteNextAction}
             onUpdateNextActionNote={onUpdateNextActionNote}
+            onAddCommentNote={onAddCommentNote}
+            onUpdateCommentNote={onUpdateCommentNote}
+            onDeleteCommentNote={onDeleteCommentNote}
           />
         )}
         {activeTab === 'fiches' && <FichesSection lead={lead} onSyncLead={onUpdateLead} />}
@@ -208,12 +217,18 @@ function OverviewTab({
   onToggleNextAction,
   onDeleteNextAction,
   onUpdateNextActionNote,
+  onAddCommentNote,
+  onUpdateCommentNote,
+  onDeleteCommentNote,
 }: {
   lead: Lead;
   onAddNextAction?: LeadDrawerProps['onAddNextAction'];
   onToggleNextAction?: LeadDrawerProps['onToggleNextAction'];
   onDeleteNextAction?: LeadDrawerProps['onDeleteNextAction'];
   onUpdateNextActionNote?: LeadDrawerProps['onUpdateNextActionNote'];
+  onAddCommentNote?: LeadDrawerProps['onAddCommentNote'];
+  onUpdateCommentNote?: LeadDrawerProps['onUpdateCommentNote'];
+  onDeleteCommentNote?: LeadDrawerProps['onDeleteCommentNote'];
 }) {
   const { prefs } = useUserPreferences();
 
@@ -337,10 +352,23 @@ function OverviewTab({
         />
       </section>
 
-      {/* Notes */}
+      {/* Commentaires libres (résumés d'appel, suivi) */}
+      {(onAddCommentNote || (lead.commentNotes && lead.commentNotes.length > 0)) && (
+        <section>
+          <SectionLabel icon={<StickyNote size={13} />}>Commentaires & suivi</SectionLabel>
+          <CommentNotesEditor
+            lead={lead}
+            onAdd={onAddCommentNote}
+            onUpdate={onUpdateCommentNote}
+            onDelete={onDeleteCommentNote}
+          />
+        </section>
+      )}
+
+      {/* Notes (champ legacy du formulaire de création) */}
       {lead.notes && (
         <section>
-          <SectionLabel>Notes</SectionLabel>
+          <SectionLabel>Notes du formulaire</SectionLabel>
           <p className="text-[13px] text-[color:var(--color-text-body)] whitespace-pre-wrap surface-panel p-3">
             {lead.notes}
           </p>
@@ -816,6 +844,225 @@ function ActionRow({
           </div>
         </div>
       )}
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Comment notes editor — résumés d'appel / commentaires libres
+// ---------------------------------------------------------------------------
+
+function formatNoteWhen(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function CommentNotesEditor({
+  lead,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: {
+  lead: Lead;
+  onAdd?: LeadDrawerProps['onAddCommentNote'];
+  onUpdate?: LeadDrawerProps['onUpdateCommentNote'];
+  onDelete?: LeadDrawerProps['onDeleteCommentNote'];
+}) {
+  const [draft, setDraft] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!draft.trim() || !onAdd || adding) return;
+    setAdding(true);
+    try {
+      await onAdd(lead.id, draft);
+      setDraft('');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const notes = lead.commentNotes ?? [];
+
+  return (
+    <div className="space-y-2">
+      {onAdd && (
+        <form onSubmit={submit} className="space-y-1.5">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Ex: appel du 27/04 — il rappelle vendredi après 14h, intéressé par 3 véhicules…"
+            rows={3}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void submit(e as unknown as FormEvent);
+              }
+            }}
+            className="w-full px-3 py-2 text-[13px] rounded-md bg-surface border border-border text-[color:var(--color-text)] placeholder:text-[color:var(--color-text-subtle)] focus:outline-none focus:border-primary focus:shadow-focus resize-none"
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-[color:var(--color-text-subtle)]">
+              {draft.trim() ? 'Ctrl/⌘ + Entrée pour ajouter' : ''}
+            </span>
+            <Button
+              type="submit"
+              size="sm"
+              variant="primary"
+              icon={<Plus size={13} />}
+              disabled={!draft.trim() || adding}
+              loading={adding}
+            >
+              Ajouter
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {notes.length > 0 && (
+        <ul className="space-y-1.5">
+          {notes.map((n) => (
+            <CommentNoteRow
+              key={n.id}
+              leadId={lead.id}
+              note={n}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+            />
+          ))}
+        </ul>
+      )}
+
+      {notes.length === 0 && !onAdd && (
+        <p className="text-[12px] text-[color:var(--color-text-subtle)] italic">
+          Aucun commentaire.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function CommentNoteRow({
+  leadId,
+  note,
+  onUpdate,
+  onDelete,
+}: {
+  leadId: string;
+  note: LeadNote;
+  onUpdate?: LeadDrawerProps['onUpdateCommentNote'];
+  onDelete?: LeadDrawerProps['onDeleteCommentNote'];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note.text);
+
+  useEffect(() => {
+    setDraft(note.text);
+  }, [note.text]);
+
+  const canEdit = typeof onUpdate === 'function';
+  const canDelete = typeof onDelete === 'function';
+  const wasEdited = note.updatedAt && note.updatedAt !== note.createdAt;
+
+  const save = () => {
+    if (!onUpdate) return;
+    if (!draft.trim()) return;
+    void onUpdate(leadId, note.id, draft);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(note.text);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <li className="surface-panel p-2 space-y-1.5">
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={3}
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              save();
+            } else if (e.key === 'Escape') {
+              cancel();
+            }
+          }}
+          className="w-full px-2 py-1.5 text-[13px] rounded-sm bg-surface border border-border text-[color:var(--color-text)] focus:outline-none focus:border-primary focus:shadow-focus resize-none"
+        />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={save}
+            disabled={!draft.trim()}
+            className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium rounded-sm bg-primary text-white hover:bg-primary-hover disabled:opacity-40"
+          >
+            <Check size={11} /> Enregistrer
+          </button>
+          <button
+            type="button"
+            onClick={cancel}
+            className="h-6 px-2 text-[11px] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-surface-2 rounded-sm"
+          >
+            Annuler
+          </button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li className="group surface-panel p-2.5">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <span className="text-[11px] text-[color:var(--color-text-muted)]">
+          {formatNoteWhen(note.createdAt)}
+          {wasEdited && (
+            <span className="ml-1 text-[color:var(--color-text-subtle)]">
+              (modifié {formatNoteWhen(note.updatedAt)})
+            </span>
+          )}
+        </span>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-[color:var(--color-text-subtle)] hover:text-primary"
+              title="Modifier"
+            >
+              <Edit size={12} />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('Supprimer ce commentaire ?')) {
+                  void onDelete!(leadId, note.id);
+                }
+              }}
+              className="text-[color:var(--color-text-subtle)] hover:text-danger"
+              title="Supprimer"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="text-[13px] text-[color:var(--color-text)] whitespace-pre-wrap break-words">
+        {note.text}
+      </p>
     </li>
   );
 }

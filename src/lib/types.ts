@@ -19,6 +19,17 @@ export type LeadStage =
   | 'closed_lost';
 
 /**
+ * Commentaire libre attaché à un lead (résumé d'appel, suivi, etc.).
+ * Indépendant des `nextActions` qui sont des tâches datées.
+ */
+export interface LeadNote {
+  id: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * Next action for a lead
  */
 export interface NextAction {
@@ -58,6 +69,11 @@ export interface Lead {
   closedDate?: string;
   notes?: string;
   nextActions?: NextAction[];
+  /**
+   * Notes libres ajoutées au fil de l'eau (résumé d'appel, commentaire de
+   * suivi…). Modifiables et supprimables, indépendantes des nextActions.
+   */
+  commentNotes?: LeadNote[];
   /**
    * Extra key/value pairs kept from the source import (or any caller) so the
    * UI can surface all columns the user saw in their Excel/CSV. Keys are
