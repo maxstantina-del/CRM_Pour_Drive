@@ -28,10 +28,16 @@ export function getSupabaseAnonKey(): string | undefined {
 }
 
 /**
- * Supabase configuration object
+ * Supabase configuration object.
+ *
+ * .trim() est crucial : si la env var Vercel a été collée avec un retour
+ * chariot final (très facile à faire), le newline finit URL-encodé en %0A
+ * dans l'apikey du WebSocket Realtime → connexion refusée avec "HTTP
+ * Authentication failed". Le pipeline reste lisible (HTTP REST tolère le
+ * trailing whitespace) mais aucun event live n'arrive jusqu'au client.
  */
 export const supabaseConfig = {
-  url: getSupabaseUrl() || '',
-  anonKey: getSupabaseAnonKey() || '',
+  url: (getSupabaseUrl() || '').trim(),
+  anonKey: (getSupabaseAnonKey() || '').trim(),
   isConfigured: isSupabaseConfigured()
 };
