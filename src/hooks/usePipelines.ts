@@ -54,8 +54,27 @@ export function usePipelines() {
       })
       .subscribe();
 
+    // Sync également les changements de membership : si on m'ajoute/retire d'un
+    // pipeline, je dois recharger la liste pour voir/cacher le pipeline sans F5.
+    const membersChannel = client
+      .channel(`pipeline_members_changes_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pipeline_members',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          loadPipelines();
+        }
+      )
+      .subscribe();
+
     return () => {
       client.removeChannel(channel);
+      client.removeChannel(membersChannel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSupabase, user]);
