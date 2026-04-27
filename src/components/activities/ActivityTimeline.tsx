@@ -89,6 +89,8 @@ export function ActivityTimeline({ leadId }: { leadId: string }) {
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder="Ajouter au journal…"
+          spellCheck
+          lang="fr"
           className="flex-1 px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
         />
         <button

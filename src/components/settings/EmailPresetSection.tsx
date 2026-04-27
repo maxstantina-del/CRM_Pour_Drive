@@ -82,6 +82,8 @@ export function EmailPresetSection() {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            spellCheck
+            lang="fr"
             placeholder="Bonjour,
 
 Suite à notre échange, je me permets de vous transmettre notre proposition…

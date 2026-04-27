@@ -585,6 +585,8 @@ function NextActionsEditor({
               placeholder="Note (ex: le client préfère être rappelé après 18h)…"
               rows={2}
               autoFocus
+              spellCheck
+              lang="fr"
               className="w-full px-3 py-2 text-[13px] rounded-md bg-surface border border-border text-[color:var(--color-text)] placeholder:text-[color:var(--color-text-subtle)] focus:outline-none focus:border-primary focus:shadow-focus resize-none"
             />
           ) : (
@@ -802,6 +804,8 @@ function ActionRow({
             placeholder="Note (ex: rappeler après 18h, envoyer devis v2…)"
             rows={2}
             autoFocus
+            spellCheck
+            lang="fr"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -900,6 +904,8 @@ function CommentNotesEditor({
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Ex: appel du 27/04 — il rappelle vendredi après 14h, intéressé par 3 véhicules…"
             rows={3}
+            spellCheck
+            lang="fr"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -991,6 +997,8 @@ function CommentNoteRow({
           onChange={(e) => setDraft(e.target.value)}
           rows={3}
           autoFocus
+          spellCheck
+          lang="fr"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();

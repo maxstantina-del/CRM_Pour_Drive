@@ -22,7 +22,7 @@ const inputSizeClass = {
 } as const;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, icon, fullWidth = false, inputSize = 'md', className, type, ...props }, ref) => {
+  ({ label, error, helperText, icon, fullWidth = false, inputSize = 'md', className, type, spellCheck, ...props }, ref) => {
     const inputId = props.id || `input-${Math.random().toString(36).slice(2, 9)}`;
 
     return (
@@ -48,6 +48,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             type={type ?? 'text'}
+            spellCheck={spellCheck ?? false}
             className={cn(
               'w-full rounded-md border transition-colors',
               'bg-surface text-[color:var(--color-text)] placeholder:text-[color:var(--color-text-subtle)]',
@@ -104,6 +105,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={textareaId}
+          spellCheck
+          lang="fr"
           className={cn(
             'w-full px-3 py-2 rounded-md border transition-colors resize-vertical text-[13px]',
             'bg-surface text-[color:var(--color-text)] placeholder:text-[color:var(--color-text-subtle)]',

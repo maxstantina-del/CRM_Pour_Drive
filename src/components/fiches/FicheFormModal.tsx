@@ -615,6 +615,8 @@ export function FicheFormModal({ isOpen, initial, lead, onClose, onSubmit }: Fic
             <textarea
               value={form.comment}
               onChange={(e) => update('comment', e.target.value)}
+              spellCheck
+              lang="fr"
               className={`${inputCls} min-h-[80px]`}
             />
           </Field>
