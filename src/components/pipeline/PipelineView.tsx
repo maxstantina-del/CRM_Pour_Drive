@@ -547,6 +547,15 @@ export const PipelineView = memo(function PipelineView({
     for (const l of leads) {
       if (map[l.stage]) map[l.stage].push(l);
     }
+    // Tri stable alpha sur (company || name) — l'ordre ne change qu'au
+    // renommage, jamais sur tag/stage/notes/etc.
+    for (const s of stages) {
+      map[s.id].sort((a, b) => {
+        const ka = (a.company || a.name || '').trim();
+        const kb = (b.company || b.name || '').trim();
+        return ka.localeCompare(kb, 'fr', { sensitivity: 'base', numeric: true });
+      });
+    }
     return map;
   }, [leads, stages]);
 

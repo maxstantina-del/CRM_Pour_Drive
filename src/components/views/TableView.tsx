@@ -71,8 +71,8 @@ export function TableView({
   tagsByLead,
 }: TableViewProps) {
   const { fichesByLead } = useAllFiches();
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<SortField>('company');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [pageSize, setPageSize] = useState(50);
   const [page, setPage] = useState(0);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);

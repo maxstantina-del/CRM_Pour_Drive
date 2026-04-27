@@ -142,7 +142,8 @@ export async function listLeads(): Promise<Lead[]> {
   const { data, error } = await supabase
     .from('leads')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('company', { ascending: true, nullsFirst: false })
+    .order('name', { ascending: true })
     .limit(10000);
   if (error) throw error;
   return (data ?? []).map(rowToLead);

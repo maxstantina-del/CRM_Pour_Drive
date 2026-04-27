@@ -11,6 +11,19 @@ import { useAuth } from '../contexts/AuthContext';
 import * as leadsService from '../services/leadsService';
 import type { BatchProgress, BulkInsertResult } from '../services/leadsService';
 
+/**
+ * Tri stable alphabétique sur (company || name). Indépendant de la stage,
+ * des tags ou de updated_at — un lead ne change de position que si on
+ * renomme l'entreprise.
+ */
+function sortLeadsAlpha(list: Lead[]): Lead[] {
+  return [...list].sort((a, b) => {
+    const ka = (a.company || a.name || '').trim();
+    const kb = (b.company || b.name || '').trim();
+    return ka.localeCompare(kb, 'fr', { sensitivity: 'base', numeric: true });
+  });
+}
+
 export function useLeads() {
   const isSupabase = isSupabaseConfigured();
   const { user } = useAuth();
@@ -25,6 +38,7 @@ export function useLeads() {
         const pid = lead.pipelineId || 'default';
         (map[pid] ||= []).push(lead);
       }
+      for (const pid of Object.keys(map)) map[pid] = sortLeadsAlpha(map[pid]);
       setLeadsByPipeline(map);
     } catch (error) {
       console.error('Error loading leads:', error);
@@ -59,7 +73,7 @@ export function useLeads() {
       // optimistic
       setLeadsByPipeline((prev) => ({
         ...prev,
-        [pipelineId]: [...(prev[pipelineId] || []), localLead],
+        [pipelineId]: sortLeadsAlpha([...(prev[pipelineId] || []), localLead]),
       }));
 
       if (!isSupabase) return;
@@ -68,7 +82,9 @@ export function useLeads() {
         // replace with authoritative row
         setLeadsByPipeline((prev) => ({
           ...prev,
-          [pipelineId]: (prev[pipelineId] || []).map((l) => (l.id === created.id ? created : l)),
+          [pipelineId]: sortLeadsAlpha(
+            (prev[pipelineId] || []).map((l) => (l.id === created.id ? created : l))
+          ),
         }));
       } catch (error) {
         // rollback
@@ -85,21 +101,24 @@ export function useLeads() {
   const updateLead = useCallback(
     async (pipelineId: string, leadId: string, updates: Partial<Lead>) => {
       const previous = leadsByPipeline[pipelineId]?.find((l) => l.id === leadId);
-      // optimistic
-      setLeadsByPipeline((prev) => ({
-        ...prev,
-        [pipelineId]: (prev[pipelineId] || []).map((l) =>
+      // optimistic — on ne re-trie que si le nom/company a changé.
+      const willResort =
+        (updates.company !== undefined && updates.company !== previous?.company) ||
+        (updates.name !== undefined && updates.name !== previous?.name);
+      setLeadsByPipeline((prev) => {
+        const next = (prev[pipelineId] || []).map((l) =>
           l.id === leadId ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l
-        ),
-      }));
+        );
+        return { ...prev, [pipelineId]: willResort ? sortLeadsAlpha(next) : next };
+      });
 
       if (!isSupabase) return;
       try {
         const fresh = await leadsService.updateLead(leadId, updates);
-        setLeadsByPipeline((prev) => ({
-          ...prev,
-          [pipelineId]: (prev[pipelineId] || []).map((l) => (l.id === leadId ? fresh : l)),
-        }));
+        setLeadsByPipeline((prev) => {
+          const next = (prev[pipelineId] || []).map((l) => (l.id === leadId ? fresh : l));
+          return { ...prev, [pipelineId]: willResort ? sortLeadsAlpha(next) : next };
+        });
       } catch (error) {
         // rollback to previous
         if (previous) {
@@ -153,7 +172,7 @@ export function useLeads() {
       if (!isSupabase) {
         setLeadsByPipeline((prev) => ({
           ...prev,
-          [pipelineId]: [...(prev[pipelineId] || []), ...scoped],
+          [pipelineId]: sortLeadsAlpha([...(prev[pipelineId] || []), ...scoped]),
         }));
         return { inserted: scoped, errors: [] };
       }
@@ -163,7 +182,7 @@ export function useLeads() {
       if (result.inserted.length > 0) {
         setLeadsByPipeline((prev) => ({
           ...prev,
-          [pipelineId]: [...(prev[pipelineId] || []), ...result.inserted],
+          [pipelineId]: sortLeadsAlpha([...(prev[pipelineId] || []), ...result.inserted]),
         }));
       }
       return result;
