@@ -61,6 +61,18 @@ export async function renamePipeline(pipelineId: string, name: string): Promise<
   if (error) throw error;
 }
 
+export async function updatePipelineStages(
+  pipelineId: string,
+  stages: StageConfig[]
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from('pipelines')
+    .update({ stages, updated_at: new Date().toISOString() })
+    .eq('id', pipelineId);
+  if (error) throw error;
+}
+
 export async function deletePipeline(pipelineId: string): Promise<void> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from('pipelines').delete().eq('id', pipelineId);

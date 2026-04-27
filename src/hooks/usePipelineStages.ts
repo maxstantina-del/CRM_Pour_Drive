@@ -1,10 +1,14 @@
 /**
- * Pipeline stages configuration hook
+ * Pipeline stages configuration hook.
+ *
+ * Source de vérité : pipelines.stages en DB (sync realtime via usePipelines).
+ * On lit depuis le Pipeline passé en argument et on écrit via pipelinesService.
+ * Plus aucune persistance localStorage — sinon Max et Nicolas voient des
+ * colonnes différentes : c'était le bug "RDV Terrain pas visible côté client".
  */
 
-import { useState, useEffect } from 'react';
-import type { StageConfig, LeadStage } from '../lib/types';
-import { getItem, setItem, STORAGE_KEYS } from '../lib/storage';
+import type { StageConfig, LeadStage, Pipeline } from '../lib/types';
+import * as pipelinesService from '../services/pipelinesService';
 
 /**
  * Default pipeline stages configuration
@@ -100,49 +104,47 @@ export function getStageLabel(stageId: LeadStage, stages: StageConfig[] = DEFAUL
 }
 
 /**
- * Hook to manage pipeline stages
+ * Hook to manage pipeline stages.
+ *
+ * Lit `pipeline.stages` (chargé par usePipelines depuis Supabase, propagé via
+ * realtime channel `pipelines_changes`). Toute modification est persistée via
+ * pipelinesService.updatePipelineStages → DB → realtime → tous les clients.
+ *
+ * Si aucun pipeline n'est passé (boot, no-auth), retourne DEFAULT_STAGES en
+ * read-only.
  */
-export function usePipelineStages(pipelineId?: string) {
-  const storageKey = pipelineId
-    ? `${STORAGE_KEYS.PIPELINES}_${pipelineId}_stages`
-    : 'crm_default_stages';
+export function usePipelineStages(pipeline?: Pipeline) {
+  const stages: StageConfig[] =
+    pipeline?.stages && pipeline.stages.length > 0 ? pipeline.stages : DEFAULT_STAGES;
 
-  const [stages, setStages] = useState<StageConfig[]>(() => {
-    return getItem<StageConfig[]>(storageKey, DEFAULT_STAGES);
-  });
-
-  useEffect(() => {
-    setItem(storageKey, stages);
-  }, [stages, storageKey]);
-
-  const addStage = (stage: StageConfig) => {
-    setStages(prev => [...prev, stage]);
+  const persist = async (next: StageConfig[]) => {
+    if (!pipeline) {
+      console.warn('usePipelineStages: no pipeline provided, change ignored');
+      return;
+    }
+    try {
+      await pipelinesService.updatePipelineStages(pipeline.id, next);
+    } catch (error) {
+      console.error('Error updating pipeline stages:', error);
+    }
   };
 
-  const updateStage = (stageId: LeadStage, updates: Partial<StageConfig>) => {
-    setStages(prev =>
-      prev.map(stage =>
-        stage.id === stageId ? { ...stage, ...updates } : stage
-      )
-    );
-  };
+  const addStage = (stage: StageConfig) => persist([...stages, stage]);
 
-  const removeStage = (stageId: LeadStage) => {
-    setStages(prev => prev.filter(stage => stage.id !== stageId));
-  };
+  const updateStage = (stageId: LeadStage, updates: Partial<StageConfig>) =>
+    persist(stages.map((s) => (s.id === stageId ? { ...s, ...updates } : s)));
+
+  const removeStage = (stageId: LeadStage) =>
+    persist(stages.filter((s) => s.id !== stageId));
 
   const reorderStages = (startIndex: number, endIndex: number) => {
-    setStages(prev => {
-      const result = Array.from(prev);
-      const [removed] = result.splice(startIndex, 1);
-      result.splice(endIndex, 0, removed);
-      return result;
-    });
+    const result = Array.from(stages);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return persist(result);
   };
 
-  const resetToDefault = () => {
-    setStages(DEFAULT_STAGES);
-  };
+  const resetToDefault = () => persist(DEFAULT_STAGES);
 
   return {
     stages,

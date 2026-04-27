@@ -97,6 +97,7 @@ function App() {
   const {
     pipelines,
     currentPipelineId,
+    currentPipeline,
     setCurrentPipelineId,
     addPipeline,
     renamePipeline,
@@ -114,7 +115,7 @@ function App() {
     deletePipelineLeads,
   } = useLeads();
 
-  const { stages, addStage, updateStage, removeStage, reorderStages } = usePipelineStages();
+  const { stages, addStage, updateStage, removeStage, reorderStages } = usePipelineStages(currentPipeline);
   const { tags, leadTags, toggleLeadTag, getTagsForLead } = useTags();
 
   const effectivePipelineId = currentPipelineId || pipelines[0]?.id || '';
