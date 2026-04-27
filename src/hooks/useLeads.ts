@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Lead } from '../lib/types';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import * as leadsService from '../services/leadsService';
 import type { BatchProgress, BulkInsertResult } from '../services/leadsService';
@@ -32,7 +33,18 @@ export function useLeads() {
 
   useEffect(() => {
     loadLeads();
-  }, [loadLeads]);
+    if (!isSupabase || !user) return;
+    const client = getSupabaseClient();
+    const channel = client
+      .channel('leads_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        loadLeads();
+      })
+      .subscribe();
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [loadLeads, isSupabase, user]);
 
   const getPipelineLeads = useCallback(
     (pipelineId: string): Lead[] => leadsByPipeline[pipelineId] || [],

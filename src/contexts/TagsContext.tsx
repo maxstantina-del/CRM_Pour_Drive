@@ -9,6 +9,7 @@ import * as service from '../services/tagsService';
 import type { Tag } from '../services/tagsService';
 import { useAuth } from './AuthContext';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabaseClient';
 
 interface TagsContextValue {
   tags: Tag[];
@@ -43,7 +44,17 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     load();
-  }, [load]);
+    if (!isSupabaseConfigured() || !user) return;
+    const client = getSupabaseClient();
+    const channel = client
+      .channel('tags_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lead_tags' }, () => load())
+      .subscribe();
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [load, user]);
 
   const createTag = useCallback(
     async (name: string, color?: string) => {
