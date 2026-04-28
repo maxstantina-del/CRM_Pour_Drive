@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { ArrowUp, ArrowDown, Trash2, Plus, Check, X as XIcon, AlertCircle } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash2, Plus, Check, X as XIcon, AlertCircle, Lock } from 'lucide-react';
 import type { StageConfig, LeadStage, StageColor } from '../../lib/types';
 import { getStageIcon, getStageColorHex } from '../../lib/stageIcons';
 import { IconPicker } from './IconPicker';
@@ -89,23 +89,39 @@ export function StagesManager({ stages, onAdd, onUpdate, onRemove, onReorder }: 
           const isEditing = editingId === s.id;
           const showIcon = iconOpenFor === s.id;
           const showColor = colorOpenFor === s.id;
+          // Colonne "Nouveau" : verrouillée — c'est la file d'attente brute,
+          // toujours en première position, ni renommable ni supprimable ni déplaçable.
+          const isLocked = s.id === 'new';
+          // Si "Nouveau" est en position 0, le stage juste en dessous (idx 1)
+          // ne peut pas remonter au-dessus.
+          const upDisabled = idx === 0 || (idx === 1 && stages[0]?.id === 'new');
 
           return (
             <div
               key={s.id}
-              className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition-colors"
+              className={`flex items-center gap-2 p-2 border rounded-lg transition-colors ${
+                isLocked
+                  ? 'border-gray-200 bg-gray-50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+              title={isLocked ? 'Colonne verrouillée — file d\'attente du pipeline' : undefined}
             >
-              {/* Icon (clickable) */}
+              {/* Icon (clickable, sauf si locked) */}
               <div className="relative">
                 <button
-                  onClick={() => { setIconOpenFor(showIcon ? null : s.id); setColorOpenFor(null); }}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                  title="Changer l'icône"
+                  onClick={() => {
+                    if (isLocked) return;
+                    setIconOpenFor(showIcon ? null : s.id);
+                    setColorOpenFor(null);
+                  }}
+                  disabled={isLocked}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  title={isLocked ? undefined : "Changer l'icône"}
                   style={{ color }}
                 >
                   <Icon size={18} />
                 </button>
-                {showIcon && (
+                {showIcon && !isLocked && (
                   <IconPicker
                     value={s.icon}
                     color={color}
@@ -115,15 +131,20 @@ export function StagesManager({ stages, onAdd, onUpdate, onRemove, onReorder }: 
                 )}
               </div>
 
-              {/* Color swatch (clickable) */}
+              {/* Color swatch (clickable, sauf si locked) */}
               <div className="relative">
                 <button
-                  onClick={() => { setColorOpenFor(showColor ? null : s.id); setIconOpenFor(null); }}
-                  className="w-6 h-6 rounded-full border-2 border-white shadow hover:scale-110 transition-transform"
+                  onClick={() => {
+                    if (isLocked) return;
+                    setColorOpenFor(showColor ? null : s.id);
+                    setIconOpenFor(null);
+                  }}
+                  disabled={isLocked}
+                  className="w-6 h-6 rounded-full border-2 border-white shadow hover:scale-110 transition-transform disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{ backgroundColor: color }}
-                  title="Changer la couleur"
+                  title={isLocked ? undefined : 'Changer la couleur'}
                 />
-                {showColor && (
+                {showColor && !isLocked && (
                   <ColorPicker
                     value={s.color}
                     onChange={(id) => onUpdate(s.id, { color: id as StageColor })}
@@ -132,8 +153,8 @@ export function StagesManager({ stages, onAdd, onUpdate, onRemove, onReorder }: 
                 )}
               </div>
 
-              {/* Label (inline edit) */}
-              {isEditing ? (
+              {/* Label (inline edit, sauf si locked) */}
+              {isEditing && !isLocked ? (
                 <div className="flex-1 flex items-center gap-1">
                   <input
                     autoFocus
@@ -153,6 +174,11 @@ export function StagesManager({ stages, onAdd, onUpdate, onRemove, onReorder }: 
                     <XIcon size={14} />
                   </button>
                 </div>
+              ) : isLocked ? (
+                <div className="flex-1 flex items-center gap-2 text-sm font-medium text-gray-500 cursor-not-allowed truncate">
+                  <span className="truncate">{s.label}</span>
+                  <Lock size={12} className="shrink-0 text-gray-400" aria-label="Verrouillée" />
+                </div>
               ) : (
                 <button
                   onClick={() => startRename(s)}
@@ -167,7 +193,7 @@ export function StagesManager({ stages, onAdd, onUpdate, onRemove, onReorder }: 
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => onReorder(idx, idx - 1)}
-                  disabled={idx === 0}
+                  disabled={isLocked || upDisabled}
                   className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600"
                   title="Monter"
                 >
@@ -175,7 +201,7 @@ export function StagesManager({ stages, onAdd, onUpdate, onRemove, onReorder }: 
                 </button>
                 <button
                   onClick={() => onReorder(idx, idx + 1)}
-                  disabled={idx === stages.length - 1}
+                  disabled={isLocked || idx === stages.length - 1}
                   className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600"
                   title="Descendre"
                 >
@@ -183,7 +209,7 @@ export function StagesManager({ stages, onAdd, onUpdate, onRemove, onReorder }: 
                 </button>
                 <button
                   onClick={() => handleDelete(s.id, s.label)}
-                  disabled={stages.length <= MIN_STAGES}
+                  disabled={isLocked || stages.length <= MIN_STAGES}
                   className="p-1.5 rounded hover:bg-red-50 text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
                   title="Supprimer"
                 >

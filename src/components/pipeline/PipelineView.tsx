@@ -551,8 +551,10 @@ export const PipelineView = memo(function PipelineView({
     //   1. Leads avec une next_action non complétée et dueDate définie →
     //      remontent en haut, triés par dueDate ASC (en retard tout en haut,
     //      relances à venir juste en dessous, par ordre chronologique).
-    //   2. Leads sans dueDate → en bas, triés alphabétiquement sur company/name
-    //      (ordre stable qui ne bouge qu'au renommage).
+    //   2. Leads sans dueDate → en bas, triés alphabétiquement sur company/name.
+    // Exception : la colonne "Nouveau" (id 'new') reste TOUJOURS triée
+    // alphabétiquement, peu importe les dates de relance — c'est la file
+    // d'attente brute, pas une colonne d'action.
     const nextDueDate = (lead: Lead): string | null => {
       const actions = lead.nextActions ?? [];
       let earliest: string | null = null;
@@ -562,16 +564,23 @@ export const PipelineView = memo(function PipelineView({
       }
       return earliest;
     };
+    const alphaCompare = (a: Lead, b: Lead) => {
+      const ka = (a.company || a.name || '').trim();
+      const kb = (b.company || b.name || '').trim();
+      return ka.localeCompare(kb, 'fr', { sensitivity: 'base', numeric: true });
+    };
     for (const s of stages) {
+      if (s.id === 'new') {
+        map[s.id].sort(alphaCompare);
+        continue;
+      }
       map[s.id].sort((a, b) => {
         const dateA = nextDueDate(a);
         const dateB = nextDueDate(b);
         if (dateA && dateB) return dateA.localeCompare(dateB);
         if (dateA) return -1;
         if (dateB) return 1;
-        const ka = (a.company || a.name || '').trim();
-        const kb = (b.company || b.name || '').trim();
-        return ka.localeCompare(kb, 'fr', { sensitivity: 'base', numeric: true });
+        return alphaCompare(a, b);
       });
     }
     return map;

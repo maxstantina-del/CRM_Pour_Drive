@@ -131,13 +131,25 @@ export function usePipelineStages(pipeline?: Pipeline) {
 
   const addStage = (stage: StageConfig) => persist([...stages, stage]);
 
-  const updateStage = (stageId: LeadStage, updates: Partial<StageConfig>) =>
-    persist(stages.map((s) => (s.id === stageId ? { ...s, ...updates } : s)));
+  // La colonne "Nouveau" (id 'new') est la file d'attente brute du pipeline :
+  // elle ne doit pas pouvoir être renommée, supprimée, ni déplacée. Garde-fou
+  // côté hook en plus du blocage UI dans StagesManager.
+  const updateStage = (stageId: LeadStage, updates: Partial<StageConfig>) => {
+    if (stageId === 'new') return Promise.resolve();
+    return persist(stages.map((s) => (s.id === stageId ? { ...s, ...updates } : s)));
+  };
 
-  const removeStage = (stageId: LeadStage) =>
-    persist(stages.filter((s) => s.id !== stageId));
+  const removeStage = (stageId: LeadStage) => {
+    if (stageId === 'new') return Promise.resolve();
+    return persist(stages.filter((s) => s.id !== stageId));
+  };
 
   const reorderStages = (startIndex: number, endIndex: number) => {
+    // Empêche de bouger la colonne 'new' OU de placer une autre colonne
+    // au-dessus d'elle.
+    const movingStage = stages[startIndex];
+    if (movingStage?.id === 'new') return Promise.resolve();
+    if (stages[0]?.id === 'new' && endIndex === 0) return Promise.resolve();
     const result = Array.from(stages);
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
