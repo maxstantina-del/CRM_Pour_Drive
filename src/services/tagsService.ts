@@ -32,10 +32,25 @@ function rowToTag(r: DbTagRow): Tag {
 }
 
 export async function listTags(): Promise<Tag[]> {
+  // Pagination défensive : aujourd'hui <100 tags, mais un import massif
+  // pourrait dépasser le cap PostgREST 1000 sans signal.
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from('tags').select('*').order('name');
-  if (error) throw error;
-  return (data ?? []).map(r => rowToTag(r as DbTagRow));
+  const PAGE = 1000;
+  const out: DbTagRow[] = [];
+  let from = 0;
+  while (from < 50000) {
+    const { data, error } = await supabase
+      .from('tags')
+      .select('*')
+      .order('name')
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as DbTagRow[];
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+    from += PAGE;
+  }
+  return out.map(r => rowToTag(r));
 }
 
 export async function createTag(ownerId: string, name: string, color = '#6366f1'): Promise<Tag> {
@@ -69,15 +84,27 @@ export async function listTagsForLead(leadId: string): Promise<Tag[]> {
 }
 
 export async function listLeadTagsMap(): Promise<Map<string, Tag[]>> {
+  // Pagination explicite : pivot many-to-many qui peut excéder 1000 lignes
+  // (1700 leads × ~3 tags = ~5000). Sans range, PostgREST tronque silencieusement.
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from('lead_tags').select('lead_id, tags(*)');
-  if (error) throw error;
+  const PAGE = 1000;
   const map = new Map<string, Tag[]>();
-  for (const row of (data as unknown as LeadTagWithTag[]) ?? []) {
-    if (!row.tags) continue;
-    const arr = map.get(row.lead_id) ?? [];
-    arr.push(rowToTag(row.tags));
-    map.set(row.lead_id, arr);
+  let from = 0;
+  while (from < 100000) {
+    const { data, error } = await supabase
+      .from('lead_tags')
+      .select('lead_id, tags(*)')
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data as unknown as LeadTagWithTag[]) ?? [];
+    for (const row of rows) {
+      if (!row.tags) continue;
+      const arr = map.get(row.lead_id) ?? [];
+      arr.push(rowToTag(row.tags));
+      map.set(row.lead_id, arr);
+    }
+    if (rows.length < PAGE) break;
+    from += PAGE;
   }
   return map;
 }

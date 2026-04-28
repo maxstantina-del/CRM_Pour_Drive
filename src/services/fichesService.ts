@@ -192,13 +192,26 @@ export async function listFichesForLead(leadId: string): Promise<Fiche[]> {
 }
 
 export async function listAllFiches(): Promise<Fiche[]> {
+  // Pagination explicite : PostgREST plafonne à max_rows=1000 par requête,
+  // .order seul tronquerait silencieusement (mêmes symptômes que le bug
+  // listLeads observé sur le pipeline Chablais).
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('fiches')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((r) => rowToFiche(r as DbFicheRow));
+  const PAGE = 1000;
+  const out: DbFicheRow[] = [];
+  let from = 0;
+  while (from < 50000) {
+    const { data, error } = await supabase
+      .from('fiches')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as DbFicheRow[];
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+    from += PAGE;
+  }
+  return out.map((r) => rowToFiche(r));
 }
 
 export async function createFiche(
