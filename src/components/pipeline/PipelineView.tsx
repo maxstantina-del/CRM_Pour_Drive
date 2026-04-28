@@ -547,10 +547,28 @@ export const PipelineView = memo(function PipelineView({
     for (const l of leads) {
       if (map[l.stage]) map[l.stage].push(l);
     }
-    // Tri stable alpha sur (company || name) — l'ordre ne change qu'au
-    // renommage, jamais sur tag/stage/notes/etc.
+    // Tri composite par colonne :
+    //   1. Leads avec une next_action non complétée et dueDate définie →
+    //      remontent en haut, triés par dueDate ASC (en retard tout en haut,
+    //      relances à venir juste en dessous, par ordre chronologique).
+    //   2. Leads sans dueDate → en bas, triés alphabétiquement sur company/name
+    //      (ordre stable qui ne bouge qu'au renommage).
+    const nextDueDate = (lead: Lead): string | null => {
+      const actions = lead.nextActions ?? [];
+      let earliest: string | null = null;
+      for (const a of actions) {
+        if (a.completed || !a.dueDate) continue;
+        if (earliest === null || a.dueDate < earliest) earliest = a.dueDate;
+      }
+      return earliest;
+    };
     for (const s of stages) {
       map[s.id].sort((a, b) => {
+        const dateA = nextDueDate(a);
+        const dateB = nextDueDate(b);
+        if (dateA && dateB) return dateA.localeCompare(dateB);
+        if (dateA) return -1;
+        if (dateB) return 1;
         const ka = (a.company || a.name || '').trim();
         const kb = (b.company || b.name || '').trim();
         return ka.localeCompare(kb, 'fr', { sensitivity: 'base', numeric: true });
