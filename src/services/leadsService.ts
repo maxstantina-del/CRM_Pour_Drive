@@ -138,15 +138,30 @@ export interface BulkInsertResult {
 }
 
 export async function listLeads(): Promise<Lead[]> {
+  // PostgREST sur Supabase plafonne à max_rows=1000 par requête (la clause
+  // `.limit(N)` ne lève pas le cap serveur). Au-delà, les leads tombent dans
+  // un trou silencieux — bug observé : 1706 leads totaux, seuls les 1000 premiers
+  // remontent et tout pipeline dont les entreprises sont en queue alpha (S–Z)
+  // se retrouve vide côté UI. On pagine donc explicitement par range.
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from('leads')
-    .select('*')
-    .order('company', { ascending: true, nullsFirst: false })
-    .order('name', { ascending: true })
-    .limit(10000);
-  if (error) throw error;
-  return (data ?? []).map(rowToLead);
+  const PAGE = 1000;
+  const out: DbLeadRow[] = [];
+  let from = 0;
+  // Hard cap à 50k pour éviter une boucle runaway en cas de bug serveur.
+  while (from < 50000) {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('company', { ascending: true, nullsFirst: false })
+      .order('name', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as DbLeadRow[];
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+    from += PAGE;
+  }
+  return out.map(rowToLead);
 }
 
 export async function createLead(lead: Lead, ownerId: string): Promise<Lead> {
